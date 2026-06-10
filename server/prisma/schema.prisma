@@ -1,0 +1,163 @@
+// ──────────────────────────────────────────────────────────────
+// Prisma Schema — RideShare
+// ──────────────────────────────────────────────────────────────
+// This is the single source of truth for the database schema.
+// After editing, run:
+//   npx prisma migrate dev --name <migration_name>
+//   npx prisma generate
+// ──────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // PostgreSQL is chosen for its strong ACID guarantees, PostGIS
+  // support (for future geolocation queries), and excellent
+  // JSON/enum support — all critical for a ride-sharing app.
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ────────────────────────────────────────────────────
+
+/// The two primary roles in the system.
+/// Using a Prisma enum maps directly to a PostgreSQL ENUM type,
+/// which is more storage-efficient and type-safe than a plain
+/// VARCHAR column with CHECK constraints.
+enum Role {
+  RIDER
+  DRIVER
+}
+
+/// Trip lifecycle states — forms a strict state machine:
+///   REQUESTED → MATCHED → STARTED → COMPLETED
+///                   ↓          ↓
+///               CANCELLED  CANCELLED
+///
+/// These transitions are enforced at the application layer
+/// (server-side event handlers), not at the database level,
+/// because the valid transitions depend on business logic
+/// that's easier to express in TypeScript than in SQL triggers.
+enum TripStatus {
+  REQUESTED  // Rider submitted the request, waiting for a driver
+  MATCHED    // A driver accepted; both parties are connected
+  STARTED    // Driver picked up the rider; trip is in progress
+  COMPLETED  // Driver reached destination; payment captured
+  CANCELLED  // Trip cancelled before completion; payment released
+}
+
+/// Payment lifecycle — tightly coupled with TripStatus:
+///   PENDING → AUTHORIZED → PAID
+///                ↓
+///           CANCELLED
+///
+/// PENDING:    PaymentIntent created but card not yet authorized
+/// AUTHORIZED: Card hold placed; safe to dispatch the driver
+/// PAID:       Trip completed, payment captured — money moved
+/// CANCELLED:  Trip cancelled, hold released — rider not charged
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  CANCELLED
+}
+
+// ── Models ───────────────────────────────────────────────────
+
+/// Core user model shared by both riders and drivers.
+///
+/// Design decisions:
+/// - UUID primary key: avoids sequential ID enumeration attacks
+///   and makes future database sharding straightforward.
+/// - Single User model for both roles: keeps auth simple. Role-
+///   specific data (vehicle info, payment methods) will live in
+///   separate related models added in later phases.
+/// - Email is @unique so it doubles as a natural lookup key for
+///   login without needing a separate index.
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String   // bcrypt hash — never store plaintext
+  name      String
+  role      Role
+  createdAt DateTime @default(now())
+
+  // ── Relations ─────────────────────────────────────────────
+  // A single User can be a rider on many trips AND a driver on
+  // many trips, but never both on the same trip. We use named
+  // relations to disambiguate the two foreign keys on Trip.
+  tripsAsRider  Trip[] @relation("RiderTrips")
+  tripsAsDriver Trip[] @relation("DriverTrips")
+
+  // 1:1 relation to the driver's current GPS position.
+  // Only drivers have a DriverLocation record; riders don't.
+  // The `?` makes it optional — it's null until the driver
+  // goes online for the first time.
+  location DriverLocation?
+}
+
+/// Represents a single ride from pickup to drop-off.
+///
+/// Design decisions:
+/// - `driverId` is nullable because when a trip is first created
+///   (status: REQUESTED), no driver has accepted yet.
+/// - `fare` is nullable because it's only calculated after the
+///   rider confirms and before the trip starts.
+/// - `stripePaymentIntentId` links to Stripe for payment tracking.
+///   We never store card numbers — Stripe handles all PCI compliance.
+/// - Coordinates are stored as plain Float rather than PostGIS
+///   geometry types for simplicity. At scale, we'd migrate to
+///   PostGIS for spatial indexing (ST_DWithin queries).
+model Trip {
+  id        String     @id @default(uuid())
+  status    TripStatus @default(REQUESTED)
+
+  // ── Participants ──────────────────────────────────────────
+  riderId  String
+  rider    User   @relation("RiderTrips", fields: [riderId], references: [id])
+
+  driverId String?
+  driver   User?  @relation("DriverTrips", fields: [driverId], references: [id])
+
+  // ── Location ──────────────────────────────────────────────
+  pickupLat Float
+  pickupLng Float
+  dropLat   Float
+  dropLng   Float
+
+  // ── Pricing ───────────────────────────────────────────────
+  // Fare is in the smallest currency unit (paise for INR).
+  // e.g., ₹150.00 = 15000 paise.
+  // Using Int avoids floating-point precision issues.
+  fare Int?
+
+  // ── Payment ───────────────────────────────────────────────
+  stripePaymentIntentId String?
+  paymentStatus         PaymentStatus @default(PENDING)
+
+  // ── Timestamps ────────────────────────────────────────────
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+}
+
+/// Stores the current GPS position of online drivers.
+///
+/// Design decisions:
+/// - Uses `driverId` as the primary key (1:1 with User) — there
+///   can only be ONE location record per driver, and we always
+///   upsert (insert or update) rather than insert new rows.
+/// - `@updatedAt` automatically refreshes on every write, which
+///   lets us filter out stale positions (e.g., a driver who
+///   disconnected 10 minutes ago without going offline).
+/// - This table is the HOT table — it's written to every 2
+///   seconds per online driver. Keeping it separate from User
+///   avoids write contention on the User table.
+model DriverLocation {
+  driverId  String   @id
+  driver    User     @relation(fields: [driverId], references: [id])
+
+  lat       Float
+  lng       Float
+  updatedAt DateTime @updatedAt
+}

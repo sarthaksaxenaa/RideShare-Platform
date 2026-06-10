@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    /* ──────────────────────────────────────────────────────────────────
+     * Target & Module
+     * ─────────────────────────────────────────────────────────────────
+     * ES2020 gives us BigInt, optional chaining, nullish coalescing
+     * without needing a polyfill on Node 18+.
+     *
+     * NodeNext for both `module` and `moduleResolution` ensures we get
+     * proper ESM/CJS interop that matches how Node actually resolves
+     * packages — critical when mixing Prisma (CJS) with our own code.
+     * ────────────────────────────────────────────────────────────── */
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    /* Output configuration */
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    /* Type-safety — keep everything strict from day one so we don't
+       accumulate tech debt in a codebase that handles payments & PII. */
+    "strict": true,
+
+    /* Interop helpers */
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+
+    /* Emit .d.ts files so downstream packages in the monorepo
+       can consume typed exports if we ever split into packages. */
+    "declaration": true,
+
+    /* Quality-of-life */
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "rideshare",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Real-Time Ride-Hailing Platform — Full-Stack Monorepo",
+  "scripts": {
+    "dev:server": "cd server && npm run dev",
+    "dev:rider": "cd rider-app && npm run dev",
+    "dev:driver": "cd driver-app && npm run dev",
+    "install:all": "cd server && npm install && cd ../rider-app && npm install && cd ../driver-app && npm install",
+    "db:migrate": "cd server && npx prisma migrate dev",
+    "db:studio": "cd server && npx prisma studio",
+    "db:generate": "cd server && npx prisma generate"
+  },
+  "keywords": ["rideshare", "real-time", "socket.io", "stripe", "prisma"],
+  "author": "",
+  "license": "MIT"
+}

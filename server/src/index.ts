@@ -38,6 +38,7 @@ import { setIO } from "./lib/socket.js";
 import authRouter from "./routes/auth.js";
 import tripsRouter from "./routes/trips.js";
 import webhooksRouter from "./routes/webhooks.js";
+import { initSocket } from "./socket/index.js";
 
 // ── App & Server ────────────────────────────────────────────
 
@@ -62,6 +63,10 @@ const io = new SocketIOServer(server, {
 
 // Store the io instance so other modules can access it via getIO().
 setIO(io);
+
+// Register Socket.io JWT auth middleware, connection handler,
+// and all real-time event handlers (driver location, trip lifecycle).
+initSocket(io);
 
 // ── Global Middleware ───────────────────────────────────────
 

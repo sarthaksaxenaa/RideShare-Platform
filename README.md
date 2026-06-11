@@ -325,4 +325,44 @@ npx prisma generate
 - ⏱️ 15-second auto-dismiss — driver trip request overlay with visual countdown progress bar
 - 🎉 Celebration overlay — confetti-style animation when driver completes a trip
 
+---
+
+### Iteration #4 — Phase 4: Stripe Payment Integration
+> **Status**: ✅ Complete — 11 June 2026
+
+**Scope:**
+- Stripe Elements PaymentForm component (PCI-compliant card collection)
+- Combined POST /api/trips/book endpoint (trip + PaymentIntent atomically)
+- Full booking flow state machine: idle → booking → paying → searching → matched
+
+**Payment Flow:**
+```
+Rider confirms → POST /book → PaymentIntent created → Stripe Elements UI
+→ Card authorized (hold placed) → trip:request emitted → Driver matched
+→ Trip completed → capturePayment() → Money moves
+```
+
+**Files Created (2 new):**
+
+| File | Purpose |
+|------|---------|
+| `rider-app/src/components/PaymentForm.tsx` | Stripe Elements with night theme, manual capture authorization |
+| `rider-app/src/components/PaymentForm.module.css` | Glassmorphism card, gradient pay button, error shake animation |
+
+**Files Modified (3):**
+
+| File | Change |
+|------|--------|
+| `server/src/routes/trips.ts` | Added `POST /api/trips/book` — atomic trip + PaymentIntent creation |
+| `rider-app/src/pages/Home.tsx` | Integrated PaymentForm into booking flow with 4-state state machine |
+| `rider-app/src/pages/Home.module.css` | Added error toast styling |
+
+**Key Design Highlights:**
+- 💳 PCI-compliant — card data never touches our server (handled by Stripe.js)
+- 🔐 Manual capture — authorize only, charge on trip completion, release on cancel
+- 🎨 Night theme Stripe Elements — custom dark appearance matching rider-app
+- ⚡ Atomic booking — trip + PaymentIntent created in single API call (no orphans)
+- 🛡️ 3D Secure/SCA support via Stripe's `confirmPayment()` flow
+
+
 

@@ -1,110 +1,191 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import useSocket from '../hooks/useSocket';
+import useTrip from '../hooks/useTrip';
+import Map, { type MapMarker } from '../components/Map';
+import BookingCard from '../components/BookingCard';
+import styles from './Home.module.css';
+
+// Default center: Chennai, India
+const DEFAULT_CENTER: [number, number] = [13.0827, 80.2707];
 
 function HomePage() {
   const navigate = useNavigate();
-  const [userName, setUserName] = useState('Rider');
+  const { socket, isConnected } = useSocket();
+  const { tripState, tripData, requestTrip, cancelTrip, resetTrip } = useTrip(socket);
 
+  const [riderLocation, setRiderLocation] = useState<[number, number] | null>(null);
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [nearbyDrivers, setNearbyDrivers] = useState<Array<{ lat: number; lng: number; id: string }>>([]);
+
+  // Get rider's current location on mount
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('user');
-      if (raw) {
-        const user = JSON.parse(raw);
-        if (user.name) setUserName(user.name);
-      }
-    } catch {
-      // ignore parse errors
+    if (!navigator.geolocation) {
+      setRiderLocation(DEFAULT_CENTER);
+      setLocationLoading(false);
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setRiderLocation([pos.coords.latitude, pos.coords.longitude]);
+        setLocationLoading(false);
+      },
+      () => {
+        setRiderLocation(DEFAULT_CENTER);
+        setLocationLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   }, []);
 
-  const handleLogout = () => {
+  // Listen for nearby driver locations
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleDriverLocations = (data: any) => {
+      if (Array.isArray(data)) {
+        setNearbyDrivers(data.map((d: any) => ({ lat: d.lat, lng: d.lng, id: d.driverId || d.id })));
+      } else if (data?.lat && data?.lng) {
+        setNearbyDrivers((prev) => {
+          const id = data.driverId || data.id || 'unknown';
+          const exists = prev.findIndex((d) => d.id === id);
+          if (exists >= 0) {
+            const updated = [...prev];
+            updated[exists] = { lat: data.lat, lng: data.lng, id };
+            return updated;
+          }
+          return [...prev, { lat: data.lat, lng: data.lng, id }];
+        });
+      }
+    };
+
+    socket.on('drivers:nearby', handleDriverLocations);
+    socket.on('driver:location', handleDriverLocations);
+
+    // Request nearby drivers
+    if (riderLocation) {
+      socket.emit('drivers:request', { lat: riderLocation[0], lng: riderLocation[1] });
+    }
+
+    return () => {
+      socket.off('drivers:nearby', handleDriverLocations);
+      socket.off('driver:location', handleDriverLocations);
+    };
+  }, [socket, riderLocation]);
+
+  // Navigate to trip page when matched
+  useEffect(() => {
+    if (tripState === 'matched' && tripData?.tripId) {
+      navigate(`/trip/${tripData.tripId}`);
+    }
+  }, [tripState, tripData, navigate]);
+
+  const handleBook = useCallback(
+    (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number) => {
+      requestTrip(pickup.lat, pickup.lng, drop.lat, drop.lng, fare);
+    },
+    [requestTrip]
+  );
+
+  const handleCancelSearch = useCallback(() => {
+    if (tripData?.tripId) {
+      cancelTrip(tripData.tripId, 'Rider cancelled search');
+    }
+    resetTrip();
+  }, [tripData, cancelTrip, resetTrip]);
+
+  const handleLogout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login', { replace: true });
-  };
+  }, [navigate]);
+
+  // Build markers array
+  const markers: MapMarker[] = [];
+
+  if (riderLocation) {
+    markers.push({
+      lat: riderLocation[0],
+      lng: riderLocation[1],
+      label: 'You are here',
+      type: 'rider',
+    });
+  }
+
+  nearbyDrivers.forEach((driver) => {
+    markers.push({
+      lat: driver.lat,
+      lng: driver.lng,
+      label: 'Available Driver',
+      type: 'driver',
+    });
+  });
+
+  // Loading state
+  if (locationLoading) {
+    return (
+      <div className={styles.loadingPage}>
+        <div className={styles.loadingSpinner} />
+        <div className={styles.loadingText}>Getting your location...</div>
+      </div>
+    );
+  }
+
+  const center = riderLocation || DEFAULT_CENTER;
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #0a0a1a 0%, #0d1117 50%, #0a0e1a 100%)',
-        padding: '24px',
-        gap: '24px',
-      }}
-    >
-      <div
-        style={{
-          background: 'rgba(255,255,255,0.03)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: '24px',
-          padding: '48px',
-          textAlign: 'center',
-          maxWidth: '500px',
-          width: '100%',
-        }}
-      >
-        <p style={{ fontSize: '48px', marginBottom: '16px' }}>🚗</p>
-        <h1
-          style={{
-            fontSize: '28px',
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #00d4ff, #7c3aed)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            marginBottom: '8px',
-          }}
-        >
-          Welcome, {userName}!
-        </h1>
-        <p
-          style={{
-            color: 'rgba(255,255,255,0.5)',
-            fontSize: '16px',
-            marginBottom: '32px',
-          }}
-        >
-          RideShare — Rider Dashboard
-        </p>
-        <p
-          style={{
-            color: 'rgba(255,255,255,0.3)',
-            fontSize: '14px',
-            marginBottom: '32px',
-            fontStyle: 'italic',
-          }}
-        >
-          Full dashboard coming in Phase 2
-        </p>
-        <button
-          onClick={handleLogout}
-          style={{
-            padding: '12px 32px',
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '12px',
-            color: '#fca5a5',
-            fontSize: '14px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-          }}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
-            e.currentTarget.style.transform = 'translateY(-1px)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          Sign Out
-        </button>
+    <div className={styles.page}>
+      {/* Header */}
+      <header className={styles.header}>
+        <div className={styles.brand}>
+          <span className={styles.brandIcon}>🚀</span>
+          <span className={styles.brandText}>RideShare</span>
+        </div>
+        <div className={styles.headerRight}>
+          <div
+            className={`${styles.connectionDot} ${
+              isConnected ? styles.connected : styles.disconnected
+            }`}
+            title={isConnected ? 'Connected' : 'Disconnected'}
+          />
+          <button className={styles.logoutBtn} onClick={handleLogout}>
+            🚪 Logout
+          </button>
+        </div>
+      </header>
+
+      {/* Full-Screen Map */}
+      <div className={styles.mapContainer}>
+        <Map center={center} zoom={14} markers={markers} fullscreen />
       </div>
+
+      {/* Booking Card or Searching Overlay */}
+      {tripState === 'requesting' ? (
+        <div className={styles.searchingOverlay}>
+          <div className={styles.searchingContent}>
+            <div className={styles.searchingPulse}>
+              <span className={styles.searchingIcon}>🔍</span>
+            </div>
+            <div className={styles.searchingTitle}>Finding your driver...</div>
+            <div className={styles.searchingSubtitle}>
+              Matching you with the best available driver nearby
+            </div>
+            <div className={styles.searchingDots}>
+              <div className={styles.dot} />
+              <div className={styles.dot} />
+              <div className={styles.dot} />
+            </div>
+            <button className={styles.cancelSearchBtn} onClick={handleCancelSearch}>
+              ✕ Cancel Search
+            </button>
+          </div>
+        </div>
+      ) : tripState === 'idle' || tripState === 'cancelled' ? (
+        <div className={styles.bookingOverlay}>
+          <BookingCard onBook={handleBook} loading={false} />
+        </div>
+      ) : null}
     </div>
   );
 }

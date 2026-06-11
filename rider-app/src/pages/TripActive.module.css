@@ -1,0 +1,461 @@
+/* ============================================
+   RideShare — Trip Active Page
+   Live trip tracking with map + status panel
+   ============================================ */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(0.8) translateY(30px); }
+  60% { transform: scale(1.02) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ---------- Page ---------- */
+
+.page {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  background: #0a0a0f;
+}
+
+/* ---------- Map ---------- */
+
+.mapContainer {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* ---------- Back Button ---------- */
+
+.backBtn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  padding: 10px 18px;
+  background: rgba(12, 12, 20, 0.9);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: fadeInUp 0.4s ease;
+}
+
+.backBtn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+/* ---------- Disconnect Banner ---------- */
+
+.disconnectBanner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  padding: 12px 24px;
+  background: rgba(239, 68, 68, 0.15);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fca5a5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: slideDown 0.3s ease;
+}
+
+.disconnectPulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* ---------- Status Panel ---------- */
+
+.statusPanel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  max-width: 480px;
+  margin: 0 auto;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.statusCard {
+  background: rgba(12, 12, 20, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px 24px 0 0;
+  padding: 28px 24px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.statusCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
+}
+
+.handle {
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  margin: 0 auto 20px;
+}
+
+/* ---------- Status Header ---------- */
+
+.statusHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.statusIconWrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.statusIconMatched {
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.statusIconStarted {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.statusIconCompleted {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.statusInfo {
+  flex: 1;
+}
+
+.statusTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.statusSubtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ---------- Driver Info ---------- */
+
+.driverInfo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.driverAvatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00d4ff, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.driverDetails {
+  flex: 1;
+}
+
+.driverName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 2px;
+}
+
+.driverRole {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ---------- Trip Details Grid ---------- */
+
+.tripDetails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tripDetailItem {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.tripDetailLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.tripDetailValue {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.tripDetailUnit {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ---------- Fare Summary ---------- */
+
+.fareSummary {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.06), rgba(124, 58, 237, 0.06));
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+  animation: bounceIn 0.5s ease;
+}
+
+.fareTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
+.fareAmount {
+  font-size: 36px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #00d4ff, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+}
+
+.fareMessage {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 8px;
+}
+
+/* ---------- Action Buttons ---------- */
+
+.doneBtn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #7c3aed 100%);
+  background-size: 200% 200%;
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.doneBtn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.doneBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3);
+  background-position: 100% 100%;
+}
+
+.doneBtn:hover::before {
+  opacity: 1;
+}
+
+.cancelBtn {
+  width: 100%;
+  padding: 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 14px;
+  color: #fca5a5;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  margin-top: 10px;
+}
+
+.cancelBtn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* ---------- Progress Bar ---------- */
+
+.progressBar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.progressStep {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.5s;
+}
+
+.progressStepActive {
+  background: linear-gradient(90deg, #00d4ff, #7c3aed);
+}
+
+.progressStepPending {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ---------- Loading State ---------- */
+
+.loadingPage {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0f;
+  gap: 16px;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 212, 255, 0.15);
+  border-top-color: #00d4ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loadingText {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 480px) {
+  .statusPanel {
+    max-width: 100%;
+  }
+
+  .statusCard {
+    padding: 20px 16px 24px;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .tripDetails {
+    grid-template-columns: 1fr;
+  }
+}

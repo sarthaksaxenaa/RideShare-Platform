@@ -239,3 +239,90 @@ npx prisma migrate dev --name add-trips-and-locations
 npx prisma generate
 ```
 
+---
+
+### Iteration #3 — Phase 3: Real-Time Socket.io Layer
+> **Status**: ✅ Complete — 11 June 2026
+
+**Scope:**
+- Socket.io server with JWT auth middleware and room-based event isolation
+- Driver event handlers: location_update (privacy-aware), go_online, go_offline
+- Trip lifecycle handlers: request → match (atomic) → start → complete (Stripe capture) → cancel
+- Rider-app: useSocket + useTrip hooks, Map component, BookingCard, Home page, TripActive page
+- Driver-app: useSocket + useLocation hooks, Map component, TripRequest overlay, Dashboard, TripActive page
+
+**Real-Time Socket Events:**
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `driver:location_update` | Driver → Server | GPS position upsert (2s interval) |
+| `driver:location` | Server → Rider/Room | Position broadcast (public or room-scoped) |
+| `driver:go_online/offline` | Driver → Server | Toggle availability |
+| `trip:request` | Rider → Server | Create trip, notify nearby drivers |
+| `trip:new_request` | Server → Drivers | Incoming ride notification |
+| `trip:accept` | Driver → Server | Atomic trip claim (prevents double-match) |
+| `trip:matched` | Server → Room | Driver + rider notified |
+| `trip:start` | Driver → Server | Rider picked up |
+| `trip:complete` | Driver → Server | Stripe capture + trip finalization |
+| `trip:cancel` | Either → Server | Stripe release + status rollback |
+
+**Files Created (16 new):**
+
+<details>
+<summary><strong>server/src/socket/ (3 files)</strong></summary>
+
+| File | Purpose |
+|------|---------|
+| `socket/index.ts` | initSocket() — JWT auth middleware, room join, disconnect handler |
+| `socket/driverHandlers.ts` | location upsert with privacy branching, online/offline toggle |
+| `socket/tripHandlers.ts` | Full trip lifecycle — request, accept (atomic), start, complete, cancel |
+
+</details>
+
+<details>
+<summary><strong>rider-app/ (8 files)</strong></summary>
+
+| File | Purpose |
+|------|---------|
+| `hooks/useSocket.ts` | Socket.io connection with JWT + auto-reconnect |
+| `hooks/useTrip.ts` | Trip state machine (idle → requesting → matched → started → completed) |
+| `components/Map.tsx` | Leaflet wrapper with emoji markers, dynamic centering |
+| `components/Map.module.css` | Map container styling |
+| `components/BookingCard.tsx` | Fare estimation, preset locations, booking flow |
+| `components/BookingCard.module.css` | Glassmorphism card, gradient buttons |
+| `pages/Home.tsx` + `.module.css` | Full-screen map, driver markers, booking overlay |
+| `pages/TripActive.tsx` + `.module.css` | Live driver tracking, status panel, fare summary |
+
+</details>
+
+<details>
+<summary><strong>driver-app/ (8 files)</strong></summary>
+
+| File | Purpose |
+|------|---------|
+| `hooks/useSocket.ts` | Socket.io connection with JWT + auto-reconnect |
+| `hooks/useLocation.ts` | GPS watchPosition with 2s throttled emission |
+| `components/Map.tsx` | Leaflet wrapper with dark-themed tiles |
+| `components/Map.module.css` | Map container styling |
+| `components/TripRequest.tsx` | Incoming ride overlay — 15s countdown, accept/decline |
+| `components/TripRequest.module.css` | Slide-up animation, pulsing glow |
+| `pages/Home.tsx` + `.module.css` | Dashboard — online/offline toggle, earnings, trip history |
+| `pages/TripActive.tsx` + `.module.css` | Navigation view — trip controls, completion celebration |
+
+</details>
+
+**Files Modified (1):**
+
+| File | Change |
+|------|--------|
+| `server/src/index.ts` | Added `initSocket(io)` call to activate the real-time layer |
+
+**Key Design Highlights:**
+- 🔐 Socket JWT auth — tokens verified on handshake, decoded user attached to `socket.data.user`
+- 🏠 Room-based isolation — `trip:{id}` rooms ensure location data is private to trip participants
+- ⚡ Atomic matching — `updateMany WHERE status='REQUESTED'` prevents double-accept race conditions
+- 📍 Privacy-aware location — active trip drivers emit only to their trip room, not globally
+- 🗺️ Leaflet maps — OpenStreetMap tiles (free), emoji-based markers, dynamic fly-to animations
+- ⏱️ 15-second auto-dismiss — driver trip request overlay with visual countdown progress bar
+- 🎉 Celebration overlay — confetti-style animation when driver completes a trip
+
+

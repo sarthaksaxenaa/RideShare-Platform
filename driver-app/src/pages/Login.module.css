@@ -156,6 +156,7 @@
 .logoText {
   font-size: 32px;
   font-weight: 800;
+  font-family: 'Playfair Display', serif;
   background: linear-gradient(135deg, #00d68f 0%, #059669 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -176,6 +177,7 @@
 .heading {
   font-size: 24px;
   font-weight: 700;
+  font-family: 'Playfair Display', serif;
   color: #ffffff;
   margin-bottom: 4px;
 }

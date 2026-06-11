@@ -12,55 +12,10 @@ generator client {
 }
 
 datasource db {
-  // PostgreSQL is chosen for its strong ACID guarantees, PostGIS
-  // support (for future geolocation queries), and excellent
-  // JSON/enum support — all critical for a ride-sharing app.
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-// ── Enums ────────────────────────────────────────────────────
-
-/// The two primary roles in the system.
-/// Using a Prisma enum maps directly to a PostgreSQL ENUM type,
-/// which is more storage-efficient and type-safe than a plain
-/// VARCHAR column with CHECK constraints.
-enum Role {
-  RIDER
-  DRIVER
-}
-
-/// Trip lifecycle states — forms a strict state machine:
-///   REQUESTED → MATCHED → STARTED → COMPLETED
-///                   ↓          ↓
-///               CANCELLED  CANCELLED
-///
-/// These transitions are enforced at the application layer
-/// (server-side event handlers), not at the database level,
-/// because the valid transitions depend on business logic
-/// that's easier to express in TypeScript than in SQL triggers.
-enum TripStatus {
-  REQUESTED  // Rider submitted the request, waiting for a driver
-  MATCHED    // A driver accepted; both parties are connected
-  STARTED    // Driver picked up the rider; trip is in progress
-  COMPLETED  // Driver reached destination; payment captured
-  CANCELLED  // Trip cancelled before completion; payment released
-}
-
-/// Payment lifecycle — tightly coupled with TripStatus:
-///   PENDING → AUTHORIZED → PAID
-///                ↓
-///           CANCELLED
-///
-/// PENDING:    PaymentIntent created but card not yet authorized
-/// AUTHORIZED: Card hold placed; safe to dispatch the driver
-/// PAID:       Trip completed, payment captured — money moved
-/// CANCELLED:  Trip cancelled, hold released — rider not charged
-enum PaymentStatus {
-  PENDING
-  AUTHORIZED
-  PAID
-  CANCELLED
+  // SQLite is used here to eliminate the need for a local PostgreSQL server,
+  // drastically reducing manual setup work for the user. It works great for MVP.
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // ── Models ───────────────────────────────────────────────────
@@ -80,7 +35,7 @@ model User {
   email     String   @unique
   password  String   // bcrypt hash — never store plaintext
   name      String
-  role      Role
+  role      String
   createdAt DateTime @default(now())
 
   // ── Relations ─────────────────────────────────────────────
@@ -111,7 +66,7 @@ model User {
 ///   PostGIS for spatial indexing (ST_DWithin queries).
 model Trip {
   id        String     @id @default(uuid())
-  status    TripStatus @default(REQUESTED)
+  status    String     @default("REQUESTED")
 
   // ── Participants ──────────────────────────────────────────
   riderId  String
@@ -134,7 +89,7 @@ model Trip {
 
   // ── Payment ───────────────────────────────────────────────
   stripePaymentIntentId String?
-  paymentStatus         PaymentStatus @default(PENDING)
+  paymentStatus         String @default("PENDING")
 
   // ── Timestamps ────────────────────────────────────────────
   createdAt   DateTime  @default(now())

@@ -60,51 +60,33 @@ import Stripe from "stripe";
  * Stripe's constructor will throw an informative error immediately
  * at startup — fail-fast is exactly what we want.
  */
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const IS_MOCK_STRIPE = !process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('YOUR_STRIPE');
+
+const stripe = IS_MOCK_STRIPE ? null as any : new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-05-28",
 });
 
 // ── Payment Operations ───────────────────────────────────────
 
-/**
- * Create a PaymentIntent with manual capture (authorize only).
- *
- * This places a hold on the rider's card for the estimated fare
- * amount. No money is moved at this stage — the charge stays
- * "pending" on the rider's bank statement.
- *
- * The returned PaymentIntent contains a `client_secret` which
- * the frontend uses with Stripe.js to confirm the payment on
- * the client side (3D Secure, card authentication, etc.).
- *
- * @param amount   - Fare amount in the smallest currency unit.
- *                   For INR, this is paise (₹100 = 10000 paise).
- *                   For USD, this is cents ($1.00 = 100 cents).
- *                   Using smallest units avoids floating-point
- *                   rounding issues with money.
- * @param currency - ISO 4217 currency code, lowercase.
- *                   Defaults to 'inr' for the Indian market.
- * @returns The full Stripe PaymentIntent object.
- *
- * @example
- * ```ts
- * // Authorize ₹250.00 (25000 paise)
- * const intent = await createTripPaymentIntent(25000, 'inr');
- * // Send intent.client_secret to the frontend
- * ```
- */
 export async function createTripPaymentIntent(
   amount: number,
   currency: string = "inr"
 ): Promise<Stripe.PaymentIntent> {
+  if (IS_MOCK_STRIPE) {
+    console.log(`[Stripe Mock] Created PaymentIntent for ${amount} ${currency}`);
+    return {
+      id: `pi_mock_${Date.now()}`,
+      client_secret: `pi_mock_secret_${Date.now()}`,
+      amount,
+      currency,
+      status: 'requires_payment_method'
+    } as unknown as Stripe.PaymentIntent;
+  }
+
   const paymentIntent = await stripe.paymentIntents.create({
     amount,
     currency,
-    // 'manual' = authorize only, don't charge yet.
-    // We'll call capturePayment() when the trip completes.
     capture_method: "manual",
-    // Metadata helps us trace payments back to business events
-    // in the Stripe dashboard and webhooks.
     metadata: {
       service: "rideshare",
       type: "trip_fare",
@@ -114,72 +96,26 @@ export async function createTripPaymentIntent(
   return paymentIntent;
 }
 
-/**
- * Capture a previously authorized PaymentIntent.
- *
- * This is called when the driver taps "Trip Complete" — the money
- * actually moves from the rider's bank account to our Stripe
- * balance at this point.
- *
- * IMPORTANT: A PaymentIntent can only be captured if:
- *  1. It was created with `capture_method: 'manual'`
- *  2. Its status is `requires_capture`
- *  3. The authorization hasn't expired (7-day window)
- *
- * If the actual fare is lower than the authorized amount, Stripe
- * allows partial capture — the remaining hold is automatically
- * released. We could pass `amount_to_capture` here in the future
- * to support this.
- *
- * @param paymentIntentId - The Stripe PaymentIntent ID (starts with 'pi_')
- * @returns The captured PaymentIntent (status will be 'succeeded')
- *
- * @example
- * ```ts
- * // Driver completes the trip
- * const captured = await capturePayment('pi_3abc123...');
- * // captured.status === 'succeeded'
- * ```
- */
 export async function capturePayment(
   paymentIntentId: string
 ): Promise<Stripe.PaymentIntent> {
+  if (IS_MOCK_STRIPE) {
+    console.log(`[Stripe Mock] Captured PaymentIntent ${paymentIntentId}`);
+    return { id: paymentIntentId, status: 'succeeded' } as unknown as Stripe.PaymentIntent;
+  }
+
   const paymentIntent = await stripe.paymentIntents.capture(paymentIntentId);
   return paymentIntent;
 }
 
-/**
- * Cancel a previously authorized PaymentIntent.
- *
- * This releases the hold on the rider's card — no money moves,
- * and the rider sees the pending charge disappear from their
- * bank statement (usually within 1-3 business days depending
- * on the bank).
- *
- * Called when:
- *  - The rider cancels the trip before the driver arrives
- *  - The driver cancels (no-show, vehicle issue, etc.)
- *  - The system cancels (no driver found within timeout)
- *
- * This is much cleaner than charge-then-refund because:
- *  1. No money moves, so no refund processing time
- *  2. The rider's available credit is restored immediately on
- *     Stripe's side (bank may take 1-3 days to reflect)
- *  3. No refund fees (some payment processors charge for refunds)
- *
- * @param paymentIntentId - The Stripe PaymentIntent ID (starts with 'pi_')
- * @returns The cancelled PaymentIntent (status will be 'canceled')
- *
- * @example
- * ```ts
- * // Rider cancels the trip
- * const cancelled = await cancelPayment('pi_3abc123...');
- * // cancelled.status === 'canceled'
- * ```
- */
 export async function cancelPayment(
   paymentIntentId: string
 ): Promise<Stripe.PaymentIntent> {
+  if (IS_MOCK_STRIPE) {
+    console.log(`[Stripe Mock] Cancelled PaymentIntent ${paymentIntentId}`);
+    return { id: paymentIntentId, status: 'canceled' } as unknown as Stripe.PaymentIntent;
+  }
+
   const paymentIntent = await stripe.paymentIntents.cancel(paymentIntentId);
   return paymentIntent;
 }

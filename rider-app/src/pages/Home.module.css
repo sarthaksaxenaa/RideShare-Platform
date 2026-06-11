@@ -80,6 +80,7 @@
 .brandText {
   font-size: 22px;
   font-weight: 800;
+  font-family: 'Playfair Display', serif;
   background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

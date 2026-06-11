@@ -188,6 +188,51 @@ export default function PaymentForm({
   onSuccess,
   onCancel,
 }: PaymentFormProps) {
+  
+  // Convert paise to rupees for display
+  const fareInRupees = (amount / 100).toFixed(2);
+
+  // If we are using the mock backend, skip Stripe completely
+  if (clientSecret && clientSecret.startsWith('pi_mock_secret_')) {
+    return (
+      <div className={styles.overlay}>
+        <div className={styles.card}>
+          <div className={styles.form}>
+            <div className={styles.header}>
+              <div className={styles.lockIcon}>🛠️</div>
+              <h3 className={styles.title}>Mock Payment (Local Dev)</h3>
+              <p className={styles.subtitle}>
+                Your card will be authorized for <span className={styles.amount}>₹{fareInRupees}</span>
+              </p>
+              <p className={styles.note}>
+                Stripe API keys were not found in .env. Using bypass mode.
+              </p>
+            </div>
+            <div className={styles.actions}>
+              <button
+                type="button"
+                className={styles.payButton}
+                onClick={() => {
+                  console.log("[PaymentForm] Mock authorization successful!");
+                  onSuccess();
+                }}
+              >
+                Mock Authorize ₹{fareInRupees}
+              </button>
+              <button
+                type="button"
+                className={styles.cancelButton}
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.overlay}>
       <div className={styles.card}>

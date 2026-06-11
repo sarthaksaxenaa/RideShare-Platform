@@ -10,9 +10,20 @@
     "install:all": "cd server && npm install && cd ../rider-app && npm install && cd ../driver-app && npm install",
     "db:migrate": "cd server && npx prisma migrate dev",
     "db:studio": "cd server && npx prisma studio",
-    "db:generate": "cd server && npx prisma generate"
+    "db:generate": "cd server && npx prisma generate",
+    "start": "concurrently \"npm run dev:server\" \"npm run dev:rider\" \"npm run dev:driver\""
   },
-  "keywords": ["rideshare", "real-time", "socket.io", "stripe", "prisma"],
+  "keywords": [
+    "rideshare",
+    "real-time",
+    "socket.io",
+    "stripe",
+    "prisma"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^10.0.3",
+    "puppeteer": "^25.1.0"
+  }
 }

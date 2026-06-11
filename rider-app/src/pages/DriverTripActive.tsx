@@ -1,11 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
-import { useSocket } from '../hooks/useSocket';
-import { useLocation } from '../hooks/useLocation';
-import MapView from '../components/Map';
+import useSocket from '../hooks/useSocket';
+import { useDriverLocation } from '../hooks/useDriverLocation';
+import Map from '../components/Map';
 import api from '../lib/api';
-import styles from './TripActive.module.css';
-import type { MarkerData } from '../components/Map';
+import styles from './DriverTripActive.module.css';
+import type { MapMarker } from '../components/Map';
 
 interface TripDetails {
   _id: string;
@@ -18,7 +18,7 @@ interface TripDetails {
   riderName?: string;
 }
 
-function TripActivePage() {
+function DriverTripActivePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
@@ -32,7 +32,7 @@ function TripActivePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Keep GPS active during the trip
-  const { currentPosition } = useLocation(socket, true);
+  const { currentPosition } = useDriverLocation(socket, true);
 
   // Fetch trip details
   useEffect(() => {
@@ -131,19 +131,19 @@ function TripActivePage() {
   }
 
   // Build map markers
-  const markers: MarkerData[] = [];
+  const markers: MapMarker[] = [];
 
   if (currentPosition) {
-    markers.push({ position: currentPosition, type: 'driver' });
+    markers.push({ lat: currentPosition.lat, lng: currentPosition.lng, type: 'driver' });
   }
 
   markers.push({
-    position: { lat: trip.pickupLat, lng: trip.pickupLng },
+    lat: trip.pickupLat, lng: trip.pickupLng, label: 'Pickup',
     type: 'pickup',
   });
 
   markers.push({
-    position: { lat: trip.dropLat, lng: trip.dropLng },
+    lat: trip.dropLat, lng: trip.dropLng, label: 'Drop-off',
     type: 'dropoff',
   });
 
@@ -213,7 +213,7 @@ function TripActivePage() {
 
       {/* Map */}
       <div className={styles.mapSection}>
-        <MapView center={mapCenter} zoom={14} markers={markers} />
+        <Map center={mapCenter} zoom={14} markers={markers} />
       </div>
 
       {/* Control Panel */}
@@ -309,4 +309,4 @@ function TripActivePage() {
   );
 }
 
-export default TripActivePage;
+export default DriverTripActivePage;

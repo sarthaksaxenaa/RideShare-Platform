@@ -6,12 +6,12 @@
   "scripts": {
     "dev:server": "cd server && npm run dev",
     "dev:rider": "cd rider-app && npm run dev",
-    "dev:driver": "cd driver-app && npm run dev",
+    
     "install:all": "cd server && npm install && cd ../rider-app && npm install && cd ../driver-app && npm install",
     "db:migrate": "cd server && npx prisma migrate dev",
     "db:studio": "cd server && npx prisma studio",
     "db:generate": "cd server && npx prisma generate",
-    "start": "concurrently \"npm run dev:server\" \"npm run dev:rider\" \"npm run dev:driver\""
+    "start": "concurrently \"npm run dev:server\" \"npm run dev:rider\""
   },
   "keywords": [
     "rideshare",

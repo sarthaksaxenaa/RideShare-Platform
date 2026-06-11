@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
-import { useSocket } from '../hooks/useSocket';
-import { useLocation } from '../hooks/useLocation';
-import MapView from '../components/Map';
+import useSocket from '../hooks/useSocket';
+import { useDriverLocation } from '../hooks/useDriverLocation';
+import Map from '../components/Map';
 import TripRequest from '../components/TripRequest';
 import api from '../lib/api';
-import styles from './Home.module.css';
-import type { MarkerData } from '../components/Map';
+import styles from './DriverHome.module.css';
+import type { MapMarker } from '../components/Map';
 
 interface TripData {
   tripId: string;
@@ -29,7 +29,7 @@ interface TripRecord {
   createdAt: string;
 }
 
-function HomePage() {
+function DriverHomePage() {
   const navigate = useNavigate();
   const [userName, setUserName] = useState('Driver');
   const [isOnline, setIsOnline] = useState(false);
@@ -40,7 +40,7 @@ function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const { socket, isConnected } = useSocket();
-  const { currentPosition, error: locationError } = useLocation(socket, isOnline);
+  const { currentPosition, error: locationError } = useDriverLocation(socket, isOnline);
 
   // Load user name from localStorage
   useEffect(() => {
@@ -173,12 +173,14 @@ function HomePage() {
   }
 
   // Build map markers
-  const markers: MarkerData[] = [];
+  const markers: MapMarker[] = [];
   if (currentPosition) {
-    markers.push({ position: currentPosition, type: 'driver' });
+    markers.push({ lat: currentPosition.lat, lng: currentPosition.lng, label: 'You', type: 'driver' });
   }
 
-  const defaultCenter = currentPosition || { lat: 28.6139, lng: 77.209 };
+  const defaultCenter: [number, number] = currentPosition
+    ? [currentPosition.lat, currentPosition.lng]
+    : [28.6139, 77.209];
 
   return (
     <div className={styles.container}>
@@ -251,7 +253,7 @@ function HomePage() {
       {/* Map */}
       <div className={styles.mapSection}>
         {isOnline && currentPosition ? (
-          <MapView center={defaultCenter} zoom={16} markers={markers} />
+          <Map center={defaultCenter} zoom={16} markers={markers} />
         ) : (
           <div className={styles.mapPlaceholder}>
             <div className={styles.mapPlaceholderIcon}>🗺️</div>
@@ -330,4 +332,4 @@ function HomePage() {
   );
 }
 
-export default HomePage;
+export default DriverHomePage;

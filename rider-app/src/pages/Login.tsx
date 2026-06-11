@@ -4,17 +4,17 @@ import api from '../lib/api';
 import styles from './Login.module.css';
 
 type Mode = 'signin' | 'signup';
+type RoleOption = 'RIDER' | 'DRIVER';
 
 function LoginPage() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>('signin');
+  const [role, setRole] = useState<RoleOption>('RIDER');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const ROLE = 'RIDER';
 
   const toggleMode = () => {
     setMode((prev) => (prev === 'signin' ? 'signup' : 'signin'));
@@ -40,7 +40,7 @@ function LoginPage() {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password,
-          role: ROLE,
+          role,
         });
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
@@ -68,8 +68,10 @@ function LoginPage() {
     }
   };
 
+  const isDriver = role === 'DRIVER';
+
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${isDriver ? styles.containerDriver : ''}`}>
       {/* Animated background orbs */}
       <div className={styles.bgOrb1} />
       <div className={styles.bgOrb2} />
@@ -79,10 +81,30 @@ function LoginPage() {
         {/* Branding */}
         <div className={styles.branding}>
           <div className={styles.logo}>
-            <span className={styles.logoIcon}>🚗</span>
-            <h1 className={styles.logoText}>RideShare</h1>
+            <span className={styles.logoIcon}>{isDriver ? '🚗' : '🚗'}</span>
+            <h1 className={`${styles.logoText} ${isDriver ? styles.logoTextDriver : ''}`}>RideShare</h1>
           </div>
-          <p className={styles.subtitle}>Book your ride</p>
+          <p className={styles.subtitle}>{isDriver ? 'Drive & Earn' : 'Book your ride'}</p>
+        </div>
+
+        {/* Role Selector */}
+        <div className={styles.roleSelector}>
+          <button
+            type="button"
+            className={`${styles.roleBtn} ${!isDriver ? styles.roleBtnActive : ''}`}
+            onClick={() => setRole('RIDER')}
+          >
+            <span className={styles.roleIcon}>👤</span>
+            Rider
+          </button>
+          <button
+            type="button"
+            className={`${styles.roleBtn} ${isDriver ? styles.roleBtnActiveDriver : ''}`}
+            onClick={() => setRole('DRIVER')}
+          >
+            <span className={styles.roleIcon}>🚘</span>
+            Driver
+          </button>
         </div>
 
         {/* Header */}
@@ -92,6 +114,8 @@ function LoginPage() {
         <p className={styles.headingSub}>
           {mode === 'signin'
             ? 'Sign in to continue your journey'
+            : isDriver
+            ? 'Join RideShare as a driver'
             : 'Join RideShare as a rider'}
         </p>
 
@@ -170,7 +194,7 @@ function LoginPage() {
 
           <button
             type="submit"
-            className={styles.submitBtn}
+            className={`${styles.submitBtn} ${isDriver ? styles.submitBtnDriver : ''}`}
             disabled={loading}
           >
             {loading ? (
@@ -188,7 +212,7 @@ function LoginPage() {
           {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
           <button
             type="button"
-            className={styles.toggleBtn}
+            className={`${styles.toggleBtn} ${isDriver ? styles.toggleBtnDriver : ''}`}
             onClick={toggleMode}
           >
             {mode === 'signin' ? 'Sign Up' : 'Sign In'}

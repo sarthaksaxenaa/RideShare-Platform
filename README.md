@@ -1,89 +1,114 @@
-# RideShare Platform
-
-A production-grade, real-time ride-hailing platform built with a modern TypeScript monorepo architecture. The platform supports concurrent rider and driver applications connected via a robust Socket.io real-time engine, with integrated Stripe payment processing and secure role-based access control.
-
-## System Overview
-
-The RideShare platform is divided into three core subsystems operating in a monorepo structure:
-- **Server**: A high-performance Node.js/Express API with PostgreSQL (Prisma ORM) and a real-time Socket.io layer.
-- **Rider Application**: A React/Vite front-end enabling users to book rides, track drivers on a live map, and authorize payments securely.
-- **Driver Application**: A React/Vite front-end providing drivers with real-time trip requests, live GPS broadcasting, and an earnings dashboard.
-
-## Application Interfaces
-
 <div align="center">
-  <img src="./assets/rider_app.png" alt="Rider Application Interface" width="45%" style="margin-right: 20px" />
-  <img src="./assets/driver_app.png" alt="Driver Application Interface" width="45%" />
+  <img src="https://img.icons8.com/color/96/000000/taxi.png" alt="RideShare Logo" width="80" />
+  <h1>RideShare Platform</h1>
+  <p><strong>A production-ready, real-time ride-hailing monorepo architecture.</strong></p>
+
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React"></a>
+  <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"></a>
+  <a href="https://socket.io/"><img src="https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socket.io&logoColor=white" alt="Socket.io"></a>
+  <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-3982CE?style=for-the-badge&logo=Prisma&logoColor=white" alt="Prisma"></a>
+  <a href="https://stripe.com/"><img src="https://img.shields.io/badge/Stripe-626CD9?style=for-the-badge&logo=Stripe&logoColor=white" alt="Stripe"></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
 </div>
 
-## Architecture and Technical Stack
+<br />
 
-**Backend infrastructure**
-- Node.js and Express.js REST API
-- WebSockets via Socket.io for real-time bidirectional event streaming
-- PostgreSQL Database using Prisma ORM
-- JSON Web Token (JWT) based authentication and authorization
-- Stripe API for payment intent creation and manual capture flow
+The RideShare Platform is a comprehensive, full-stack monorepo demonstrating modern web architecture patterns. It facilitates real-time ride booking, GPS tracking, and secure financial transactions through concurrent Rider and Driver applications powered by a Node.js/Socket.io backend.
 
-**Frontend Infrastructure**
-- React 18 with Vite for rapid bundling
-- TypeScript for end-to-end type safety
-- React Router DOM for client-side navigation
-- React-Leaflet with OpenStreetMap for interactive, high-performance mapping
-- CSS Modules for localized, collision-free styling
-- Stripe Elements for PCI-compliant payment data collection
+---
 
-**Design Patterns**
-- **Monorepo**: Centralized codebase for synchronized backend/frontend updates.
-- **Event-Driven State Machines**: Complex trip lifecycles (Idle -> Requesting -> Matched -> Started -> Completed) managed robustly across the network.
-- **Room-based Broadcasting**: Socket.io rooms used to enforce data privacy, ensuring drivers only broadcast precise coordinates to their assigned rider.
+## ⚡ Core Capabilities
 
-## Project Setup and Local Development
+- **Real-Time Event Streaming**: Sub-second GPS synchronization and state-machine transitions powered by Socket.io.
+- **Privacy-First WebSockets**: Drivers broadcast raw GPS coordinates exclusively to their assigned `trip:{id}` room, preventing location leaks.
+- **Atomic Concurrency**: Prisma `updateMany` constraints prevent double-booking race conditions when multiple drivers attempt to accept the same trip simultaneously.
+- **PCI-Compliant Payments**: Stripe Elements handles card collection, using an authorize-and-capture flow that only charges the rider upon successful trip completion.
+- **Interactive Mapping**: React-Leaflet integration with OpenStreetMap tiles, dynamic center point tracking, and custom localized markers.
+
+---
+
+## 🛠️ Monorepo Architecture
+
+This project strictly adheres to a domain-driven monorepo structure, ensuring type-safety boundaries and synchronized deployments.
+
+```mermaid
+graph TD
+    Client_Rider[Rider App<br/>React + Vite]
+    Client_Driver[Driver App<br/>React + Vite]
+    
+    sublayer_gateway[Socket.io + Express API<br/>Node.js Engine]
+    
+    Client_Rider <-->|WebSockets & REST| sublayer_gateway
+    Client_Driver <-->|WebSockets & REST| sublayer_gateway
+    
+    sublayer_gateway <--> DB[(PostgreSQL + Prisma)]
+    sublayer_gateway <--> Stripe[Stripe Payment Gateway]
+```
+
+### 1. `server/` (Backend Engine)
+- **Framework**: Express.js + Node.js
+- **Database**: PostgreSQL with Prisma ORM
+- **Authentication**: Stateless JWT via HTTP headers
+- **Real-time**: Socket.io middleware validating JWTs on handshake
+
+### 2. `rider-app/` (Consumer Client)
+- **Framework**: React 18 + Vite
+- **UI Architecture**: Glassmorphism CSS Modules, protected routing via React Router DOM
+- **Key Hooks**: `useSocket` (persistent connection), `useTrip` (client-side state machine tracking idle -> matched -> completed)
+
+### 3. `driver-app/` (Provider Client)
+- **Framework**: React 18 + Vite
+- **Tracking**: `useLocation` hook utilizing `navigator.geolocation.watchPosition` with throttled 2-second socket emissions.
+- **Experience**: 15-second auto-dismissing trip request overlays, earnings dashboard, and online/offline availability toggles.
+
+---
+
+## 🚀 Local Development Setup
 
 ### Prerequisites
-- Node.js (v18+ recommended)
-- PostgreSQL (v14+ recommended)
-- Stripe Account (for test API keys)
+- Node.js (v18+ LTS)
+- PostgreSQL (v14+)
+- Stripe Test Account keys
 
-### Installation
+### 1. Installation
+Clone the repository and install the monorepo dependencies:
+```bash
+npm install
+```
 
-1. Clone the repository and install dependencies from the root:
-   ```bash
-   npm install
-   ```
+### 2. Environment Configuration
+Create `.env` files based on the provided examples.
+- `server/.env`: Requires `DATABASE_URL`, `JWT_SECRET`, `STRIPE_SECRET_KEY`
+- `rider-app/.env`: Requires `VITE_API_URL`, `VITE_SOCKET_URL`, `VITE_STRIPE_PUBLISHABLE_KEY`
+- `driver-app/.env`: Requires `VITE_API_URL`, `VITE_SOCKET_URL`
 
-2. Environment Configuration:
-   Configure the `.env` variables in `server/`, `rider-app/`, and `driver-app/`.
-   Required variables include `DATABASE_URL`, `JWT_SECRET`, and Stripe keys.
+### 3. Database Initialization
+```bash
+cd server
+npx prisma migrate dev --name init
+npx prisma generate
+```
 
-3. Database Initialization:
-   ```bash
-   cd server
-   npx prisma migrate dev --name init
-   npx prisma generate
-   ```
+### 4. Bootstrapping
+Launch the entire stack concurrently from the root directory:
+```bash
+npm start
+```
+The services will be available at:
+- **API Server**: `http://localhost:3001`
+- **Rider Client**: `http://localhost:5173`
+- **Driver Client**: `http://localhost:5174`
 
-4. Start the Development Servers:
-   From the project root, launch the concurrent services:
-   ```bash
-   npm start
-   ```
-   - Server running on `http://localhost:3001`
-   - Rider App running on `http://localhost:5173`
-   - Driver App running on `http://localhost:5174`
+---
 
-## Implementation Details
+## 📖 Iteration History
 
-The system was built iteratively, adhering to strict software engineering standards.
+1. **Phase 1: Scaffolding & Auth**: Monorepo structure, Express + React Vite setups, JWT + bcrypt authentication.
+2. **Phase 2: Data Modeling**: Prisma schema implementation (User, Trip, DriverLocation), REST endpoints, and Haversine distance-based driver matching algorithms.
+3. **Phase 3: Real-Time Logistics**: Socket.io integration, driver tracking hooks, atomic database updates, Leaflet map implementation.
+4. **Phase 4: Financial Security**: Stripe authorization-capture pipeline, webhook signature verification, React Stripe Elements integration.
 
-### Phase 1: Authentication and Scaffolding
-Established the monorepo foundation. Configured the Express backend and React frontends. Implemented secure user registration and login workflows utilizing bcrypt for password hashing and JWT for stateless authentication.
-
-### Phase 2: Core Trip Logistics and Database Design
-Extended the PostgreSQL schema via Prisma to handle complex relational data including Users, Trips, and real-time Driver Locations. Developed the REST API layer for CRUD operations on trips and integrated a Haversine formula-based matching algorithm to locate proximal available drivers efficiently.
-
-### Phase 3: Real-Time Event Streaming
-Integrated Socket.io to handle low-latency interactions. Engineered custom event handlers for continuous GPS polling from drivers, trip request broadcasting, and atomic trip acceptance to prevent race conditions (double-matching). Implemented dynamic Leaflet maps on the front-end to visualize real-time coordinate updates.
-
-### Phase 4: Financial Transactions and Security
-Integrated Stripe for secure payment processing. Utilized the authorize-and-capture paradigm: placing a hold on the rider's card upon booking confirmation and capturing the funds programmatically via the backend only when the driver completes the trip. Built custom, stylized Stripe Elements forms in the React client to maintain a seamless user experience while ensuring PCI compliance.
+---
+<div align="center">
+  <i>Engineered for scale, speed, and real-time reliability.</i>
+</div>

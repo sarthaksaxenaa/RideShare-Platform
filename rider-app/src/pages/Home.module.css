@@ -287,3 +287,42 @@
     max-width: 100%;
   }
 }
+
+/* ---------- Error Toast ---------- */
+
+.errorToast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+  color: #fca5a5;
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeInUp 0.3s ease;
+  max-width: 400px;
+}
+
+.errorToast button {
+  background: none;
+  border: none;
+  color: #fca5a5;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.errorToast button:hover {
+  opacity: 1;
+}
+

@@ -4,10 +4,34 @@ import useSocket from '../hooks/useSocket';
 import useTrip from '../hooks/useTrip';
 import Map, { type MapMarker } from '../components/Map';
 import BookingCard from '../components/BookingCard';
+import PaymentForm from '../components/PaymentForm';
+import api from '../lib/api';
 import styles from './Home.module.css';
 
 // Default center: Chennai, India
 const DEFAULT_CENTER: [number, number] = [13.0827, 80.2707];
+
+/**
+ * Booking flow states:
+ *  idle → booking → paying → searching → matched → navigate to /trip/:id
+ *
+ * - idle: Show BookingCard overlay
+ * - booking: BookingCard submitted, calling POST /api/trips/book
+ * - paying: PaymentForm overlay (Stripe Elements)
+ * - searching: "Finding your driver..." overlay (after card authorized)
+ * - matched: Auto-navigate to /trip/:id
+ */
+type BookingFlow = 'idle' | 'booking' | 'paying' | 'searching';
+
+interface PaymentData {
+  tripId: string;
+  clientSecret: string;
+  fare: number;
+  pickupLat: number;
+  pickupLng: number;
+  dropLat: number;
+  dropLng: number;
+}
 
 function HomePage() {
   const navigate = useNavigate();
@@ -17,6 +41,9 @@ function HomePage() {
   const [riderLocation, setRiderLocation] = useState<[number, number] | null>(null);
   const [locationLoading, setLocationLoading] = useState(true);
   const [nearbyDrivers, setNearbyDrivers] = useState<Array<{ lat: number; lng: number; id: string }>>([]);
+  const [bookingFlow, setBookingFlow] = useState<BookingFlow>('idle');
+  const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
 
   // Get rider's current location on mount
   useEffect(() => {
@@ -63,7 +90,6 @@ function HomePage() {
     socket.on('drivers:nearby', handleDriverLocations);
     socket.on('driver:location', handleDriverLocations);
 
-    // Request nearby drivers
     if (riderLocation) {
       socket.emit('drivers:request', { lat: riderLocation[0], lng: riderLocation[1] });
     }
@@ -81,18 +107,72 @@ function HomePage() {
     }
   }, [tripState, tripData, navigate]);
 
+  /**
+   * Step 1: User confirms booking → create trip + PaymentIntent
+   */
   const handleBook = useCallback(
-    (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number) => {
-      requestTrip(pickup.lat, pickup.lng, drop.lat, drop.lng, fare);
+    async (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number) => {
+      setBookingFlow('booking');
+      setBookingError(null);
+
+      try {
+        const res = await api.post('/trips/book', {
+          pickupLat: pickup.lat,
+          pickupLng: pickup.lng,
+          dropLat: drop.lat,
+          dropLng: drop.lng,
+          fare,
+        });
+
+        setPaymentData({
+          tripId: res.data.tripId,
+          clientSecret: res.data.clientSecret,
+          fare,
+          pickupLat: pickup.lat,
+          pickupLng: pickup.lng,
+          dropLat: drop.lat,
+          dropLng: drop.lng,
+        });
+        setBookingFlow('paying');
+      } catch (err: any) {
+        const msg = err?.response?.data?.message || 'Failed to create booking. Please try again.';
+        setBookingError(msg);
+        setBookingFlow('idle');
+      }
     },
-    [requestTrip]
+    []
   );
+
+  /**
+   * Step 2: Card authorized → emit trip:request to start driver matching
+   */
+  const handlePaymentSuccess = useCallback(() => {
+    if (!paymentData) return;
+    setBookingFlow('searching');
+    requestTrip(
+      paymentData.pickupLat,
+      paymentData.pickupLng,
+      paymentData.dropLat,
+      paymentData.dropLng,
+      paymentData.fare
+    );
+  }, [paymentData, requestTrip]);
+
+  /**
+   * Cancel payment → go back to idle
+   */
+  const handlePaymentCancel = useCallback(() => {
+    setBookingFlow('idle');
+    setPaymentData(null);
+  }, []);
 
   const handleCancelSearch = useCallback(() => {
     if (tripData?.tripId) {
       cancelTrip(tripData.tripId, 'Rider cancelled search');
     }
     resetTrip();
+    setBookingFlow('idle');
+    setPaymentData(null);
   }, [tripData, cancelTrip, resetTrip]);
 
   const handleLogout = useCallback(() => {
@@ -160,8 +240,26 @@ function HomePage() {
         <Map center={center} zoom={14} markers={markers} fullscreen />
       </div>
 
-      {/* Booking Card or Searching Overlay */}
-      {tripState === 'requesting' ? (
+      {/* Booking Error Toast */}
+      {bookingError && (
+        <div className={styles.errorToast}>
+          <span>⚠️ {bookingError}</span>
+          <button onClick={() => setBookingError(null)}>✕</button>
+        </div>
+      )}
+
+      {/* Payment Form Overlay */}
+      {bookingFlow === 'paying' && paymentData && (
+        <PaymentForm
+          clientSecret={paymentData.clientSecret}
+          amount={paymentData.fare}
+          onSuccess={handlePaymentSuccess}
+          onCancel={handlePaymentCancel}
+        />
+      )}
+
+      {/* Searching Overlay */}
+      {bookingFlow === 'searching' || tripState === 'requesting' ? (
         <div className={styles.searchingOverlay}>
           <div className={styles.searchingContent}>
             <div className={styles.searchingPulse}>
@@ -169,7 +267,7 @@ function HomePage() {
             </div>
             <div className={styles.searchingTitle}>Finding your driver...</div>
             <div className={styles.searchingSubtitle}>
-              Matching you with the best available driver nearby
+              Payment authorized! Matching you with the best available driver nearby
             </div>
             <div className={styles.searchingDots}>
               <div className={styles.dot} />
@@ -181,9 +279,9 @@ function HomePage() {
             </button>
           </div>
         </div>
-      ) : tripState === 'idle' || tripState === 'cancelled' ? (
+      ) : bookingFlow === 'idle' || bookingFlow === 'booking' ? (
         <div className={styles.bookingOverlay}>
-          <BookingCard onBook={handleBook} loading={false} />
+          <BookingCard onBook={handleBook} loading={bookingFlow === 'booking'} />
         </div>
       ) : null}
     </div>

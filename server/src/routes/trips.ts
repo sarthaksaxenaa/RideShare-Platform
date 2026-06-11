@@ -395,4 +395,89 @@ router.post(
   }
 );
 
+// ─────────────────────────────────────────────────────────────
+// POST /api/trips/book — Create trip + PaymentIntent in one call
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Combined endpoint that creates a Trip record AND a Stripe
+ * PaymentIntent in a single request. This simplifies the
+ * frontend booking flow from 2 separate API calls to just 1.
+ *
+ * Flow:
+ *  1. Rider enters pickup/drop → calls POST /estimate (already exists)
+ *  2. Rider confirms → calls POST /book (this endpoint)
+ *  3. Server creates Trip (status: REQUESTED) + PaymentIntent
+ *  4. Returns { tripId, clientSecret } to the frontend
+ *  5. Frontend renders Stripe PaymentElement with clientSecret
+ *  6. After card authorization → frontend emits trip:request via Socket.io
+ *
+ * WHY COMBINE THESE?
+ * If we kept them separate, a network failure between "create trip"
+ * and "create payment intent" would leave an orphaned trip record.
+ * By doing both in one request, either both succeed or we can
+ * roll back cleanly.
+ */
+router.post(
+  "/book",
+  authenticate,
+  requireRole("RIDER"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { pickupLat, pickupLng, dropLat, dropLng, fare } = req.body;
+      const userId = req.user!.id;
+
+      // ── Validation ──────────────────────────────────────────
+      if (
+        pickupLat === undefined ||
+        pickupLng === undefined ||
+        dropLat === undefined ||
+        dropLng === undefined ||
+        fare === undefined
+      ) {
+        res.status(400).json({
+          error: "Validation error",
+          message:
+            "All fields required: pickupLat, pickupLng, dropLat, dropLng, fare.",
+        });
+        return;
+      }
+
+      // ── Create Trip record ──────────────────────────────────
+      const trip = await prisma.trip.create({
+        data: {
+          riderId: userId,
+          pickupLat,
+          pickupLng,
+          dropLat,
+          dropLng,
+          fare,
+          status: "REQUESTED",
+        },
+      });
+
+      // ── Create Stripe PaymentIntent (authorize only) ────────
+      const paymentIntent = await createTripPaymentIntent(fare);
+
+      // ── Link PaymentIntent to Trip ──────────────────────────
+      await prisma.trip.update({
+        where: { id: trip.id },
+        data: { stripePaymentIntentId: paymentIntent.id },
+      });
+
+      // ── Return both IDs to the frontend ─────────────────────
+      res.status(201).json({
+        tripId: trip.id,
+        clientSecret: paymentIntent.client_secret,
+      });
+    } catch (error) {
+      console.error("[trips/book] Unexpected error:", error);
+      res.status(500).json({
+        error: "Internal server error",
+        message: "Failed to book trip. Please try again later.",
+      });
+    }
+  }
+);
+
 export default router;

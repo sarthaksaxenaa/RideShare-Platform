@@ -6,7 +6,7 @@ interface Position {
   lng: number;
 }
 
-export function useLocation(socket: Socket | null, isOnline: boolean) {
+export function useDriverLocation(socket: Socket | null, isOnline: boolean) {
   const [currentPosition, setCurrentPosition] = useState<Position | null>(null);
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);

@@ -23,13 +23,13 @@ interface TripDetails {
 function TripActivePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { socket, isConnected } = useSocket();
+  const { socket } = useSocket();
   const { tripState, tripData, driverLocation, driverDisconnected, cancelTrip, resetTrip } =
     useTrip(socket);
 
   const [tripDetails, setTripDetails] = useState<TripDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  // Error state removed as it is not displayed
 
   // Fetch trip details on mount
   useEffect(() => {
@@ -54,7 +54,7 @@ function TripActivePage() {
         });
       } catch (err: any) {
         console.error('Failed to fetch trip details:', err);
-        setError('Could not load trip details');
+        // Error state removed
         // Use data from useTrip hook if available
         if (tripData) {
           setTripDetails({

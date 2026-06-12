@@ -134,7 +134,7 @@ function DriverTripActivePage() {
   const markers: MapMarker[] = [];
 
   if (currentPosition) {
-    markers.push({ lat: currentPosition.lat, lng: currentPosition.lng, type: 'driver' });
+    markers.push({ lat: currentPosition.lat, lng: currentPosition.lng, label: 'Driver', type: 'driver' });
   }
 
   markers.push({
@@ -148,10 +148,9 @@ function DriverTripActivePage() {
   });
 
   // Center on driver position if available, else on pickup
-  const mapCenter = currentPosition || {
-    lat: trip.pickupLat,
-    lng: trip.pickupLng,
-  };
+  const mapCenter: [number, number] = currentPosition 
+    ? [currentPosition.lat, currentPosition.lng] 
+    : [trip.pickupLat, trip.pickupLng];
 
   // Determine status display
   const getStatusConfig = () => {

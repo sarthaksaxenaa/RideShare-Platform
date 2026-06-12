@@ -16,10 +16,21 @@ interface BookingCardProps {
   loading?: boolean;
 }
 
-interface EstimateData {
+interface VehicleEstimate {
+  vehicleType: string;
+  label: string;
+  icon: string;
+  description: string;
   fare: number;
-  distance: number;
-  eta: number;
+  baseFare: number;
+  ratePerKm: number;
+  timeCharge: number;
+}
+
+interface EstimateResponse {
+  estimates: VehicleEstimate[];
+  distanceKm: number;
+  estimatedDuration: number;
 }
 
 interface SelectedLocation {
@@ -42,8 +53,11 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
   const [selectedDrop, setSelectedDrop] = useState<SelectedLocation | null>(null);
   const [dropFocused, setDropFocused] = useState(false);
 
-  // Common state
-  const [estimate, setEstimate] = useState<EstimateData | null>(null);
+  // Estimate state
+  const [estimates, setEstimates] = useState<VehicleEstimate[] | null>(null);
+  const [distance, setDistance] = useState(0);
+  const [eta, setEta] = useState(0);
+  const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState('');
 
@@ -91,7 +105,8 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
   const handlePickupChange = (value: string) => {
     setPickupQuery(value);
     setSelectedPickup(null);
-    setEstimate(null);
+    setEstimates(null);
+    setSelectedVehicle(null);
     if (pickupTimerRef.current) clearTimeout(pickupTimerRef.current);
     pickupTimerRef.current = setTimeout(async () => {
       const results = await searchLocation(value);
@@ -103,7 +118,8 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
   const handleDropChange = (value: string) => {
     setDropQuery(value);
     setSelectedDrop(null);
-    setEstimate(null);
+    setEstimates(null);
+    setSelectedVehicle(null);
     if (dropTimerRef.current) clearTimeout(dropTimerRef.current);
     dropTimerRef.current = setTimeout(async () => {
       const results = await searchLocation(value);
@@ -138,7 +154,6 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
       async (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        // Reverse geocode to get address
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
@@ -162,6 +177,15 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
     );
   }, []);
 
+  // Haversine helper for client-side fallback
+  const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lng2 - lng1) * Math.PI) / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
   const handleEstimate = useCallback(async () => {
     setError('');
     if (!selectedPickup) {
@@ -180,37 +204,39 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
         dropLat: selectedDrop.lat,
         dropLng: selectedDrop.lng,
       });
-      setEstimate({
-        fare: res.data.fare ?? res.data.estimatedFare ?? Math.round(80 + Math.random() * 200),
-        distance: res.data.distance ?? res.data.estimatedDistance ?? parseFloat((2 + Math.random() * 15).toFixed(1)),
-        eta: res.data.eta ?? res.data.estimatedEta ?? Math.round(5 + Math.random() * 25),
-      });
+      const data: EstimateResponse = res.data;
+      setEstimates(data.estimates);
+      setDistance(data.distanceKm);
+      setEta(data.estimatedDuration);
+      setSelectedVehicle('economy'); // default selection
     } catch {
-      // Fallback distance estimation using Haversine
-      const R = 6371;
-      const dLat = ((selectedDrop.lat - selectedPickup.lat) * Math.PI) / 180;
-      const dLon = ((selectedDrop.lng - selectedPickup.lng) * Math.PI) / 180;
-      const a = Math.sin(dLat / 2) ** 2 + Math.cos((selectedPickup.lat * Math.PI) / 180) * Math.cos((selectedDrop.lat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const distKm = Math.max(1, parseFloat((R * c).toFixed(1)));
-      setEstimate({
-        fare: Math.round(50 + distKm * 12),
-        distance: distKm,
-        eta: Math.round(distKm * 3 + 5),
-      });
+      // Client-side fallback
+      const distKm = Math.max(1, Math.round(haversine(selectedPickup.lat, selectedPickup.lng, selectedDrop.lat, selectedDrop.lng) * 1.3 * 10) / 10);
+      const durMin = Math.round(distKm * 2 + 5);
+      const chargeableKm = Math.max(0, distKm - 2);
+      setEstimates([
+        { vehicleType: 'bike', label: 'Bike', icon: '🏍️', description: 'Fastest in traffic', fare: Math.round(23 + chargeableKm * 9), baseFare: 23, ratePerKm: 9, timeCharge: 0 },
+        { vehicleType: 'economy', label: 'Economy', icon: '🚗', description: 'Comfortable & affordable', fare: Math.round(48 + chargeableKm * 14 + durMin * 1), baseFare: 48, ratePerKm: 14, timeCharge: 1 },
+        { vehicleType: 'premium', label: 'Premium', icon: '✨', description: 'Top-rated drivers & cars', fare: Math.round(78 + chargeableKm * 21 + durMin * 2), baseFare: 78, ratePerKm: 21, timeCharge: 2 },
+      ]);
+      setDistance(distKm);
+      setEta(durMin);
+      setSelectedVehicle('economy');
     } finally {
       setEstimating(false);
     }
   }, [selectedPickup, selectedDrop]);
 
   const handleBook = useCallback(() => {
-    if (!estimate || !selectedPickup || !selectedDrop) return;
+    if (!estimates || !selectedPickup || !selectedDrop || !selectedVehicle) return;
+    const chosen = estimates.find(e => e.vehicleType === selectedVehicle);
+    if (!chosen) return;
     onBook(
       { lat: selectedPickup.lat, lng: selectedPickup.lng },
       { lat: selectedDrop.lat, lng: selectedDrop.lng },
-      estimate.fare
+      chosen.fare
     );
-  }, [estimate, selectedPickup, selectedDrop, onBook]);
+  }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook]);
 
   const canEstimate = !!selectedPickup && !!selectedDrop;
 
@@ -318,33 +344,39 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
         )}
       </div>
 
-      {/* Estimate Result */}
-      {estimate && (
-        <div className={styles.estimateResult}>
-          <div className={styles.estimateItem}>
-            <div className={styles.estimateLabel}>Fare</div>
-            <div className={styles.estimateValue}>₹{estimate.fare}</div>
+      {/* Vehicle Selection Cards */}
+      {estimates && (
+        <div className={styles.vehicleSection}>
+          <div className={styles.vehicleSectionHeader}>
+            <span className={styles.vehicleSectionTitle}>Choose your ride</span>
+            <span className={styles.vehicleSectionMeta}>
+              {distance} km · {eta} min
+            </span>
           </div>
-          <div className={styles.estimateItem}>
-            <div className={styles.estimateLabel}>Distance</div>
-            <div className={styles.estimateValue}>
-              {estimate.distance}
-              <span className={styles.estimateUnit}> km</span>
-            </div>
-          </div>
-          <div className={styles.estimateItem}>
-            <div className={styles.estimateLabel}>ETA</div>
-            <div className={styles.estimateValue}>
-              {estimate.eta}
-              <span className={styles.estimateUnit}> min</span>
-            </div>
+          <div className={styles.vehicleGrid}>
+            {estimates.map((est) => (
+              <button
+                key={est.vehicleType}
+                className={`${styles.vehicleCard} ${
+                  selectedVehicle === est.vehicleType ? styles.vehicleCardActive : ''
+                }`}
+                onClick={() => setSelectedVehicle(est.vehicleType)}
+              >
+                <div className={styles.vehicleIcon}>{est.icon}</div>
+                <div className={styles.vehicleInfo}>
+                  <div className={styles.vehicleName}>{est.label}</div>
+                  <div className={styles.vehicleDesc}>{est.description}</div>
+                </div>
+                <div className={styles.vehiclePrice}>₹{est.fare}</div>
+              </button>
+            ))}
           </div>
         </div>
       )}
 
       {/* Action Buttons */}
       <div className={styles.actions}>
-        {!estimate ? (
+        {!estimates ? (
           <button
             className={styles.estimateBtn}
             onClick={handleEstimate}
@@ -360,14 +392,14 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
           <>
             <button
               className={styles.estimateBtn}
-              onClick={() => setEstimate(null)}
+              onClick={() => { setEstimates(null); setSelectedVehicle(null); }}
             >
               ← Change
             </button>
             <button
               className={styles.bookBtn}
               onClick={handleBook}
-              disabled={loading}
+              disabled={loading || !selectedVehicle}
             >
               {loading ? (
                 <span className={styles.spinner} />

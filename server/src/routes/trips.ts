@@ -55,22 +55,58 @@ import { createTripPaymentIntent } from "../services/stripe.js";
 
 const router = Router();
 
-// ── Fare Calculation Constants ───────────────────────────────
+// ── Fare Calculation — Vehicle-Type Pricing ─────────────────
+//
+// RideShare pricing is designed to be market-competitive while
+// remaining transparent. Every fare has three components:
+//   1. Base fare — flat charge covering the initial ~2 km
+//   2. Per-km rate — distance-based charge after the base distance
+//   3. Time charge — per-minute fee to account for traffic/wait
+//
+// Rates are set 1–2 rupees below major competitors (Rapido, Ola)
+// to offer riders better value without undercutting driver earnings
+// unsustainably. In production, these would be loaded from a
+// database and vary by city/time-of-day.
 
-/**
- * Base fare in INR — charged regardless of distance.
- * Covers the driver's time to reach the pickup point and the
- * minimum viable earnings per trip.
- */
-const BASE_FARE_INR = 50;
+interface VehiclePricing {
+  baseFare: number;       // INR — includes the first ~2 km
+  baseDistanceKm: number; // km included in the base fare
+  ratePerKm: number;      // INR per km after base distance
+  timeChargePerMin: number; // INR per minute
+  label: string;
+  icon: string;
+  description: string;
+}
 
-/**
- * Per-kilometre rate in INR.
- * Based on typical auto/cab rates in Indian metros.
- * In production, this would vary by vehicle type (auto, mini,
- * sedan, SUV) and city.
- */
-const RATE_PER_KM_INR = 15;
+const VEHICLE_PRICING: Record<string, VehiclePricing> = {
+  bike: {
+    baseFare: 23,           // Rapido: ₹25–35, we start at ₹23
+    baseDistanceKm: 2,
+    ratePerKm: 9,           // Rapido: ₹10–12, we charge ₹9
+    timeChargePerMin: 0,    // Rapido: ₹0–1, we keep it free
+    label: 'Bike',
+    icon: '🏍️',
+    description: 'Fastest in traffic',
+  },
+  economy: {
+    baseFare: 48,           // Rapido: ₹50–60, we start at ₹48
+    baseDistanceKm: 2,
+    ratePerKm: 14,          // Rapido: ₹15–18, we charge ₹14
+    timeChargePerMin: 1,    // Rapido: ₹1–2, we charge ₹1
+    label: 'Economy',
+    icon: '🚗',
+    description: 'Comfortable & affordable',
+  },
+  premium: {
+    baseFare: 78,           // Rapido: ₹80–100, we start at ₹78
+    baseDistanceKm: 2,
+    ratePerKm: 21,          // Rapido: ₹22–28, we charge ₹21
+    timeChargePerMin: 2,    // Rapido: ₹2–3, we charge ₹2
+    label: 'Premium',
+    icon: '✨',
+    description: 'Top-rated drivers & cars',
+  },
+};
 
 /**
  * Assumed average speed for duration estimation, in km/h.
@@ -78,6 +114,27 @@ const RATE_PER_KM_INR = 15;
  * we'd use real-time traffic data from a routing API.
  */
 const AVERAGE_SPEED_KMH = 30;
+
+/**
+ * Calculate fare for a given vehicle type, distance, and duration.
+ */
+function calculateFare(
+  vehicleType: string,
+  distanceKm: number,
+  durationMin: number
+): number {
+  const pricing = VEHICLE_PRICING[vehicleType];
+  if (!pricing) return 0;
+
+  // Distance-based component
+  const chargeableDistance = Math.max(0, distanceKm - pricing.baseDistanceKm);
+  const distanceFare = pricing.baseFare + chargeableDistance * pricing.ratePerKm;
+
+  // Time-based component
+  const timeFare = durationMin * pricing.timeChargePerMin;
+
+  return Math.round(distanceFare + timeFare);
+}
 
 /**
  * Safe select clause for user data in trip responses.
@@ -203,31 +260,15 @@ router.get(
 );
 
 // ─────────────────────────────────────────────────────────────
-// POST /api/trips/estimate — Estimate fare before booking
+// POST /api/trips/estimate — Multi-vehicle fare estimation
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Calculate an estimated fare, duration, and distance for a trip.
+ * Calculate fare estimates for all vehicle types.
  *
- * This is called BEFORE the rider confirms the booking — it lets
- * them see the price and decide whether to proceed. The estimate
- * is non-binding (the actual fare may differ based on the route
- * taken, traffic, waiting time, etc.).
- *
- * FARE FORMULA (MVP):
- *   fare = BASE_FARE + (distance_km × RATE_PER_KM)
- *   result is converted to paise (× 100) for Stripe
- *
- * In a real-world app, fare estimation would be much more complex:
- *  - Surge pricing: multiply fare by a demand/supply ratio
- *    (e.g., 1.5× during rain, 2× on New Year's Eve)
- *  - Route-based pricing: use Google Maps Directions API for
- *    actual road distance (not straight-line Haversine)
- *  - Time-based component: add a per-minute charge for the
- *    estimated duration
- *  - Tolls and fees: add known toll costs for the route
- *  - Vehicle type: different rates for auto, mini, sedan, SUV
- *  - City-specific pricing: rates vary by market
+ * Returns estimates for bike, economy, and premium so the
+ * frontend can display them as selectable cards without
+ * making separate API calls.
  */
 router.post(
   "/estimate",
@@ -235,9 +276,8 @@ router.post(
   requireRole("RIDER"),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { pickupLat, pickupLng, dropLat, dropLng } = req.body;
+      const { pickupLat, pickupLng, dropLat, dropLng, vehicleType } = req.body;
 
-      // ── Validation ──────────────────────────────────────────
       if (
         pickupLat === undefined ||
         pickupLng === undefined ||
@@ -252,32 +292,52 @@ router.post(
         return;
       }
 
-      // ── Distance calculation ────────────────────────────────
-      // Uses Haversine (straight-line). Actual road distance is
-      // typically 20-40% longer, but this is fine for an estimate.
-      const distanceKm = haversineDistance(
+      // Haversine × 1.3 road factor for realistic distance
+      const straightLineKm = haversineDistance(
         pickupLat,
         pickupLng,
         dropLat,
         dropLng
       );
+      const distanceKm = Math.round(straightLineKm * 1.3 * 100) / 100;
 
-      // ── Fare calculation ────────────────────────────────────
-      // Calculate in rupees, then convert to paise for Stripe.
-      const fareInRupees = BASE_FARE_INR + distanceKm * RATE_PER_KM_INR;
-      const estimatedFare = Math.round(fareInRupees * 100); // paise
-
-      // ── Duration estimation ─────────────────────────────────
-      // Simple: distance / speed × 60 = minutes.
-      // In production, use a routing API for traffic-aware ETAs.
       const estimatedDuration = Math.round(
         (distanceKm / AVERAGE_SPEED_KMH) * 60
       );
 
+      // If a specific vehicleType is requested, return just that
+      if (vehicleType && VEHICLE_PRICING[vehicleType]) {
+        const fare = calculateFare(vehicleType, distanceKm, estimatedDuration);
+        const pricing = VEHICLE_PRICING[vehicleType];
+        res.status(200).json({
+          estimatedFare: fare,
+          estimatedDuration,
+          distanceKm,
+          vehicleType,
+          label: pricing.label,
+          icon: pricing.icon,
+        });
+        return;
+      }
+
+      // Return estimates for ALL vehicle types
+      const estimates = Object.entries(VEHICLE_PRICING).map(
+        ([type, pricing]) => ({
+          vehicleType: type,
+          label: pricing.label,
+          icon: pricing.icon,
+          description: pricing.description,
+          fare: calculateFare(type, distanceKm, estimatedDuration),
+          baseFare: pricing.baseFare,
+          ratePerKm: pricing.ratePerKm,
+          timeCharge: pricing.timeChargePerMin,
+        })
+      );
+
       res.status(200).json({
-        estimatedFare,
+        estimates,
+        distanceKm,
         estimatedDuration,
-        distanceKm: Math.round(distanceKm * 100) / 100, // 2 decimal places
       });
     } catch (error) {
       console.error("[trips/estimate] Unexpected error:", error);

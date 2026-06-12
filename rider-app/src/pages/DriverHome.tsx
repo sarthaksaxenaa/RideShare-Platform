@@ -160,7 +160,7 @@ function DriverHomePage() {
   };
 
   const formatFare = (fareInPaise: number) => {
-    return `₹${(fareInPaise / 100).toFixed(0)}`;
+    return `₹${fareInPaise.toFixed(0)}`;
   };
 
   if (isLoading) {
@@ -271,7 +271,7 @@ function DriverHomePage() {
         <div className={styles.statCard}>
           <div className={styles.statLabel}>Today&apos;s Earnings</div>
           <div className={styles.statValue}>
-            ₹{(todayEarnings / 100).toFixed(0)}
+            ₹{todayEarnings.toFixed(0)}
           </div>
         </div>
         <div className={styles.statCard}>

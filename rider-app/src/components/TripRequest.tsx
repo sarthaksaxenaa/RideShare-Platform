@@ -55,7 +55,7 @@ function TripRequest({ trip, onAccept, onDecline }: TripRequestProps) {
   }, [handleDecline]);
 
   const progressPercent = (secondsLeft / COUNTDOWN_SECONDS) * 100;
-  const fareInRupees = (trip.fare / 100).toFixed(2);
+  const fareInRupees = trip.fare.toFixed(2);
 
   return (
     <div className={styles.overlay}>

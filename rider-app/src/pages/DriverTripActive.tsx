@@ -235,7 +235,7 @@ function DriverTripActivePage() {
             <div className={styles.tripInfoItem}>
               <div className={styles.tripInfoLabel}>Fare</div>
               <div className={`${styles.tripInfoValue} ${styles.tripInfoFare}`}>
-                ₹{(trip.fare / 100).toFixed(0)}
+                ₹{trip.fare.toFixed(0)}
               </div>
             </div>
             <div className={styles.tripInfoItem}>
@@ -291,7 +291,7 @@ function DriverTripActivePage() {
             <div className={styles.earningsDisplay}>
               <div className={styles.earningsLabel}>You Earned</div>
               <div className={styles.earningsAmount}>
-                ₹{(tripEarnings / 100).toFixed(0)}
+                ₹{tripEarnings.toFixed(0)}
               </div>
             </div>
 

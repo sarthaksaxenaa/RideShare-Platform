@@ -428,7 +428,9 @@ router.post(
       }
 
       // ── Create Stripe PaymentIntent (authorize only) ────────
-      const paymentIntent = await createTripPaymentIntent(amount);
+      // Stripe requires amounts in the smallest currency unit
+      // (paise for INR), so we multiply rupees × 100.
+      const paymentIntent = await createTripPaymentIntent(Math.round(amount * 100));
 
       // ── Store the PaymentIntent ID on the trip record ───────
       // This links the trip to the Stripe payment so we can

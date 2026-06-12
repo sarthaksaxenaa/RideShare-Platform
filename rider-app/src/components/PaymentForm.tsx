@@ -115,7 +115,7 @@ function CheckoutForm({
   };
 
   // Convert paise to rupees for display
-  const fareInRupees = (amount / 100).toFixed(2);
+  const fareInRupees = amount.toFixed(2);
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
@@ -190,7 +190,7 @@ export default function PaymentForm({
 }: PaymentFormProps) {
   
   // Convert paise to rupees for display
-  const fareInRupees = (amount / 100).toFixed(2);
+  const fareInRupees = amount.toFixed(2);
 
   // If we are using the mock backend, skip Stripe completely
   if (clientSecret && clientSecret.startsWith('pi_mock_secret_')) {

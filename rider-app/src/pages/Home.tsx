@@ -44,6 +44,9 @@ function HomePage() {
   const [bookingFlow, setBookingFlow] = useState<BookingFlow>('idle');
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [bookingError, setBookingError] = useState<string | null>(null);
+  const [userName] = useState(() => {
+    try { const u = JSON.parse(localStorage.getItem('user') || '{}'); return u.name || 'R'; } catch { return 'R'; }
+  });
 
   // Get rider's current location on mount
   useEffect(() => {
@@ -229,6 +232,13 @@ function HomePage() {
             }`}
             title={isConnected ? 'Connected' : 'Disconnected'}
           />
+          <button
+            className={styles.profileBtn}
+            onClick={() => navigate('/profile')}
+            title="Profile"
+          >
+            {userName.charAt(0).toUpperCase()}
+          </button>
           <button className={styles.logoutBtn} onClick={handleLogout}>
             🚪 Logout
           </button>

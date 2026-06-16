@@ -37,6 +37,7 @@ import { Server as SocketIOServer } from "socket.io";
 import { setIO } from "./lib/socket.js";
 import authRouter from "./routes/auth.js";
 import tripsRouter from "./routes/trips.js";
+import usersRouter from "./routes/users.js";
 import webhooksRouter from "./routes/webhooks.js";
 import { initSocket } from "./socket/index.js";
 
@@ -109,6 +110,9 @@ app.use("/api/auth", authRouter);
 
 /** Trip routes: /api/trips — CRUD, estimation, payment intents */
 app.use("/api/trips", tripsRouter);
+
+/** User routes: /api/users — Profile management */
+app.use("/api/users", usersRouter);
 
 // ── Start ───────────────────────────────────────────────────
 

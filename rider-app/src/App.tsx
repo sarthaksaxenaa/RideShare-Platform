@@ -7,6 +7,7 @@ import HomePage from './pages/Home';
 import DriverHomePage from './pages/DriverHome';
 import TripActivePage from './pages/TripActive';
 import DriverTripActivePage from './pages/DriverTripActive';
+import ProfilePage from './pages/Profile';
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const token = localStorage.getItem('token');
@@ -92,6 +93,14 @@ function App() {
             element={
               <AuthGuard>
                 <RoleBasedTrip />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <AuthGuard>
+                <ProfilePage />
               </AuthGuard>
             }
           />

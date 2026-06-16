@@ -36,6 +36,8 @@ model User {
   password  String   // bcrypt hash — never store plaintext
   name      String
   role      String
+  phone     String?  // optional phone number
+  avatarUrl String?  // optional profile picture URL
   createdAt DateTime @default(now())
 
   // ── Relations ─────────────────────────────────────────────

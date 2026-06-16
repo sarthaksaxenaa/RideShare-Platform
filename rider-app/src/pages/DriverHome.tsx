@@ -197,6 +197,13 @@ function DriverHomePage() {
           </div>
         </div>
         <div className={styles.topBarActions}>
+          <button
+            className={styles.profileBtn}
+            onClick={() => navigate('/profile')}
+            title="Profile"
+          >
+            {userName.charAt(0).toUpperCase()}
+          </button>
           <button className={styles.logoutBtn} onClick={handleLogout}>
             Sign Out
           </button>

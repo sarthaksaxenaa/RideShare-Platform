@@ -68,14 +68,7 @@
   padding: 24px;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(
-    135deg,
-    #0a0a1a 0%,
-    #0d1117 25%,
-    #0a0e1a 50%,
-    #0f0a1e 75%,
-    #0a0a1a 100%
-  );
+  background: var(--bg-primary);
 }
 
 /* ---------- Background Orbs ---------- */
@@ -121,17 +114,16 @@
 .card {
   width: 100%;
   max-width: 440px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 24px;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
   padding: 48px 40px;
   position: relative;
   z-index: 1;
+  box-shadow: var(--shadow-lg);
   animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation: pulseGlow 4s ease-in-out infinite,
-    fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ---------- Branding ---------- */
@@ -167,7 +159,7 @@
 
 .subtitle {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   font-weight: 400;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -179,13 +171,13 @@
   font-size: 24px;
   font-weight: 700;
   font-family: 'Playfair Display', serif;
-  color: #ffffff;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .headingSub {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-secondary);
   margin-bottom: 28px;
   font-weight: 400;
 }
@@ -228,18 +220,18 @@
 .label {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
   letter-spacing: 0.3px;
 }
 
 .input {
   width: 100%;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
+  color: var(--text-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

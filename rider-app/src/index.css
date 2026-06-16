@@ -1,5 +1,100 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 
+/* ============================================
+   RideShare — Design System Variables
+   Dark/Light theme via data-theme attribute
+   ============================================ */
+
+:root,
+[data-theme="dark"] {
+  /* Surface colors */
+  --bg-primary: #07070c;
+  --bg-secondary: #0e0e16;
+  --bg-elevated: #14141f;
+  --bg-card: #161622;
+
+  /* Text colors */
+  --text-primary: #f0f0f5;
+  --text-secondary: rgba(240, 240, 245, 0.6);
+  --text-muted: rgba(240, 240, 245, 0.35);
+
+  /* Accent */
+  --accent: #00d4ff;
+  --accent-hover: #00bbdf;
+  --accent-glow: rgba(0, 212, 255, 0.15);
+  --accent-driver: #00d68f;
+
+  /* Borders */
+  --border-primary: rgba(255, 255, 255, 0.07);
+  --border-hover: rgba(255, 255, 255, 0.14);
+  --border-accent: rgba(0, 212, 255, 0.3);
+
+  /* Glass */
+  --glass-bg: rgba(12, 12, 20, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.06);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
+
+  /* Input */
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --input-border: rgba(255, 255, 255, 0.08);
+  --input-focus: rgba(0, 212, 255, 0.25);
+
+  /* Scrollbar */
+  --scrollbar-track: #07070c;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.08);
+  --scrollbar-hover: rgba(255, 255, 255, 0.16);
+
+  /* Gradient overlays */
+  --gradient-primary: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+  --gradient-driver: linear-gradient(135deg, #00d68f 0%, #00b4d8 100%);
+}
+
+[data-theme="light"] {
+  --bg-primary: #f5f5fa;
+  --bg-secondary: #eeeef4;
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+
+  --text-primary: #1a1a2e;
+  --text-secondary: rgba(26, 26, 46, 0.6);
+  --text-muted: rgba(26, 26, 46, 0.35);
+
+  --accent: #0090b8;
+  --accent-hover: #007a9e;
+  --accent-glow: rgba(0, 144, 184, 0.12);
+  --accent-driver: #00a870;
+
+  --border-primary: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.14);
+  --border-accent: rgba(0, 144, 184, 0.3);
+
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.06);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.1);
+
+  --input-bg: rgba(0, 0, 0, 0.03);
+  --input-border: rgba(0, 0, 0, 0.1);
+  --input-focus: rgba(0, 144, 184, 0.2);
+
+  --scrollbar-track: #f5f5fa;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.1);
+  --scrollbar-hover: rgba(0, 0, 0, 0.18);
+
+  --gradient-primary: linear-gradient(135deg, #0090b8 0%, #6d28d9 100%);
+  --gradient-driver: linear-gradient(135deg, #00a870 0%, #0090b8 100%);
+}
+
+/* ============================================
+   Global Reset & Base Styles
+   ============================================ */
+
 *,
 *::before,
 *::after {
@@ -12,15 +107,17 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #0a0a0f;
-  color: #ffffff;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
   min-height: 100vh;
   line-height: 1.6;
+  transition: background-color 0.35s ease, color 0.35s ease;
 }
 
 #root {
@@ -50,19 +147,28 @@ input {
   outline: none;
 }
 
+/* ── Scrollbar ────────────────────────────────────────────── */
+
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0a0f;
+  background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--scrollbar-hover);
+}
+
+/* ── Selection ───────────────────────────────────────────── */
+
+::selection {
+  background: var(--accent);
+  color: #ffffff;
 }

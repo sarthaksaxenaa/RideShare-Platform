@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { type ReactNode } from 'react';
+import { ThemeProvider } from './hooks/useTheme';
+import ThemeToggle from './components/ThemeToggle';
 import LoginPage from './pages/Login';
 import HomePage from './pages/Home';
 import DriverHomePage from './pages/DriverHome';
@@ -65,35 +67,38 @@ function RoleBasedTrip() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <GuestGuard>
-              <LoginPage />
-            </GuestGuard>
-          }
-        />
-        <Route
-          path="/"
-          element={
-            <AuthGuard>
-              <RoleBasedHome />
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/trip/:id"
-          element={
-            <AuthGuard>
-              <RoleBasedTrip />
-            </AuthGuard>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <ThemeToggle />
+        <Routes>
+          <Route
+            path="/login"
+            element={
+              <GuestGuard>
+                <LoginPage />
+              </GuestGuard>
+            }
+          />
+          <Route
+            path="/"
+            element={
+              <AuthGuard>
+                <RoleBasedHome />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/trip/:id"
+            element={
+              <AuthGuard>
+                <RoleBasedTrip />
+              </AuthGuard>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

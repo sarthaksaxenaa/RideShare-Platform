@@ -55,7 +55,7 @@ function TripRequest({ trip, onAccept, onDecline }: TripRequestProps) {
   }, [handleDecline]);
 
   const progressPercent = (secondsLeft / COUNTDOWN_SECONDS) * 100;
-  const fareInRupees = trip.fare.toFixed(2);
+  const fareDisplay = `₹${trip.fare.toFixed(0)}`;
 
   return (
     <div className={styles.overlay}>
@@ -76,7 +76,7 @@ function TripRequest({ trip, onAccept, onDecline }: TripRequestProps) {
             <div className={styles.detailContent}>
               <div className={styles.detailLabel}>Estimated Fare</div>
               <div className={`${styles.detailValue} ${styles.fareHighlight}`}>
-                ₹{fareInRupees}
+                {fareDisplay}
               </div>
             </div>
           </div>

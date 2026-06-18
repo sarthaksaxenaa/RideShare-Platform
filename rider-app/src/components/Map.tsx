@@ -91,7 +91,7 @@ function Map({ center, zoom = 14, markers = [], className, fullscreen }: MapProp
             icon={createMarkerIcon(marker.type)}
           >
             <Popup>
-              <span style={{ fontWeight: 600, color: '#fff' }}>{marker.label}</span>
+              <span style={{ fontWeight: 600, color: '#1a1a2e' }}>{marker.label}</span>
             </Popup>
           </Marker>
         ))}

@@ -170,7 +170,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   font-size: 14px;
-  color: #ffffff;
+  color: var(--text-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
   cursor: pointer;

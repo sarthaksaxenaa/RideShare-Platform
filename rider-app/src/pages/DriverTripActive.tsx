@@ -8,7 +8,7 @@ import styles from './DriverTripActive.module.css';
 import type { MapMarker } from '../components/Map';
 
 interface TripDetails {
-  _id: string;
+  id: string;
   status: string;
   fare: number;
   pickupLat: number;

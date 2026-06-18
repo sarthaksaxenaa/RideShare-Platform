@@ -7,7 +7,7 @@ import api from '../lib/api';
 import styles from './TripActive.module.css';
 
 interface TripDetails {
-  _id: string;
+  id: string;
   status: string;
   pickupLat: number;
   pickupLng: number;
@@ -40,14 +40,14 @@ function TripActivePage() {
         const res = await api.get(`/trips/${id}`);
         const data = res.data.trip || res.data;
         setTripDetails({
-          _id: data._id || id,
+          id: data.id || id,
           status: data.status || 'MATCHED',
           pickupLat: data.pickupLat || data.pickup?.lat || 0,
           pickupLng: data.pickupLng || data.pickup?.lng || 0,
           dropLat: data.dropLat || data.drop?.lat || 0,
           dropLng: data.dropLng || data.drop?.lng || 0,
           fare: data.fare || data.estimatedFare,
-          driverId: data.driverId || data.driver?._id,
+          driverId: data.driverId || data.driver?.id,
           driverName: data.driverName || data.driver?.name || 'Your Driver',
           distance: data.distance,
           eta: data.eta,
@@ -58,7 +58,7 @@ function TripActivePage() {
         // Use data from useTrip hook if available
         if (tripData) {
           setTripDetails({
-            _id: id,
+            id: id || '',
             status: tripState === 'idle' ? 'MATCHED' : tripState.toUpperCase(),
             pickupLat: tripData.pickupLat,
             pickupLng: tripData.pickupLng,

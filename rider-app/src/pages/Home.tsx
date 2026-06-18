@@ -112,6 +112,11 @@ function HomePage() {
 
   /**
    * Step 1: User confirms booking → create trip + PaymentIntent
+   *
+   * In development (mock Stripe), the server returns a fake client_secret
+   * starting with "pi_mock_". In this case, we skip the Stripe payment
+   * form entirely and go straight to driver matching — the mock payment
+   * service has already "authorized" the fare.
    */
   const handleBook = useCallback(
     async (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number) => {
@@ -127,23 +132,35 @@ function HomePage() {
           fare,
         });
 
-        setPaymentData({
-          tripId: res.data.tripId,
-          clientSecret: res.data.clientSecret,
+        const { tripId, clientSecret } = res.data;
+        const isMockPayment = !clientSecret || clientSecret.startsWith('pi_mock_');
+
+        const pd: PaymentData = {
+          tripId,
+          clientSecret,
           fare,
           pickupLat: pickup.lat,
           pickupLng: pickup.lng,
           dropLat: drop.lat,
           dropLng: drop.lng,
-        });
-        setBookingFlow('paying');
+        };
+        setPaymentData(pd);
+
+        if (isMockPayment) {
+          // Dev mode: skip Stripe payment form, go straight to matching
+          setBookingFlow('searching');
+          requestTrip(pickup.lat, pickup.lng, drop.lat, drop.lng, fare);
+        } else {
+          // Production: show Stripe PaymentElement for card authorization
+          setBookingFlow('paying');
+        }
       } catch (err: any) {
         const msg = err?.response?.data?.message || 'Failed to create booking. Please try again.';
         setBookingError(msg);
         setBookingFlow('idle');
       }
     },
-    []
+    [requestTrip]
   );
 
   /**

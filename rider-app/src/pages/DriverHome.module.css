@@ -1,6 +1,6 @@
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0a1a0a 0%, #0d1711 50%, #0a0a0f 100%);
+  background: var(--bg-primary);
   display: flex;
   flex-direction: column;
 }
@@ -11,8 +11,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-primary);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -45,7 +45,7 @@
 
 .greeting {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   font-weight: 400;
 }
 
@@ -235,7 +235,7 @@
 .statLabel {
   font-size: 12px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
@@ -263,7 +263,7 @@
 .sectionTitle {
   font-size: 16px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   margin-bottom: 14px;
   display: flex;
   align-items: center;
@@ -319,7 +319,7 @@
 .tripRoute {
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -327,7 +327,7 @@
 
 .tripTime {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -341,7 +341,7 @@
 .emptyState {
   text-align: center;
   padding: 40px 20px;
-  color: rgba(255, 255, 255, 0.25);
+  color: var(--text-muted);
 }
 
 .emptyIcon {
@@ -357,7 +357,7 @@
 
 .emptySubtext {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
   margin-top: 4px;
 }
 
@@ -399,14 +399,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0a1a0a 0%, #0d1711 50%, #0a0a0f 100%);
+  background: var(--bg-primary);
   gap: 16px;
 }
 
 .loadingSpinner {
   width: 44px;
   height: 44px;
-  border: 3px solid rgba(255, 255, 255, 0.06);
+  border: 3px solid var(--border-primary);
   border-top-color: #00d68f;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -418,6 +418,6 @@
 
 .loadingText {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
   font-weight: 500;
 }

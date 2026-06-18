@@ -91,7 +91,7 @@
 
 .subtitle {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-secondary);
   margin-bottom: 20px;
 }
 
@@ -105,7 +105,7 @@
 .label {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   margin-bottom: 8px;
@@ -149,7 +149,7 @@
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
 }
 
 .input:hover {
@@ -250,7 +250,7 @@
 .estimateLabel {
   font-size: 11px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -266,7 +266,7 @@
 .estimateUnit {
   font-size: 12px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
 }
 
 /* ---------- Action Buttons ---------- */
@@ -466,7 +466,7 @@
 .vehicleSectionTitle {
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-primary);
 }
 
 .vehicleSectionMeta {
@@ -493,7 +493,7 @@
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
   text-align: left;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-secondary);
 }
 
 .vehicleCard:hover {
@@ -507,7 +507,7 @@
   border-color: rgba(0, 212, 255, 0.35);
   box-shadow: 0 0 20px rgba(0, 212, 255, 0.08),
     inset 0 0 20px rgba(0, 212, 255, 0.03);
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .vehicleIcon {
@@ -540,7 +540,7 @@
 
 .vehicleDesc {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
   font-weight: 400;
 }
 
@@ -551,7 +551,7 @@
 .vehiclePrice {
   font-size: 18px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-primary);
   font-family: 'Outfit', sans-serif;
   flex-shrink: 0;
 }

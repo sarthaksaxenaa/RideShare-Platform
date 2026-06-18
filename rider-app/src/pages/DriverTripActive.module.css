@@ -35,7 +35,7 @@
 
 .backBtn:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .backArrow {
@@ -103,7 +103,7 @@
 .statusTitle {
   font-size: 16px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 
@@ -183,7 +183,7 @@
 
 .arrivedBtn {
   background: linear-gradient(135deg, #3b82f6, #2563eb);
-  color: #ffffff;
+  color: var(--text-primary);
   box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
 }
 
@@ -194,7 +194,7 @@
 
 .completeBtn {
   background: linear-gradient(135deg, #00d68f, #059669);
-  color: #ffffff;
+  color: var(--text-primary);
   box-shadow: 0 4px 20px rgba(0, 214, 143, 0.3);
 }
 
@@ -298,11 +298,10 @@
 }
 
 .earningsAmount {
-  font-size: 36px;
+  font-size: 40px;
   font-weight: 800;
-  background: linear-gradient(135deg, #00d68f, #6ee7b7);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
+  font-family: 'Playfair Display', serif;
 }
 
 .backToDashBtn {

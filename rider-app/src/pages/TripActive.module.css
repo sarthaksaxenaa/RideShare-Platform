@@ -79,7 +79,7 @@
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s;
@@ -209,7 +209,7 @@
 .statusTitle {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 
@@ -250,9 +250,9 @@
 }
 
 .driverName {
-  font-size: 15px;
-  font-weight: 600;
-  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 
@@ -289,7 +289,7 @@
 .tripDetailValue {
   font-size: 16px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .tripDetailUnit {
@@ -341,7 +341,7 @@
   background: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #7c3aed 100%);
   background-size: 200% 200%;
   border-radius: 14px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 15px;
   font-weight: 700;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -375,10 +375,10 @@
 .cancelBtn {
   width: 100%;
   padding: 14px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  border-radius: 14px;
-  color: #fca5a5;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s;

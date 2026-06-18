@@ -78,7 +78,7 @@
 .title {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   margin-bottom: 4px;
   display: flex;
   align-items: center;
@@ -143,7 +143,7 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   font-size: 14px;
-  color: #ffffff;
+  color: var(--text-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
 }
@@ -182,8 +182,8 @@
 }
 
 .select option {
-  background: #12121f;
-  color: #ffffff;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .select:hover {
@@ -259,7 +259,7 @@
 .estimateValue {
   font-size: 20px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
@@ -283,7 +283,7 @@
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -310,7 +310,7 @@
   background: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #7c3aed 100%);
   background-size: 200% 200%;
   border-radius: 14px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 700;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -421,12 +421,12 @@
   padding: 12px 14px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-secondary);
   font-size: 13px;
   text-align: left;
   cursor: pointer;
   transition: all 0.15s ease;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .suggestionItem:last-child {
@@ -434,8 +434,8 @@
 }
 
 .suggestionItem:hover {
-  background: rgba(0, 212, 255, 0.08);
-  color: #ffffff;
+  background: var(--accent-glow);
+  color: var(--text-primary);
 }
 
 .suggestionIcon {

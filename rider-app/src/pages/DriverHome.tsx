@@ -19,7 +19,7 @@ interface TripData {
 }
 
 interface TripRecord {
-  _id: string;
+  id: string;
   status: string;
   fare: number;
   pickupLat: number;
@@ -159,8 +159,8 @@ function DriverHomePage() {
     }
   };
 
-  const formatFare = (fareInPaise: number) => {
-    return `₹${fareInPaise.toFixed(0)}`;
+  const formatFare = (fare: number) => {
+    return `₹${fare.toFixed(0)}`;
   };
 
   if (isLoading) {
@@ -299,7 +299,7 @@ function DriverHomePage() {
         {completedTrips.length > 0 ? (
           <div className={styles.tripList}>
             {completedTrips.map((trip) => (
-              <div key={trip._id} className={styles.tripItem}>
+              <div key={trip.id} className={styles.tripItem}>
                 <div className={styles.tripIcon}>✓</div>
                 <div className={styles.tripDetails}>
                   <div className={styles.tripRoute}>

@@ -6,8 +6,7 @@
   "scripts": {
     "dev:server": "cd server && npm run dev",
     "dev:rider": "cd rider-app && npm run dev",
-    
-    "install:all": "cd server && npm install && cd ../rider-app && npm install && cd ../driver-app && npm install",
+    "install:all": "cd server && npm install && cd ../rider-app && npm install",
     "db:migrate": "cd server && npx prisma migrate dev",
     "db:studio": "cd server && npx prisma studio",
     "db:generate": "cd server && npx prisma generate",
@@ -23,7 +22,6 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^10.0.3",
-    "puppeteer": "^25.1.0"
+    "concurrently": "^10.0.3"
   }
 }

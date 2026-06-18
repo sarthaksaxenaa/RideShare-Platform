@@ -69,22 +69,26 @@ const stripe = IS_MOCK_STRIPE ? null as any : new Stripe(process.env.STRIPE_SECR
 // ── Payment Operations ───────────────────────────────────────
 
 export async function createTripPaymentIntent(
-  amount: number,
+  fareInRupees: number,
   currency: string = "inr"
 ): Promise<Stripe.PaymentIntent> {
+  // Stripe expects amounts in the smallest currency unit.
+  // For INR, that's paise (1 rupee = 100 paise).
+  const amountInPaise = Math.round(fareInRupees * 100);
+
   if (IS_MOCK_STRIPE) {
-    console.log(`[Stripe Mock] Created PaymentIntent for ${amount} ${currency}`);
+    console.log(`[Stripe Mock] Created PaymentIntent for ₹${fareInRupees} (${amountInPaise} paise)`);
     return {
       id: `pi_mock_${Date.now()}`,
       client_secret: `pi_mock_secret_${Date.now()}`,
-      amount,
+      amount: amountInPaise,
       currency,
       status: 'requires_payment_method'
     } as unknown as Stripe.PaymentIntent;
   }
 
   const paymentIntent = await stripe.paymentIntents.create({
-    amount,
+    amount: amountInPaise,
     currency,
     capture_method: "manual",
     metadata: {

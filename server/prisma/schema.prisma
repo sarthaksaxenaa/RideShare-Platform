@@ -84,9 +84,9 @@ model Trip {
   dropLng   Float
 
   // ── Pricing ───────────────────────────────────────────────
-  // Fare is in the smallest currency unit (paise for INR).
-  // e.g., ₹150.00 = 15000 paise.
-  // Using Int avoids floating-point precision issues.
+  // Fare is in whole rupees (INR). e.g., ₹150 is stored as 150.
+  // Using Int avoids floating-point precision issues while keeping
+  // calculations simple for the Indian market.
   fare Int?
 
   // ── Payment ───────────────────────────────────────────────

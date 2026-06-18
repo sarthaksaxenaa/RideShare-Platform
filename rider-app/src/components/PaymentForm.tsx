@@ -114,8 +114,8 @@ function CheckoutForm({
     }
   };
 
-  // Convert paise to rupees for display
-  const fareInRupees = amount.toFixed(2);
+  // Amount is already in whole rupees (e.g., 150 = ₹150)
+  const fareDisplay = `₹${amount.toFixed(0)}`;
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
@@ -123,7 +123,7 @@ function CheckoutForm({
         <div className={styles.lockIcon}>🔒</div>
         <h3 className={styles.title}>Secure Payment</h3>
         <p className={styles.subtitle}>
-          Your card will be authorized for <span className={styles.amount}>₹{fareInRupees}</span>
+          Your card will be authorized for <span className={styles.amount}>{fareDisplay}</span>
         </p>
         <p className={styles.note}>
           You'll only be charged when the trip is completed
@@ -157,7 +157,7 @@ function CheckoutForm({
               Processing...
             </>
           ) : (
-            `Authorize ₹${fareInRupees}`
+            `Authorize ${fareDisplay}`
           )}
         </button>
         <button
@@ -189,8 +189,8 @@ export default function PaymentForm({
   onCancel,
 }: PaymentFormProps) {
   
-  // Convert paise to rupees for display
-  const fareInRupees = amount.toFixed(2);
+  // Amount is already in whole rupees
+  const fareDisplay = `₹${amount.toFixed(0)}`;
 
   // If we are using the mock backend, skip Stripe completely
   if (clientSecret && clientSecret.startsWith('pi_mock_secret_')) {
@@ -202,7 +202,7 @@ export default function PaymentForm({
               <div className={styles.lockIcon}>🛠️</div>
               <h3 className={styles.title}>Mock Payment (Local Dev)</h3>
               <p className={styles.subtitle}>
-                Your card will be authorized for <span className={styles.amount}>₹{fareInRupees}</span>
+                Your card will be authorized for <span className={styles.amount}>{fareDisplay}</span>
               </p>
               <p className={styles.note}>
                 Stripe API keys were not found in .env. Using bypass mode.
@@ -217,7 +217,7 @@ export default function PaymentForm({
                   onSuccess();
                 }}
               >
-                Mock Authorize ₹{fareInRupees}
+                Mock Authorize {fareDisplay}
               </button>
               <button
                 type="button"

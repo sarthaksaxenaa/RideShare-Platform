@@ -1,7 +1,6 @@
 <div align="center">
-  <img src="https://img.icons8.com/color/96/000000/taxi.png" alt="RideShare Logo" width="80" />
-  <h1>RideShare Platform</h1>
-  <p><strong>A production-ready, real-time ride-hailing monorepo architecture.</strong></p>
+  <h1>🚗 RideShare</h1>
+  <p><strong>Real-time ride-hailing platform built with React, Node.js, Socket.io, and Prisma.</strong></p>
 
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React"></a>
   <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"></a>
@@ -11,104 +10,175 @@
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
 </div>
 
-<br />
+---
 
-The RideShare Platform is a comprehensive, full-stack monorepo demonstrating modern web architecture patterns. It facilitates real-time ride booking, GPS tracking, and secure financial transactions through concurrent Rider and Driver applications powered by a Node.js/Socket.io backend.
+## What It Does
+
+RideShare connects riders with drivers in real time. Riders request a ride by selecting pickup and drop locations, get a fare estimate, and are matched with nearby drivers. Drivers receive trip requests, accept or decline, navigate to the rider, and complete the trip. Payments are handled via Stripe.
+
+The entire platform runs as a **monorepo** with a single unified frontend — both rider and driver experiences are built into one React app, with role-based routing determining which interface you see after login.
 
 ---
 
-## ⚡ Core Capabilities
+## Tech Stack
 
-- **Real-Time Event Streaming**: Sub-second GPS synchronization and state-machine transitions powered by Socket.io.
-- **Privacy-First WebSockets**: Drivers broadcast raw GPS coordinates exclusively to their assigned `trip:{id}` room, preventing location leaks.
-- **Atomic Concurrency**: Prisma `updateMany` constraints prevent double-booking race conditions when multiple drivers attempt to accept the same trip simultaneously.
-- **PCI-Compliant Payments**: Stripe Elements handles card collection, using an authorize-and-capture flow that only charges the rider upon successful trip completion.
-- **Interactive Mapping**: React-Leaflet integration with OpenStreetMap tiles, dynamic center point tracking, and custom localized markers.
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Frontend | React 18, Vite, TypeScript | SPA with CSS Modules |
+| Maps | React-Leaflet + OpenStreetMap | Interactive map with live markers |
+| Backend | Express.js, Node.js | REST API + static file serving |
+| Real-time | Socket.io | Live GPS tracking, trip state changes |
+| Database | SQLite via Prisma ORM | Zero-config local development |
+| Payments | Stripe (authorize & capture) | PCI-compliant card handling |
+| Auth | JWT + bcrypt (12 rounds) | Stateless token-based auth |
 
 ---
 
-## 🛠️ Monorepo Architecture
+## Project Structure
 
-This project strictly adheres to a domain-driven monorepo structure, ensuring type-safety boundaries and synchronized deployments.
-
-```mermaid
-graph TD
-    Client_Rider[Rider App<br/>React + Vite]
-    Client_Driver[Driver App<br/>React + Vite]
-    
-    sublayer_gateway[Socket.io + Express API<br/>Node.js Engine]
-    
-    Client_Rider <-->|WebSockets & REST| sublayer_gateway
-    Client_Driver <-->|WebSockets & REST| sublayer_gateway
-    
-    sublayer_gateway <--> DB[(PostgreSQL + Prisma)]
-    sublayer_gateway <--> Stripe[Stripe Payment Gateway]
+```
+RideShare/
+├── server/                 # Backend API
+│   ├── src/
+│   │   ├── routes/         # REST endpoints (auth, trips, users, webhooks)
+│   │   ├── socket/         # Socket.io event handlers
+│   │   ├── services/       # Stripe integration
+│   │   ├── middleware/      # JWT auth middleware
+│   │   └── lib/            # Prisma client, socket instance
+│   └── prisma/
+│       └── schema.prisma   # Database schema
+├── rider-app/              # Frontend (serves both Rider + Driver UIs)
+│   ├── src/
+│   │   ├── pages/          # Login, Home, DriverHome, TripActive, Profile
+│   │   ├── components/     # Map, BookingCard, TripRequest, PaymentForm
+│   │   ├── hooks/          # useSocket, useTrip, useDriverLocation, useTheme
+│   │   └── lib/            # Axios API client
+│   └── index.html
+├── run.py                  # One-command launcher
+└── package.json            # Root scripts (concurrently runs both)
 ```
 
-### 1. `server/` (Backend Engine)
-- **Framework**: Express.js + Node.js
-- **Database**: PostgreSQL with Prisma ORM
-- **Authentication**: Stateless JWT via HTTP headers
-- **Real-time**: Socket.io middleware validating JWTs on handshake
-
-### 2. `rider-app/` (Consumer Client)
-- **Framework**: React 18 + Vite
-- **UI Architecture**: Glassmorphism CSS Modules, protected routing via React Router DOM
-- **Key Hooks**: `useSocket` (persistent connection), `useTrip` (client-side state machine tracking idle -> matched -> completed)
-
-### 3. `driver-app/` (Provider Client)
-- **Framework**: React 18 + Vite
-- **Tracking**: `useLocation` hook utilizing `navigator.geolocation.watchPosition` with throttled 2-second socket emissions.
-- **Experience**: 15-second auto-dismissing trip request overlays, earnings dashboard, and online/offline availability toggles.
-
 ---
 
-## 🚀 Local Development Setup
+## Quick Start
 
 ### Prerequisites
-- Node.js (v18+ LTS)
-- PostgreSQL (v14+)
-- Stripe Test Account keys
+- **Node.js** v18+ and npm
+- **Python** 3.8+ (optional, for the launcher script)
 
-### 1. Installation
-Clone the repository and install the monorepo dependencies:
+### Option A: Automated (recommended)
 ```bash
-npm install
+python run.py
 ```
+This installs all dependencies, creates the database, and starts both servers.
 
-### 2. Environment Configuration
-Create `.env` files based on the provided examples.
-- `server/.env`: Requires `DATABASE_URL`, `JWT_SECRET`, `STRIPE_SECRET_KEY`
-- `rider-app/.env`: Requires `VITE_API_URL`, `VITE_SOCKET_URL`, `VITE_STRIPE_PUBLISHABLE_KEY`
-- `driver-app/.env`: Requires `VITE_API_URL`, `VITE_SOCKET_URL`
-
-### 3. Database Initialization
+### Option B: Manual
 ```bash
+# 1. Install dependencies
+npm install                       # Root (concurrently)
+cd server && npm install          # Backend
+cd ../rider-app && npm install    # Frontend
+
+# 2. Set up the database
 cd server
-npx prisma migrate dev --name init
 npx prisma generate
-```
+npx prisma db push
 
-### 4. Bootstrapping
-Launch the entire stack concurrently from the root directory:
-```bash
+# 3. Start both servers
+cd ..
 npm start
 ```
-The services will be available at:
-- **API Server**: `http://localhost:3001`
-- **Rider Client**: `http://localhost:5173`
-- **Driver Client**: `http://localhost:5174`
+
+### Access
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:5173 |
+| API Server | http://localhost:3001 |
+| Health Check | http://localhost:3001/health |
 
 ---
 
-## 📖 Iteration History
+## How It Works
 
-1. **Phase 1: Scaffolding & Auth**: Monorepo structure, Express + React Vite setups, JWT + bcrypt authentication.
-2. **Phase 2: Data Modeling**: Prisma schema implementation (User, Trip, DriverLocation), REST endpoints, and Haversine distance-based driver matching algorithms.
-3. **Phase 3: Real-Time Logistics**: Socket.io integration, driver tracking hooks, atomic database updates, Leaflet map implementation.
-4. **Phase 4: Financial Security**: Stripe authorization-capture pipeline, webhook signature verification, React Stripe Elements integration.
+### Booking Flow (Rider)
+1. Rider opens the app → sees a full-screen map centered on their location
+2. Enters pickup and drop coordinates → gets fare estimates for Bike, Economy, Premium
+3. Selects a vehicle → server creates a Trip + Stripe PaymentIntent
+4. In dev mode: skips payment, goes straight to driver matching
+5. In production: Stripe PaymentElement authorizes the card first
+6. Socket broadcasts the trip request to nearby online drivers
+
+### Matching Flow (Driver)
+1. Driver toggles "Online" → sends GPS every 2 seconds via socket
+2. Receives trip request overlay with 15-second auto-decline countdown
+3. Accepts → Prisma's `updateMany` ensures only one driver can claim the trip (atomic)
+4. Navigates to rider → starts trip → completes trip
+5. Stripe captures the authorized payment on completion
+
+### Theme System
+The app supports dark and light themes via CSS custom properties. All colors use variables like `--text-primary`, `--bg-primary`, etc. Toggle is available on every page.
 
 ---
-<div align="center">
-  <i>Engineered for scale, speed, and real-time reliability.</i>
-</div>
+
+## Environment Variables
+
+Create `server/.env` (auto-created by `run.py`):
+
+```env
+# Database (SQLite, no setup needed)
+DATABASE_URL="file:./dev.db"
+
+# Auth
+JWT_SECRET="your-secret-key"
+
+# Server
+PORT=3001
+
+# Stripe (optional — mock mode works without these)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# CORS
+CORS_ORIGIN="http://localhost:5173"
+```
+
+> **Note:** Without Stripe keys, the app runs in mock payment mode — everything works, just no real card authorization.
+
+---
+
+## API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/api/auth/register` | No | Create account (rider/driver) |
+| POST | `/api/auth/login` | No | Get JWT token |
+| GET | `/api/trips/estimate` | Yes | Calculate fare for a route |
+| POST | `/api/trips/book` | Yes | Create trip + payment intent |
+| GET | `/api/trips/:id` | Yes | Get trip details |
+| GET | `/api/users/me` | Yes | Get current user profile |
+| PUT | `/api/users/me` | Yes | Update name/phone |
+| PUT | `/api/users/me/password` | Yes | Change password |
+
+---
+
+## Socket Events
+
+| Event | Direction | Description |
+|-------|-----------|-------------|
+| `trip:request` | Client → Server | Rider requests a trip |
+| `trip:accept` | Client → Server | Driver accepts a trip |
+| `trip:start` | Client → Server | Driver starts the trip |
+| `trip:complete` | Client → Server | Driver completes the trip |
+| `trip:cancel` | Client → Server | Cancel a trip |
+| `trip:matched` | Server → Client | Trip matched with a driver |
+| `trip:started` | Server → Client | Trip started |
+| `trip:completed` | Server → Client | Trip completed |
+| `driver:go_online` | Client → Server | Driver goes online |
+| `driver:go_offline` | Client → Server | Driver goes offline |
+| `driver:location` | Both | GPS coordinate updates |
+
+---
+
+## License
+
+MIT

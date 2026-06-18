@@ -12,6 +12,8 @@ build/
 
 # Prisma
 server/prisma/migrations/**/migration_lock.toml
+*.db
+*.db-journal
 
 # IDE
 .vscode/

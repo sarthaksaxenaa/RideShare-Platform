@@ -39,6 +39,9 @@ import authRouter from "./routes/auth.js";
 import tripsRouter from "./routes/trips.js";
 import usersRouter from "./routes/users.js";
 import webhooksRouter from "./routes/webhooks.js";
+import ratingsRouter from "./routes/ratings.js";
+import locationsRouter from "./routes/locations.js";
+import emergencyRouter from "./routes/emergency.js";
 import { initSocket } from "./socket/index.js";
 
 // ── App & Server ────────────────────────────────────────────
@@ -113,6 +116,15 @@ app.use("/api/trips", tripsRouter);
 
 /** User routes: /api/users — Profile management */
 app.use("/api/users", usersRouter);
+
+/** Rating routes: /api/ratings — Post-trip feedback */
+app.use("/api/ratings", ratingsRouter);
+
+/** Saved location routes: /api/locations — Home/Work/Custom */
+app.use("/api/locations", locationsRouter);
+
+/** Emergency routes: /api/emergency — SOS & contacts */
+app.use("/api/emergency", emergencyRouter);
 
 // ── Start ───────────────────────────────────────────────────
 

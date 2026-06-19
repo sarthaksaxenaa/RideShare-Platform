@@ -1,64 +1,6 @@
 /* ============================================
-   RideShare — Rider Login (Cyan / Blue Theme)
-   Premium glassmorphism dark UI
+   Login Page — Warm Gold Premium Theme
    ============================================ */
-
-/* ---------- Animations ---------- */
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(30px, -40px) scale(1.05);
-  }
-  66% {
-    transform: translate(-20px, 20px) scale(0.95);
-  }
-}
-
-@keyframes floatReverse {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  33% {
-    transform: translate(-40px, 30px) scale(1.08);
-  }
-  66% {
-    transform: translate(20px, -30px) scale(0.92);
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes pulseGlow {
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.15);
-  }
-  50% {
-    box-shadow: 0 0 40px rgba(0, 212, 255, 0.25);
-  }
-}
-
-/* ---------- Container ---------- */
 
 .container {
   min-height: 100vh;
@@ -68,21 +10,26 @@
   padding: 24px;
   position: relative;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: linear-gradient(
+    135deg,
+    #0C0A09 0%,
+    #1A1410 25%,
+    #14100D 50%,
+    #1A150F 75%,
+    #0C0A09 100%
+  );
 }
 
-/* ---------- Background Orbs ---------- */
-
+/* Animated background orbs — warm gold */
 .bgOrb1 {
   position: absolute;
   width: 500px;
   height: 500px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(232, 168, 56, 0.08) 0%, transparent 70%);
   top: -150px;
   right: -100px;
-  animation: float 12s ease-in-out infinite;
-  pointer-events: none;
+  animation: float 8s ease-in-out infinite;
 }
 
 .bgOrb2 {
@@ -90,11 +37,10 @@
   width: 400px;
   height: 400px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(214, 104, 83, 0.06) 0%, transparent 70%);
   bottom: -100px;
   left: -80px;
-  animation: floatReverse 15s ease-in-out infinite;
-  pointer-events: none;
+  animation: float 10s ease-in-out infinite reverse;
 }
 
 .bgOrb3 {
@@ -102,77 +48,97 @@
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.06) 0%, transparent 70%);
-  top: 40%;
+  background: radial-gradient(circle, rgba(232, 168, 56, 0.04) 0%, transparent 70%);
+  top: 50%;
   left: 50%;
-  animation: float 18s ease-in-out infinite;
-  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: float 12s ease-in-out infinite;
 }
 
-/* ---------- Card (Glassmorphism) ---------- */
+/* ── Card ──────────────────────────────────── */
 
 .card {
   width: 100%;
-  max-width: 440px;
-  background: var(--glass-bg);
+  max-width: 420px;
+  background: rgba(28, 24, 22, 0.75);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: 48px 40px;
+  border: 1px solid rgba(245, 237, 228, 0.06);
+  border-radius: 28px;
+  padding: 44px 36px;
   position: relative;
   z-index: 1;
-  box-shadow: var(--shadow-lg);
-  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-shadow:
+    0 24px 80px rgba(0, 0, 0, 0.4),
+    0 0 60px rgba(232, 168, 56, 0.03),
+    inset 0 1px 0 rgba(245, 237, 228, 0.04);
+  animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ---------- Branding ---------- */
+/* Subtle top border glow */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 168, 56, 0.4), transparent);
+}
+
+/* ── Branding ─────────────────────────────── */
 
 .branding {
   text-align: center;
   margin-bottom: 32px;
+  animation: fadeInUp 0.6s ease 0.1s both;
 }
 
 .logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 8px;
 }
 
 .logoIcon {
   font-size: 36px;
-  filter: drop-shadow(0 0 12px rgba(0, 212, 255, 0.4));
+  display: inline-block;
+  animation: float 3s ease-in-out infinite;
 }
 
 .logoText {
   font-size: 32px;
-  font-weight: 800;
-  font-family: 'Playfair Display', serif;
-  background: linear-gradient(135deg, #00d4ff 0%, #7c3aed 100%);
+  font-weight: 700;
+  font-family: 'Cormorant Garamond', serif;
+  background: var(--gradient-gold);
+  background-size: 200% 200%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -0.5px;
+  animation: gradientShift 4s ease infinite;
 }
 
 .subtitle {
   font-size: 14px;
   color: var(--text-muted);
   font-weight: 400;
-  letter-spacing: 2px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
 }
 
-/* ---------- Heading ---------- */
+/* ── Heading ──────────────────────────────── */
 
 .heading {
-  font-size: 24px;
-  font-weight: 700;
-  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  font-weight: 600;
+  font-family: 'Cormorant Garamond', serif;
   color: var(--text-primary);
   margin-bottom: 4px;
+  animation: fadeInUp 0.6s ease 0.2s both;
 }
 
 .headingSub {
@@ -180,35 +146,37 @@
   color: var(--text-secondary);
   margin-bottom: 28px;
   font-weight: 400;
+  animation: fadeInUp 0.6s ease 0.25s both;
 }
 
-/* ---------- Error Box ---------- */
+/* ── Error Box ────────────────────────────── */
 
 .errorBox {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: 12px;
+  background: rgba(232, 96, 76, 0.1);
+  border: 1px solid rgba(232, 96, 76, 0.25);
+  border-radius: 14px;
   padding: 12px 16px;
   margin-bottom: 20px;
   font-size: 13px;
-  color: #fca5a5;
+  color: #f0a090;
   animation: fadeInUp 0.3s ease;
 }
 
 .errorIcon {
   flex-shrink: 0;
-  color: #f87171;
+  color: var(--error);
 }
 
-/* ---------- Form ---------- */
+/* ── Form ─────────────────────────────────── */
 
 .form {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  animation: fadeInUp 0.6s ease 0.3s both;
 }
 
 .inputGroup {
@@ -229,7 +197,7 @@
   padding: 14px 16px;
   background: var(--input-bg);
   border: 1px solid var(--input-border);
-  border-radius: 12px;
+  border-radius: 14px;
   font-size: 15px;
   color: var(--text-primary);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -240,37 +208,38 @@
 }
 
 .input:hover {
-  border-color: rgba(0, 212, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(232, 168, 56, 0.15);
+  background: rgba(245, 237, 228, 0.05);
 }
 
 .input:focus {
-  border-color: rgba(0, 212, 255, 0.5);
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1),
-    0 0 20px rgba(0, 212, 255, 0.05);
+  border-color: rgba(232, 168, 56, 0.4);
+  background: rgba(245, 237, 228, 0.05);
+  box-shadow: 0 0 0 3px rgba(232, 168, 56, 0.08),
+    0 0 20px rgba(232, 168, 56, 0.04);
 }
 
-/* ---------- Submit Button ---------- */
+/* ── Submit Button ────────────────────────── */
 
 .submitBtn {
   width: 100%;
-  padding: 15px;
+  padding: 16px;
   margin-top: 4px;
-  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #7c3aed 100%);
+  background: var(--gradient-gold);
   background-size: 200% 200%;
-  color: #ffffff;
+  color: #0C0A09;
   font-size: 15px;
-  font-weight: 600;
-  border-radius: 12px;
-  letter-spacing: 0.3px;
+  font-weight: 700;
+  border-radius: 14px;
+  letter-spacing: 0.5px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 50px;
+  min-height: 52px;
+  animation: gradientShift 4s ease infinite;
 }
 
 .submitBtn::before {
@@ -279,17 +248,30 @@
   inset: 0;
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.2) 0%,
     transparent 50%
   );
   opacity: 0;
   transition: opacity 0.3s;
 }
 
+.submitBtn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
 .submitBtn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3),
-    0 0 60px rgba(0, 212, 255, 0.1);
+  box-shadow: 0 8px 30px rgba(232, 168, 56, 0.3),
+    0 0 60px rgba(232, 168, 56, 0.08);
   background-position: 100% 100%;
 }
 
@@ -297,39 +279,45 @@
   opacity: 1;
 }
 
+.submitBtn:active:not(:disabled)::after {
+  width: 300px;
+  height: 300px;
+}
+
 .submitBtn:active:not(:disabled) {
   transform: translateY(0);
 }
 
 .submitBtn:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* ---------- Spinner ---------- */
+/* ── Spinner ──────────────────────────────── */
 
 .spinner {
   width: 22px;
   height: 22px;
-  border: 2.5px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #ffffff;
+  border: 2.5px solid rgba(12, 10, 9, 0.25);
+  border-top-color: #0C0A09;
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   display: inline-block;
 }
 
-/* ---------- Toggle ---------- */
+/* ── Toggle ───────────────────────────────── */
 
 .toggle {
   text-align: center;
   margin-top: 28px;
   font-size: 14px;
   color: var(--text-secondary);
+  animation: fadeInUp 0.6s ease 0.4s both;
 }
 
 .toggleBtn {
   background: none;
-  color: #00d4ff;
+  color: var(--accent);
   font-weight: 600;
   font-size: 14px;
   padding: 0;
@@ -337,30 +325,31 @@
 }
 
 .toggleBtn:hover {
-  color: #66e5ff;
+  color: #F0C060;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
-/* ---------- Role Selector ---------- */
+/* ── Role Selector ────────────────────────── */
 
 .roleSelector {
   display: flex;
   gap: 10px;
   margin-bottom: 24px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-primary);
+  border-radius: 16px;
   padding: 4px;
+  animation: fadeInUp 0.6s ease 0.15s both;
 }
 
 .roleBtn {
   flex: 1;
   padding: 12px 16px;
-  border-radius: 11px;
+  border-radius: 13px;
   font-size: 14px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   background: transparent;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
@@ -370,8 +359,8 @@
 }
 
 .roleBtn:hover {
-  color: rgba(255, 255, 255, 0.6);
-  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  background: rgba(245, 237, 228, 0.03);
 }
 
 .roleIcon {
@@ -379,69 +368,70 @@
 }
 
 .roleBtnActive {
-  background: rgba(0, 212, 255, 0.12);
-  color: #00d4ff;
-  border: 1px solid rgba(0, 212, 255, 0.2);
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+  background: rgba(232, 168, 56, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(232, 168, 56, 0.2);
+  box-shadow: 0 0 20px rgba(232, 168, 56, 0.08);
 }
 
 .roleBtnActiveDriver {
-  background: rgba(0, 214, 143, 0.12);
-  color: #00d68f;
-  border: 1px solid rgba(0, 214, 143, 0.2);
-  box-shadow: 0 0 20px rgba(0, 214, 143, 0.1);
+  background: rgba(76, 175, 125, 0.12);
+  color: var(--accent-driver);
+  border: 1px solid rgba(76, 175, 125, 0.2);
+  box-shadow: 0 0 20px rgba(76, 175, 125, 0.08);
 }
 
-/* ---------- Driver Theme Variants ---------- */
+/* ── Driver Theme Variants ────────────────── */
 
 .containerDriver {
   background: linear-gradient(
     135deg,
-    #0a1a0a 0%,
-    #0d1711 25%,
-    #0a1a0e 50%,
-    #0a1e0f 75%,
-    #0a1a0a 100%
+    #0A0D0A 0%,
+    #0D1711 25%,
+    #0A130E 50%,
+    #0D1A10 75%,
+    #0A0D0A 100%
   );
 }
 
 .containerDriver .bgOrb1 {
-  background: radial-gradient(circle, rgba(0, 214, 143, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(76, 175, 125, 0.08) 0%, transparent 70%);
 }
 
 .containerDriver .bgOrb2 {
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(46, 139, 87, 0.06) 0%, transparent 70%);
 }
 
 .containerDriver .bgOrb3 {
-  background: radial-gradient(circle, rgba(0, 214, 143, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(76, 175, 125, 0.04) 0%, transparent 70%);
 }
 
 .logoTextDriver {
-  background: linear-gradient(135deg, #00d68f 0%, #059669 100%) !important;
+  background: var(--gradient-driver) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
 }
 
 .submitBtnDriver {
-  background: linear-gradient(135deg, #00d68f 0%, #059669 50%, #047857 100%) !important;
+  background: linear-gradient(135deg, #4CAF7D 0%, #2E8B57 50%, #228B4F 100%) !important;
+  background-size: 200% 200% !important;
 }
 
 .submitBtnDriver:hover:not(:disabled) {
-  box-shadow: 0 8px 30px rgba(0, 214, 143, 0.3),
-    0 0 60px rgba(0, 214, 143, 0.1) !important;
+  box-shadow: 0 8px 30px rgba(76, 175, 125, 0.3),
+    0 0 60px rgba(76, 175, 125, 0.08) !important;
 }
 
 .toggleBtnDriver {
-  color: #00d68f !important;
+  color: var(--accent-driver) !important;
 }
 
 .toggleBtnDriver:hover {
-  color: #34d399 !important;
+  color: #6DD5A0 !important;
 }
 
-/* ---------- Responsive ---------- */
+/* ── Responsive ───────────────────────────── */
 
 @media (max-width: 480px) {
   .card {
@@ -458,6 +448,6 @@
   }
 
   .heading {
-    font-size: 20px;
+    font-size: 22px;
   }
 }

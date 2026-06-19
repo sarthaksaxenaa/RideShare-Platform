@@ -80,31 +80,58 @@ interface VehiclePricing {
 
 const VEHICLE_PRICING: Record<string, VehiclePricing> = {
   bike: {
-    baseFare: 23,           // Rapido: ₹25–35, we start at ₹23
+    baseFare: 23,
     baseDistanceKm: 2,
-    ratePerKm: 9,           // Rapido: ₹10–12, we charge ₹9
-    timeChargePerMin: 0,    // Rapido: ₹0–1, we keep it free
+    ratePerKm: 9,
+    timeChargePerMin: 0,
     label: 'Bike',
     icon: '🏍️',
     description: 'Fastest in traffic',
   },
-  economy: {
-    baseFare: 48,           // Rapido: ₹50–60, we start at ₹48
+  auto: {
+    baseFare: 35,
+    baseDistanceKm: 1.5,
+    ratePerKm: 12,
+    timeChargePerMin: 1,
+    label: 'Auto',
+    icon: '🛺',
+    description: 'No surge pricing',
+  },
+  mini: {
+    baseFare: 42,
     baseDistanceKm: 2,
-    ratePerKm: 14,          // Rapido: ₹15–18, we charge ₹14
-    timeChargePerMin: 1,    // Rapido: ₹1–2, we charge ₹1
+    ratePerKm: 13,
+    timeChargePerMin: 1,
+    label: 'Mini',
+    icon: '🚙',
+    description: 'Budget 4-seater',
+  },
+  economy: {
+    baseFare: 48,
+    baseDistanceKm: 2,
+    ratePerKm: 14,
+    timeChargePerMin: 1,
     label: 'Economy',
     icon: '🚗',
     description: 'Comfortable & affordable',
   },
-  premium: {
-    baseFare: 78,           // Rapido: ₹80–100, we start at ₹78
+  sedan: {
+    baseFare: 65,
     baseDistanceKm: 2,
-    ratePerKm: 21,          // Rapido: ₹22–28, we charge ₹21
-    timeChargePerMin: 2,    // Rapido: ₹2–3, we charge ₹2
+    ratePerKm: 18,
+    timeChargePerMin: 1.5,
+    label: 'Sedan',
+    icon: '🚘',
+    description: 'Spacious & smooth',
+  },
+  premium: {
+    baseFare: 85,
+    baseDistanceKm: 2,
+    ratePerKm: 24,
+    timeChargePerMin: 2,
     label: 'Premium',
     icon: '✨',
-    description: 'Top-rated drivers & cars',
+    description: 'Luxury experience',
   },
 };
 
@@ -118,6 +145,8 @@ const AVERAGE_SPEED_KMH = 30;
 /**
  * Calculate fare for a given vehicle type, distance, and duration.
  */
+const PLATFORM_FEE = 10; // ₹10 flat platform fee
+
 function calculateFare(
   vehicleType: string,
   distanceKm: number,
@@ -126,14 +155,37 @@ function calculateFare(
   const pricing = VEHICLE_PRICING[vehicleType];
   if (!pricing) return 0;
 
-  // Distance-based component
   const chargeableDistance = Math.max(0, distanceKm - pricing.baseDistanceKm);
-  const distanceFare = pricing.baseFare + chargeableDistance * pricing.ratePerKm;
+  const distanceFare = chargeableDistance * pricing.ratePerKm;
+  const timeFare = Math.round(durationMin * pricing.timeChargePerMin);
+  const total = pricing.baseFare + distanceFare + timeFare + PLATFORM_FEE;
 
-  // Time-based component
-  const timeFare = durationMin * pricing.timeChargePerMin;
+  return Math.round(total);
+}
 
-  return Math.round(distanceFare + timeFare);
+/**
+ * Returns an itemized fare breakdown for the booking UI.
+ */
+function calculateFareBreakdown(
+  vehicleType: string,
+  distanceKm: number,
+  durationMin: number
+): { baseFare: number; distanceFare: number; timeFare: number; platformFee: number; total: number } {
+  const pricing = VEHICLE_PRICING[vehicleType];
+  if (!pricing) return { baseFare: 0, distanceFare: 0, timeFare: 0, platformFee: 0, total: 0 };
+
+  const chargeableDistance = Math.max(0, distanceKm - pricing.baseDistanceKm);
+  const distanceFare = Math.round(chargeableDistance * pricing.ratePerKm);
+  const timeFare = Math.round(durationMin * pricing.timeChargePerMin);
+  const total = pricing.baseFare + distanceFare + timeFare + PLATFORM_FEE;
+
+  return {
+    baseFare: pricing.baseFare,
+    distanceFare,
+    timeFare,
+    platformFee: PLATFORM_FEE,
+    total: Math.round(total),
+  };
 }
 
 /**
@@ -146,6 +198,11 @@ const SAFE_USER_SELECT = {
   id: true,
   name: true,
   email: true,
+  phone: true,
+  avatarUrl: true,
+  vehicleNumber: true,
+  vehicleType: true,
+  vehicleModel: true,
 } as const;
 
 // ─────────────────────────────────────────────────────────────
@@ -170,24 +227,55 @@ router.get(
       const userId = req.user!.id;
       const userRole = req.user!.role;
 
-      // Build the WHERE clause dynamically based on role.
-      // A rider only sees their own trips; a driver only sees
-      // trips they've been assigned to.
-      const whereClause =
-        userRole === "RIDER"
-          ? { riderId: userId }
-          : { driverId: userId };
+      // Query parameters for filtering
+      const status = req.query.status as string | undefined;
+      const from = req.query.from as string | undefined;
+      const to = req.query.to as string | undefined;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(parseInt(req.query.limit as string) || 50, 100);
+      const skip = (page - 1) * limit;
 
-      const trips = await prisma.trip.findMany({
-        where: whereClause,
-        include: {
-          rider: { select: SAFE_USER_SELECT },
-          driver: { select: SAFE_USER_SELECT },
+      // Build WHERE clause
+      const whereClause: Record<string, unknown> = userRole === "RIDER"
+        ? { riderId: userId }
+        : { driverId: userId };
+
+      // Optional status filter
+      if (status) {
+        whereClause.status = status;
+      }
+
+      // Optional date range filter
+      if (from || to) {
+        whereClause.createdAt = {};
+        if (from) (whereClause.createdAt as Record<string, unknown>).gte = new Date(from);
+        if (to) (whereClause.createdAt as Record<string, unknown>).lte = new Date(to);
+      }
+
+      const [trips, totalCount] = await Promise.all([
+        prisma.trip.findMany({
+          where: whereClause,
+          include: {
+            rider: { select: SAFE_USER_SELECT },
+            driver: { select: SAFE_USER_SELECT },
+            rating: true,
+          },
+          orderBy: { createdAt: "desc" },
+          skip,
+          take: limit,
+        }),
+        prisma.trip.count({ where: whereClause }),
+      ]);
+
+      res.status(200).json({
+        trips,
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
         },
-        orderBy: { createdAt: "desc" },
       });
-
-      res.status(200).json(trips);
     } catch (error) {
       console.error("[trips/list] Unexpected error:", error);
       res.status(500).json({
@@ -320,18 +408,24 @@ router.post(
         return;
       }
 
-      // Return estimates for ALL vehicle types
+      // Return estimates for ALL vehicle types with itemized breakdown
       const estimates = Object.entries(VEHICLE_PRICING).map(
-        ([type, pricing]) => ({
-          vehicleType: type,
-          label: pricing.label,
-          icon: pricing.icon,
-          description: pricing.description,
-          fare: calculateFare(type, distanceKm, estimatedDuration),
-          baseFare: pricing.baseFare,
-          ratePerKm: pricing.ratePerKm,
-          timeCharge: pricing.timeChargePerMin,
-        })
+        ([type, pricing]) => {
+          const breakdown = calculateFareBreakdown(type, distanceKm, estimatedDuration);
+          return {
+            vehicleType: type,
+            label: pricing.label,
+            icon: pricing.icon,
+            description: pricing.description,
+            fare: breakdown.total,
+            baseFare: breakdown.baseFare,
+            distanceFare: breakdown.distanceFare,
+            timeFare: breakdown.timeFare,
+            platformFee: breakdown.platformFee,
+            ratePerKm: pricing.ratePerKm,
+            timeCharge: pricing.timeChargePerMin,
+          };
+        }
       );
 
       res.status(200).json({

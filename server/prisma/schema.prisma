@@ -40,6 +40,11 @@ model User {
   avatarUrl String?  // optional profile picture URL
   createdAt DateTime @default(now())
 
+  // ── Driver-specific fields ─────────────────────────────
+  vehicleNumber String?  // e.g., "DL 01 AB 1234"
+  vehicleType   String?  // e.g., "Sedan", "Bike"
+  vehicleModel  String?  // e.g., "Maruti Swift Dzire"
+
   // ── Relations ─────────────────────────────────────────────
   // A single User can be a rider on many trips AND a driver on
   // many trips, but never both on the same trip. We use named
@@ -52,6 +57,16 @@ model User {
   // The `?` makes it optional — it's null until the driver
   // goes online for the first time.
   location DriverLocation?
+
+  // Ratings given and received
+  ratingsGiven    Rating[] @relation("RatingsGiven")
+  ratingsReceived Rating[] @relation("RatingsReceived")
+
+  // Saved locations (Home, Work, etc.)
+  savedLocations SavedLocation[]
+
+  // Emergency contacts
+  emergencyContacts EmergencyContact[]
 }
 
 /// Represents a single ride from pickup to drop-off.
@@ -78,24 +93,42 @@ model Trip {
   driver   User?  @relation("DriverTrips", fields: [driverId], references: [id])
 
   // ── Location ──────────────────────────────────────────────
-  pickupLat Float
-  pickupLng Float
-  dropLat   Float
-  dropLng   Float
+  pickupLat     Float
+  pickupLng     Float
+  pickupAddress String?
+  dropLat       Float
+  dropLng       Float
+  dropAddress   String?
+
+  // ── Route ─────────────────────────────────────────────────
+  distanceKm  Float?
+  durationMin Int?
 
   // ── Pricing ───────────────────────────────────────────────
   // Fare is in whole rupees (INR). e.g., ₹150 is stored as 150.
   // Using Int avoids floating-point precision issues while keeping
   // calculations simple for the Indian market.
-  fare Int?
+  fare         Int?
+  baseFare     Int?
+  distanceFare Int?
+  timeFare     Int?
+  platformFee  Int?
+  vehicleType  String?  // vehicle type used for this trip
 
   // ── Payment ───────────────────────────────────────────────
   stripePaymentIntentId String?
   paymentStatus         String @default("PENDING")
+  paymentMethod         String @default("CARD")  // CARD, CASH, UPI, WALLET
+
+  // ── OTP ───────────────────────────────────────────────────
+  rideOtp String?  // 4-digit OTP shown to rider, driver must confirm
 
   // ── Timestamps ────────────────────────────────────────────
   createdAt   DateTime  @default(now())
   completedAt DateTime?
+
+  // ── Relations ─────────────────────────────────────────────
+  rating Rating?
 }
 
 /// Stores the current GPS position of online drivers.
@@ -117,4 +150,53 @@ model DriverLocation {
   lat       Float
   lng       Float
   updatedAt DateTime @updatedAt
+}
+
+/// Rating left after a trip is completed.
+///
+/// Design decisions:
+/// - tripId is @unique so each trip can only be rated once.
+/// - stars is 1-5 integer rating.
+/// - tags stores quick feedback labels as JSON string (e.g., '["clean","polite"]').
+/// - Both rider and driver can rate each other; fromId/toId tracks direction.
+model Rating {
+  id        String   @id @default(uuid())
+  tripId    String   @unique
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  fromId    String
+  from      User     @relation("RatingsGiven", fields: [fromId], references: [id])
+  toId      String
+  to        User     @relation("RatingsReceived", fields: [toId], references: [id])
+  stars     Int      // 1-5
+  comment   String?
+  tags      String?  // JSON array: '["clean_vehicle","good_driving"]'
+  createdAt DateTime @default(now())
+}
+
+/// User's saved locations (Home, Work, Gym, etc.)
+///
+/// Design decisions:
+/// - @@unique([userId, label]) ensures one "Home" per user.
+/// - icon is an emoji string for display.
+model SavedLocation {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  label     String   // "Home", "Work", "Gym", custom name
+  icon      String   @default("📍")
+  lat       Float
+  lng       Float
+  address   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, label])
+}
+
+/// Emergency contacts for SOS feature.
+model EmergencyContact {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  name   String
+  phone  String
 }

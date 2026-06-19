@@ -157,7 +157,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(232, 168, 56, 0.3), transparent);
 }
 
 .handle {
@@ -188,8 +188,8 @@
 }
 
 .statusIconMatched {
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: rgba(232, 168, 56, 0.1);
+  border: 1px solid rgba(232, 168, 56, 0.2);
 }
 
 .statusIconStarted {
@@ -235,7 +235,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #00d4ff, #7c3aed);
+  background: linear-gradient(135deg, #E8A838, #D66853);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -301,8 +301,8 @@
 /* ---------- Fare Summary ---------- */
 
 .fareSummary {
-  background: linear-gradient(135deg, rgba(0, 212, 255, 0.06), rgba(124, 58, 237, 0.06));
-  border: 1px solid rgba(0, 212, 255, 0.15);
+  background: linear-gradient(135deg, rgba(232, 168, 56, 0.06), rgba(214, 104, 83, 0.06));
+  border: 1px solid rgba(232, 168, 56, 0.15);
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
@@ -320,7 +320,7 @@
 .fareAmount {
   font-size: 36px;
   font-weight: 800;
-  background: linear-gradient(135deg, #00d4ff, #7c3aed);
+  background: linear-gradient(135deg, #E8A838, #D66853);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -338,7 +338,7 @@
 .doneBtn {
   width: 100%;
   padding: 16px;
-  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 50%, #7c3aed 100%);
+  background: linear-gradient(135deg, #E8A838 0%, #C47F17 50%, #D66853 100%);
   background-size: 200% 200%;
   border-radius: 14px;
   color: var(--text-primary);
@@ -364,7 +364,7 @@
 
 .doneBtn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3);
+  box-shadow: 0 8px 30px rgba(232, 168, 56, 0.3);
   background-position: 100% 100%;
 }
 
@@ -408,7 +408,7 @@
 }
 
 .progressStepActive {
-  background: linear-gradient(90deg, #00d4ff, #7c3aed);
+  background: linear-gradient(90deg, #E8A838, #D66853);
 }
 
 .progressStepPending {
@@ -432,7 +432,7 @@
   width: 40px;
   height: 40px;
   border: 3px solid var(--border-primary);
-  border-top-color: #00d4ff;
+  border-top-color: #E8A838;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

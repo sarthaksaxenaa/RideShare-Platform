@@ -32,7 +32,7 @@
   width: 400px;
   height: 400px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(232, 168, 56, 0.08) 0%, transparent 70%);
   top: -100px;
   right: -80px;
   animation: float 14s ease-in-out infinite;
@@ -44,7 +44,7 @@
   width: 350px;
   height: 350px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(214, 104, 83, 0.06) 0%, transparent 70%);
   bottom: -80px;
   left: -60px;
   animation: float 18s ease-in-out infinite reverse;
@@ -52,7 +52,7 @@
 }
 
 .pageDriver .bgOrb1 {
-  background: radial-gradient(circle, rgba(0, 214, 143, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(76, 175, 125, 0.08) 0%, transparent 70%);
 }
 
 /* ---------- Back Button ---------- */
@@ -134,7 +134,7 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00d4ff, #7c3aed);
+  background: linear-gradient(135deg, #E8A838, #D66853);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -142,20 +142,20 @@
   font-weight: 700;
   color: #ffffff;
   margin: 0 auto 16px;
-  box-shadow: 0 8px 32px rgba(0, 212, 255, 0.2);
-  font-family: 'Playfair Display', serif;
+  box-shadow: 0 8px 32px rgba(232, 168, 56, 0.2);
+  font-family: 'Cormorant Garamond', serif;
 }
 
 .avatarDriver {
-  background: linear-gradient(135deg, #00d68f, #00b4d8);
-  box-shadow: 0 8px 32px rgba(0, 214, 143, 0.2);
+  background: linear-gradient(135deg, #4CAF7D, #00b4d8);
+  box-shadow: 0 8px 32px rgba(76, 175, 125, 0.2);
 }
 
 .profileName {
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
-  font-family: 'Playfair Display', serif;
+  font-family: 'Cormorant Garamond', serif;
   margin-bottom: 4px;
 }
 
@@ -178,18 +178,18 @@
   align-items: center;
   gap: 4px;
   padding: 4px 14px;
-  background: rgba(0, 212, 255, 0.1);
-  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: rgba(232, 168, 56, 0.1);
+  border: 1px solid rgba(232, 168, 56, 0.2);
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
-  color: #00d4ff;
+  color: #E8A838;
 }
 
 .roleBadgeDriver {
-  background: rgba(0, 214, 143, 0.1);
-  border-color: rgba(0, 214, 143, 0.2);
-  color: #00d68f;
+  background: rgba(76, 175, 125, 0.1);
+  border-color: rgba(76, 175, 125, 0.2);
+  color: #4CAF7D;
 }
 
 .dateBadge {
@@ -226,7 +226,7 @@
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 20px;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Cormorant Garamond', serif;
 }
 
 .sectionIcon {
@@ -295,9 +295,9 @@
 }
 
 .msgSuccess {
-  background: rgba(0, 214, 143, 0.1);
-  border: 1px solid rgba(0, 214, 143, 0.2);
-  color: #00d68f;
+  background: rgba(76, 175, 125, 0.1);
+  border: 1px solid rgba(76, 175, 125, 0.2);
+  color: #4CAF7D;
 }
 
 .msgError {
@@ -322,7 +322,7 @@
 
 .saveBtn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0, 212, 255, 0.2);
+  box-shadow: 0 6px 20px rgba(232, 168, 56, 0.2);
 }
 
 .saveBtn:disabled {
@@ -335,7 +335,7 @@
 }
 
 .saveBtnDriver:hover:not(:disabled) {
-  box-shadow: 0 6px 20px rgba(0, 214, 143, 0.2);
+  box-shadow: 0 6px 20px rgba(76, 175, 125, 0.2);
 }
 
 /* ---------- Danger Zone ---------- */

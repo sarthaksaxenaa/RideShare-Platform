@@ -138,13 +138,13 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
 
 router.post("/login", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     // ── Validation ──────────────────────────────────────────
-    if (!email || !password) {
+    if (!email || !password || !role) {
       res.status(400).json({
         error: "Validation error",
-        message: "Both email and password are required.",
+        message: "Email, password, and role are required.",
       });
       return;
     }
@@ -155,13 +155,17 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
     });
 
     if (!user) {
-      // NOTE: returning 404 reveals that the email is not registered.
-      // In a hardened production app, you might use a generic 401
-      // for both "user not found" and "wrong password" to prevent
-      // user-enumeration attacks. Kept separate here for DX clarity.
       res.status(404).json({
         error: "Not found",
         message: "No account found with this email address.",
+      });
+      return;
+    }
+
+    if (user.role !== role) {
+      res.status(403).json({
+        error: "Forbidden",
+        message: `This email is registered as a ${user.role}. Please switch roles or create a new account.`,
       });
       return;
     }

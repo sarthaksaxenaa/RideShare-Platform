@@ -212,7 +212,13 @@ function DriverTripActivePage() {
 
       {/* Map */}
       <div className={styles.mapSection}>
-        <Map center={mapCenter} zoom={14} markers={markers} />
+        <Map
+          center={mapCenter}
+          zoom={14}
+          markers={markers}
+          pickup={trip ? [trip.pickupLat, trip.pickupLng] : undefined}
+          dropoff={trip ? [trip.dropLat, trip.dropLng] : undefined}
+        />
       </div>
 
       {/* Control Panel */}

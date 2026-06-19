@@ -14,6 +14,7 @@ interface LocationSuggestion {
 interface BookingCardProps {
   onBook: (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number) => void;
   loading?: boolean;
+  onLocationChange?: (pickup: [number, number] | null, dropoff: [number, number] | null) => void;
 }
 
 interface VehicleEstimate {
@@ -23,6 +24,9 @@ interface VehicleEstimate {
   description: string;
   fare: number;
   baseFare: number;
+  distanceFare: number;
+  timeFare: number;
+  platformFee: number;
   ratePerKm: number;
   timeCharge: number;
 }
@@ -39,7 +43,7 @@ interface SelectedLocation {
   lng: number;
 }
 
-function BookingCard({ onBook, loading = false }: BookingCardProps) {
+function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardProps) {
   // Pickup state
   const [pickupQuery, setPickupQuery] = useState('');
   const [pickupSuggestions, setPickupSuggestions] = useState<LocationSuggestion[]>([]);
@@ -129,18 +133,24 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
 
   const selectPickup = (suggestion: LocationSuggestion) => {
     const shortName = suggestion.display_name.split(',').slice(0, 3).join(', ');
-    setSelectedPickup({ name: shortName, lat: parseFloat(suggestion.lat), lng: parseFloat(suggestion.lon) });
+    const lat = parseFloat(suggestion.lat);
+    const lng = parseFloat(suggestion.lon);
+    setSelectedPickup({ name: shortName, lat, lng });
     setPickupQuery(shortName);
     setPickupSuggestions([]);
     setPickupFocused(false);
+    if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
   };
 
   const selectDrop = (suggestion: LocationSuggestion) => {
     const shortName = suggestion.display_name.split(',').slice(0, 3).join(', ');
-    setSelectedDrop({ name: shortName, lat: parseFloat(suggestion.lat), lng: parseFloat(suggestion.lon) });
+    const lat = parseFloat(suggestion.lat);
+    const lng = parseFloat(suggestion.lon);
+    setSelectedDrop({ name: shortName, lat, lng });
     setDropQuery(shortName);
     setDropSuggestions([]);
     setDropFocused(false);
+    if (onLocationChange) onLocationChange(selectedPickup ? [selectedPickup.lat, selectedPickup.lng] : null, [lat, lng]);
   };
 
   const handleUseCurrentLocation = useCallback(() => {
@@ -163,9 +173,11 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
           const name = data.display_name?.split(',').slice(0, 3).join(', ') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
           setSelectedPickup({ name, lat, lng });
           setPickupQuery(name);
+          if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
         } catch {
           setSelectedPickup({ name: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, lat, lng });
           setPickupQuery(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+          if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
         }
         setGettingLocation(false);
       },
@@ -215,9 +227,12 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
       const durMin = Math.round(distKm * 2 + 5);
       const chargeableKm = Math.max(0, distKm - 2);
       setEstimates([
-        { vehicleType: 'bike', label: 'Bike', icon: '🏍️', description: 'Fastest in traffic', fare: Math.round(23 + chargeableKm * 9), baseFare: 23, ratePerKm: 9, timeCharge: 0 },
-        { vehicleType: 'economy', label: 'Economy', icon: '🚗', description: 'Comfortable & affordable', fare: Math.round(48 + chargeableKm * 14 + durMin * 1), baseFare: 48, ratePerKm: 14, timeCharge: 1 },
-        { vehicleType: 'premium', label: 'Premium', icon: '✨', description: 'Top-rated drivers & cars', fare: Math.round(78 + chargeableKm * 21 + durMin * 2), baseFare: 78, ratePerKm: 21, timeCharge: 2 },
+        { vehicleType: 'bike', label: 'Bike', icon: '🏍️', description: 'Fastest in traffic', fare: Math.round(23 + chargeableKm * 9), baseFare: 23, distanceFare: Math.round(chargeableKm * 9), timeFare: 0, platformFee: 10, ratePerKm: 9, timeCharge: 0 },
+        { vehicleType: 'auto', label: 'Auto', icon: '🛺', description: 'No surge pricing', fare: Math.round(35 + chargeableKm * 12 + durMin * 1), baseFare: 35, distanceFare: Math.round(chargeableKm * 12), timeFare: durMin * 1, platformFee: 10, ratePerKm: 12, timeCharge: 1 },
+        { vehicleType: 'mini', label: 'Mini', icon: '🚙', description: 'Budget 4-seater', fare: Math.round(42 + chargeableKm * 13 + durMin * 1), baseFare: 42, distanceFare: Math.round(chargeableKm * 13), timeFare: durMin * 1, platformFee: 10, ratePerKm: 13, timeCharge: 1 },
+        { vehicleType: 'economy', label: 'Economy', icon: '🚗', description: 'Comfortable & affordable', fare: Math.round(48 + chargeableKm * 14 + durMin * 1), baseFare: 48, distanceFare: Math.round(chargeableKm * 14), timeFare: durMin * 1, platformFee: 10, ratePerKm: 14, timeCharge: 1 },
+        { vehicleType: 'sedan', label: 'Sedan', icon: '🚘', description: 'Spacious & smooth', fare: Math.round(65 + chargeableKm * 18 + durMin * 1.5), baseFare: 65, distanceFare: Math.round(chargeableKm * 18), timeFare: Math.round(durMin * 1.5), platformFee: 10, ratePerKm: 18, timeCharge: 1.5 },
+        { vehicleType: 'premium', label: 'Premium', icon: '✨', description: 'Luxury experience', fare: Math.round(85 + chargeableKm * 24 + durMin * 2), baseFare: 85, distanceFare: Math.round(chargeableKm * 24), timeFare: durMin * 2, platformFee: 10, ratePerKm: 24, timeCharge: 2 },
       ]);
       setDistance(distKm);
       setEta(durMin);
@@ -371,6 +386,39 @@ function BookingCard({ onBook, loading = false }: BookingCardProps) {
               </button>
             ))}
           </div>
+
+          {/* Fare Breakdown for Selected Vehicle */}
+          {selectedVehicle && (
+            <div className={styles.fareBreakdown}>
+              <div className={styles.fareBreakdownTitle}>Fare Breakdown</div>
+              {estimates
+                .filter((e) => e.vehicleType === selectedVehicle)
+                .map((est) => (
+                  <div key="breakdown" className={styles.fareBreakdownList}>
+                    <div className={styles.fareBreakdownRow}>
+                      <span>Base Fare</span>
+                      <span>₹{est.baseFare}</span>
+                    </div>
+                    <div className={styles.fareBreakdownRow}>
+                      <span>Distance Fare ({distance} km)</span>
+                      <span>₹{est.distanceFare || 0}</span>
+                    </div>
+                    <div className={styles.fareBreakdownRow}>
+                      <span>Time Fare ({eta} min)</span>
+                      <span>₹{est.timeFare || 0}</span>
+                    </div>
+                    <div className={styles.fareBreakdownRow}>
+                      <span>Platform Fee</span>
+                      <span>₹{est.platformFee || 10}</span>
+                    </div>
+                    <div className={`${styles.fareBreakdownRow} ${styles.fareBreakdownTotal}`}>
+                      <span>Total Estimated Fare</span>
+                      <span>₹{est.fare}</span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       )}
 

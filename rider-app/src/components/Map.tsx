@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import styles from './Map.module.css';
@@ -52,6 +52,50 @@ function ChangeView({ center, zoom }: { center: [number, number]; zoom: number }
   return null;
 }
 
+// OSRM Route Fetcher Component
+function RouteRenderer({ pickup, dropoff }: { pickup: [number, number], dropoff: [number, number] }) {
+  const [route, setRoute] = useState<[number, number][]>([]);
+  const map = useMap();
+
+  useEffect(() => {
+    async function fetchRoute() {
+      try {
+        // OSRM requires lng,lat
+        const res = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${pickup[1]},${pickup[0]};${dropoff[1]},${dropoff[0]}?overview=full&geometries=geojson`
+        );
+        const data = await res.json();
+        if (data.routes && data.routes[0]) {
+          const coords = data.routes[0].geometry.coordinates;
+          // OSRM returns [lng, lat], leaflet needs [lat, lng]
+          const latLngs = coords.map((c: [number, number]) => [c[1], c[0]] as [number, number]);
+          setRoute(latLngs);
+
+          // Fit bounds to route
+          const bounds = L.latLngBounds(latLngs);
+          map.fitBounds(bounds, { padding: [50, 50], animate: true });
+        }
+      } catch (err) {
+        console.error("Failed to fetch OSRM route:", err);
+      }
+    }
+    fetchRoute();
+  }, [pickup[0], pickup[1], dropoff[0], dropoff[1], map]);
+
+  if (route.length === 0) return null;
+
+  return (
+    <Polyline
+      positions={route}
+      color="var(--accent, #E8A838)"
+      weight={5}
+      opacity={0.8}
+      dashArray="10, 15"
+      className={styles.routeLine}
+    />
+  );
+}
+
 export interface MapMarker {
   lat: number;
   lng: number;
@@ -65,9 +109,11 @@ interface MapProps {
   markers?: MapMarker[];
   className?: string;
   fullscreen?: boolean;
+  pickup?: [number, number];
+  dropoff?: [number, number];
 }
 
-function Map({ center, zoom = 14, markers = [], className, fullscreen }: MapProps) {
+function Map({ center, zoom = 14, markers = [], className, fullscreen, pickup, dropoff }: MapProps) {
   return (
     <div
       className={`${styles.mapWrapper} ${fullscreen ? styles.fullscreen : ''} ${className || ''}`}
@@ -80,9 +126,10 @@ function Map({ center, zoom = 14, markers = [], className, fullscreen }: MapProp
         style={{ width: '100%', height: '100%' }}
       >
         <ChangeView center={center} zoom={zoom} />
+        {pickup && dropoff && <RouteRenderer pickup={pickup} dropoff={dropoff} />}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         />
         {markers.map((marker, idx) => (
           <Marker

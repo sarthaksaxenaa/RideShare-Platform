@@ -184,7 +184,14 @@ function TripActivePage() {
 
       {/* Full-Screen Map */}
       <div className={styles.mapContainer}>
-        <Map center={mapCenter} zoom={14} markers={markers} fullscreen />
+        <Map
+          center={mapCenter}
+          zoom={14}
+          markers={markers}
+          fullscreen
+          pickup={tripDetails?.pickupLat && tripDetails?.pickupLng ? [tripDetails.pickupLat, tripDetails.pickupLng] : undefined}
+          dropoff={tripDetails?.dropLat && tripDetails?.dropLng ? [tripDetails.dropLat, tripDetails.dropLng] : undefined}
+        />
       </div>
 
       {/* Status Panel */}

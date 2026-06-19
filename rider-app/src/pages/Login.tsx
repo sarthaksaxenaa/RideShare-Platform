@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, type FormEvent } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
 import styles from './Login.module.css';
 
@@ -8,6 +8,7 @@ type RoleOption = 'RIDER' | 'DRIVER';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<Mode>('signin');
   const [role, setRole] = useState<RoleOption>('RIDER');
   const [name, setName] = useState('');
@@ -15,6 +16,15 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // If ?logout param is present, clear session first
+  // This ensures switching roles works cleanly
+  useEffect(() => {
+    if (searchParams.get('logout') === '1') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+  }, [searchParams]);
 
   const toggleMode = () => {
     setMode((prev) => (prev === 'signin' ? 'signup' : 'signin'));
@@ -56,13 +66,23 @@ function LoginPage() {
         navigate('/', { replace: true });
       }
     } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'response' in err) {
-        const axiosErr = err as { response?: { data?: { message?: string } } };
-        setError(
-          axiosErr.response?.data?.message || 'Something went wrong. Please try again.'
-        );
+      console.error('[Login] Error:', err);
+      const axiosErr = err as { response?: { status?: number; data?: { message?: string; error?: string } } };
+      const serverMessage = axiosErr?.response?.data?.message;
+      const status = axiosErr?.response?.status;
+
+      if (serverMessage) {
+        setError(serverMessage);
+      } else if (status === 403) {
+        setError('Access denied. This email may be registered under a different role.');
+      } else if (status === 401) {
+        setError('Invalid email or password.');
+      } else if (status === 404) {
+        setError('No account found with this email. Please sign up first.');
+      } else if (status) {
+        setError(`Server error (${status}). Please try again.`);
       } else {
-        setError('Network error. Please check your connection.');
+        setError('Cannot connect to server. Please check if the backend is running.');
       }
     } finally {
       setLoading(false);

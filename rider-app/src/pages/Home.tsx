@@ -224,6 +224,24 @@ function HomePage() {
     });
   });
 
+  if (selectedPickup) {
+    markers.push({
+      lat: selectedPickup[0],
+      lng: selectedPickup[1],
+      label: 'Pickup',
+      type: 'pickup',
+    });
+  }
+
+  if (selectedDropoff) {
+    markers.push({
+      lat: selectedDropoff[0],
+      lng: selectedDropoff[1],
+      label: 'Drop-off',
+      type: 'dropoff',
+    });
+  }
+
   // Loading state
   if (locationLoading) {
     return (

@@ -87,10 +87,9 @@ function RouteRenderer({ pickup, dropoff }: { pickup: [number, number], dropoff:
   return (
     <Polyline
       positions={route}
-      color="var(--accent, #E8A838)"
+      color="#1a3a6b"
       weight={5}
-      opacity={0.8}
-      dashArray="10, 15"
+      opacity={1}
       className={styles.routeLine}
     />
   );

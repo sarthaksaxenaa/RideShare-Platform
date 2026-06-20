@@ -19,9 +19,9 @@
   font-family: 'Outfit', sans-serif;
 }
 
-/* Dark-themed tile filter */
+/* Sharp, crisp map tiles — no filter applied */
 .mapWrapper :global(.leaflet-tile-pane) {
-  filter: brightness(0.7) contrast(1.1) saturate(0.8);
+  filter: none;
 }
 
 /* Dark popup styling */

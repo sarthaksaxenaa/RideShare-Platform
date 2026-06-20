@@ -115,7 +115,7 @@
 /* ── Map ── */
 .mapSection {
   flex: 1;
-  min-height: 300px;
+  min-height: 320px;
   padding: 0 24px;
   margin-bottom: 16px;
 }

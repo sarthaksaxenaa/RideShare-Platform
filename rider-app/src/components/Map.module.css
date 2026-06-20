@@ -84,23 +84,12 @@
 }
 
 .mapWrapper :global(.leaflet-control-zoom a:hover) {
-  background: rgba(232, 168, 56, 0.15) !important;
-  color: #E8A838 !important;
+  background: rgba(0, 212, 255, 0.15) !important;
+  color: #00d4ff !important;
 }
 
 /* Full-screen variant */
 .fullscreen {
   border-radius: 0;
   border: none;
-}
-
-/* Route line animation */
-.routeLine {
-  animation: routeDash 1.5s linear infinite;
-}
-
-@keyframes routeDash {
-  to {
-    stroke-dashoffset: -25;
-  }
 }

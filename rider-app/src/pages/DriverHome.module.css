@@ -180,8 +180,7 @@
 /* ── Map Section ── */
 .mapSection {
   padding: 0 24px;
-  flex: 1;
-  min-height: 300px;
+  height: 280px;
   margin-bottom: 20px;
 }
 

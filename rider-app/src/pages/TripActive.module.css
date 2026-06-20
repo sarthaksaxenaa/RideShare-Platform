@@ -134,29 +134,18 @@
   left: 0;
   right: 0;
   z-index: 1000;
-  max-height: 55vh;
-  overflow-y: auto;
+  max-width: 480px;
+  margin: 0 auto;
   animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(232, 168, 56, 0.3) transparent;
-}
-
-.statusPanel::-webkit-scrollbar {
-  width: 4px;
-}
-
-.statusPanel::-webkit-scrollbar-thumb {
-  background: rgba(232, 168, 56, 0.3);
-  border-radius: 4px;
 }
 
 .statusCard {
-  background: rgba(12, 10, 9, 0.92);
+  background: rgba(12, 12, 20, 0.9);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0;
-  padding: 24px 28px 32px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px 24px 0 0;
+  padding: 28px 24px 32px;
   position: relative;
   overflow: hidden;
 }

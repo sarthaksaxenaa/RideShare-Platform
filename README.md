@@ -70,7 +70,7 @@ graph TD
 ### Frontend (`/rider-app`)
 - **Core:** React 18, Vite, TypeScript.
 - **Styling:** Custom CSS Modules featuring a dynamic light/dark mode CSS Variable architecture and premium glassmorphism aesthetics.
-- **Mapping:** `react-leaflet` with custom tile filters and hardware-accelerated marker rendering.
+- **Mapping:** `react-leaflet` with sharp map rendering, custom hardware-accelerated markers, and interactive route polylines using the OSRM API for accurate paths.
 - **State & Real-time:** Custom hooks (`useSocket`, `useTrip`, `useDriverLocation`) for decoupling UI from WebSocket business logic.
 
 ### Backend (`/server`)

@@ -268,7 +268,7 @@ function HomePage() {
       <div className={styles.mapContainer}>
         <Map
           center={center}
-          zoom={14}
+          zoom={12}
           markers={markers}
           fullscreen
           pickup={selectedPickup || undefined}

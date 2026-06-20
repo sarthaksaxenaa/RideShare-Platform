@@ -172,9 +172,8 @@
   max-height: 50vh;
   overflow-y: auto;
   z-index: 1000;
-  max-width: 480px;
   width: 100%;
-  margin: 0 auto;
+  background: var(--bg-primary);
   animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   scrollbar-width: thin;
   scrollbar-color: rgba(232, 168, 56, 0.3) transparent;
@@ -319,7 +318,7 @@
   }
 
   .bookingOverlay {
-    max-width: 100%;
+    width: 100%;
   }
 }
 

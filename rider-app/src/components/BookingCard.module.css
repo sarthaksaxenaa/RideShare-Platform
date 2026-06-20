@@ -42,10 +42,12 @@
 /* ---------- Card ---------- */
 
 .card {
-  background: var(--bg-primary);
-  border-top: 1px solid var(--glass-border);
+  background: rgba(12, 10, 9, 0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-top: 1px solid rgba(232, 168, 56, 0.15);
   border-radius: 0;
-  padding: 24px 32px 32px;
+  padding: 24px 28px 32px;
   animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   position: relative;
   overflow: hidden;

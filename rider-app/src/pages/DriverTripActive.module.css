@@ -114,8 +114,8 @@
 
 /* ── Map ── */
 .mapSection {
-  flex: 1;
-  min-height: 320px;
+  flex: 1 1 0;
+  min-height: 45vh;
   padding: 0 24px;
   margin-bottom: 16px;
 }

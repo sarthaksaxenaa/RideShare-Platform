@@ -259,7 +259,13 @@ function HomePage() {
       {/* Header */}
       <header className={styles.header}>
         <div className={styles.brand}>
-          <span className={styles.brandIcon}>🚀</span>
+          <div className={styles.brandIconWrap}>
+            <svg className={styles.brandSvg} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
           <span className={styles.brandText}>RideShare</span>
         </div>
         <div className={styles.headerRight}>
@@ -277,7 +283,12 @@ function HomePage() {
             {userName.charAt(0).toUpperCase()}
           </button>
           <button className={styles.logoutBtn} onClick={handleLogout}>
-            🚪 Logout
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            Logout
           </button>
         </div>
       </header>
@@ -297,7 +308,8 @@ function HomePage() {
       {/* Booking Error Toast */}
       {bookingError && (
         <div className={styles.errorToast}>
-          <span>⚠️ {bookingError}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+          <span>{bookingError}</span>
           <button onClick={() => setBookingError(null)}>✕</button>
         </div>
       )}
@@ -317,7 +329,10 @@ function HomePage() {
         <div className={styles.searchingOverlay}>
           <div className={styles.searchingContent}>
             <div className={styles.searchingPulse}>
-              <span className={styles.searchingIcon}>🔍</span>
+              <svg className={styles.searchingIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
             </div>
             <div className={styles.searchingTitle}>Finding your driver...</div>
             <div className={styles.searchingSubtitle}>

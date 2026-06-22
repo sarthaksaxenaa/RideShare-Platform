@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 
 /* ============================================
-   RideShare — Design System v2
-   Warm Gold / Amber premium palette
-   Paragone-inspired serif headings
+   RideShare — Design System v3
+   Deep Slate + Electric Blue premium palette
+   Inter sans-serif headings
    ============================================ */
 
 :root,
@@ -168,11 +168,11 @@ input {
   outline: none;
 }
 
-/* ── Typography — Paragone-inspired serif for headings ───── */
+/* ── Typography — Modern sans-serif for headings ───── */
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
-  font-weight: 600;
+  font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
 }

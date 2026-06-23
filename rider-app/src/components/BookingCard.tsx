@@ -260,14 +260,13 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
       <div className={styles.handle} />
 
       <div className={styles.title}>
-        <span className={styles.titleIcon}>🚀</span>
         Book a Ride
       </div>
       <div className={styles.subtitle}>Where would you like to go?</div>
 
       {error && (
         <div className={styles.error}>
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
@@ -433,7 +432,7 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
             {estimating ? (
               <><span className={styles.spinner} /> Calculating...</>
             ) : (
-              <>💰 Estimate Fare</>
+              <>Estimate Fare</>
             )}
           </button>
         ) : (
@@ -452,7 +451,7 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
               {loading ? (
                 <span className={styles.spinner} />
               ) : (
-                <>✨ Confirm Booking</>
+                <>Confirm Booking</>
               )}
             </button>
           </>

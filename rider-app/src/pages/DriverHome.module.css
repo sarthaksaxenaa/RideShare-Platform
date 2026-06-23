@@ -25,8 +25,21 @@
   gap: 12px;
 }
 
-.brandIcon {
-  font-size: 28px;
+.brandIconWrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 12px rgba(34, 197, 94, 0.3);
+}
+
+.brandSvg {
+  width: 18px;
+  height: 18px;
+  color: #fff;
 }
 
 .brandText {
@@ -37,8 +50,8 @@
 .brandName {
   font-size: 18px;
   font-weight: 700;
-  font-family: 'Cormorant Garamond', serif;
-  background: linear-gradient(135deg, #4CAF7D, #2E8B57);
+  font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -64,6 +77,10 @@
   font-size: 13px;
   font-weight: 500;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', 'Outfit', sans-serif;
 }
 
 .logoutBtn:hover {
@@ -72,20 +89,20 @@
 }
 
 .profileBtn {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #4CAF7D, #00b4d8);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #ffffff;
   cursor: pointer;
   transition: all 0.2s ease;
   border: none;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Inter', 'Outfit', sans-serif;
 }
 
 .profileBtn:hover {
@@ -199,8 +216,8 @@
 }
 
 .mapPlaceholderIcon {
-  font-size: 40px;
-  opacity: 0.5;
+  color: var(--text-muted);
+  opacity: 0.4;
 }
 
 .mapPlaceholderText {
@@ -345,9 +362,10 @@
 }
 
 .emptyIcon {
-  font-size: 40px;
+  color: var(--text-muted);
   margin-bottom: 12px;
-  opacity: 0.5;
+  opacity: 0.4;
+  display: inline-block;
 }
 
 .emptyText {

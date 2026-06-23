@@ -17,6 +17,7 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [comingSoon, setComingSoon] = useState('');
 
   // If ?logout param is present, clear session first
   // This ensures switching roles works cleanly
@@ -229,7 +230,7 @@ function LoginPage() {
                 Password
               </label>
               {mode === 'signin' && (
-                <button type="button" className={`${styles.forgotLink} ${isDriver ? styles.forgotLinkDriver : ''}`}>
+                <button type="button" className={`${styles.forgotLink} ${isDriver ? styles.forgotLinkDriver : ''}`} onClick={() => { setComingSoon('Password reset coming soon!'); setTimeout(() => setComingSoon(''), 3000); }}>
                   Forgot Password?
                 </button>
               )}
@@ -309,7 +310,7 @@ function LoginPage() {
 
         {/* Social Login Buttons */}
         <div className={styles.socialRow}>
-          <button type="button" className={styles.socialBtn} title="Continue with Google">
+          <button type="button" className={styles.socialBtn} title="Continue with Google" onClick={() => { setComingSoon('Google sign-in coming soon!'); setTimeout(() => setComingSoon(''), 3000); }}>
             <svg viewBox="0 0 24 24" width="20" height="20">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -318,7 +319,7 @@ function LoginPage() {
             </svg>
             Google
           </button>
-          <button type="button" className={styles.socialBtn} title="Continue with Apple">
+          <button type="button" className={styles.socialBtn} title="Continue with Apple" onClick={() => { setComingSoon('Apple sign-in coming soon!'); setTimeout(() => setComingSoon(''), 3000); }}>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
               <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.23 0-1.44.62-2.2.44-3.06-.4C3.79 16.17 4.36 9.53 8.82 9.27c1.28.07 2.16.72 2.91.76.96-.2 1.88-.76 2.96-.69 1.26.1 2.2.6 2.82 1.5-2.58 1.54-1.97 4.92.54 5.87-.45 1.18-.98 2.35-1.99 3.57zM12.03 9.2C11.88 7.15 13.5 5.45 15.43 5.3c.27 2.34-2.13 4.1-3.4 3.9z" />
             </svg>
@@ -338,6 +339,18 @@ function LoginPage() {
           </button>
         </p>
       </div>
+
+      {/* Coming Soon Toast */}
+      {comingSoon && (
+        <div className={styles.comingSoonToast}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          {comingSoon}
+        </div>
+      )}
     </div>
   );
 }

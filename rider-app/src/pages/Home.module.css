@@ -1,6 +1,7 @@
 /* ============================================
    RideShare — Home Page (Rider Dashboard)
    Full-screen map with booking overlay
+   Updated: Deep Slate + Electric Blue theme
    ============================================ */
 
 @keyframes fadeInUp {
@@ -26,9 +27,9 @@
 }
 
 @keyframes searchPulse {
-  0% { box-shadow: 0 0 0 0 rgba(232, 168, 56, 0.4); }
-  70% { box-shadow: 0 0 0 20px rgba(232, 168, 56, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(232, 168, 56, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  70% { box-shadow: 0 0 0 20px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
 }
 
 @keyframes dotBounce {
@@ -57,8 +58,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  background: linear-gradient(180deg, rgba(10, 10, 15, 0.95) 0%, rgba(10, 10, 15, 0.7) 70%, transparent 100%);
+  padding: 14px 24px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.7) 70%, transparent 100%);
   pointer-events: none;
 }
 
@@ -72,16 +73,28 @@
   gap: 10px;
 }
 
-.brandIcon {
-  font-size: 24px;
-  filter: drop-shadow(0 0 8px rgba(232, 168, 56, 0.4));
+.brandIconWrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 12px rgba(59, 130, 246, 0.3);
+}
+
+.brandSvg {
+  width: 18px;
+  height: 18px;
+  color: #fff;
 }
 
 .brandText {
-  font-size: 22px;
-  font-weight: 800;
-  font-family: 'Cormorant Garamond', serif;
-  background: linear-gradient(135deg, #E8A838 0%, #D66853 100%);
+  font-size: 20px;
+  font-weight: 700;
+  font-family: 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #e2e8f0, #f8fafc);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -91,7 +104,7 @@
 .headerRight {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .connectionDot {
@@ -112,46 +125,47 @@
   animation: pulse 1.5s ease-in-out infinite;
 }
 
+.profileBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-family: 'Inter', 'Outfit', sans-serif;
+}
+
+.profileBtn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+}
+
 .logoutBtn {
   padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.12);
   border-radius: 10px;
-  color: var(--text-secondary);
+  color: #94a3b8;
   font-size: 13px;
   font-weight: 600;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 6px;
+  font-family: 'Inter', 'Outfit', sans-serif;
 }
 
 .logoutBtn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.25);
   color: #fca5a5;
-}
-
-.profileBtn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #E8A838, #D66853);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-  font-family: 'Cormorant Garamond', serif;
-}
-
-.profileBtn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 16px rgba(232, 168, 56, 0.3);
 }
 
 /* ---------- Map ---------- */
@@ -187,8 +201,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(10, 10, 15, 0.85);
-  backdrop-filter: blur(12px);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(16px);
   animation: fadeInUp 0.3s ease;
 }
 
@@ -201,8 +215,8 @@
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background: rgba(232, 168, 56, 0.1);
-  border: 2px solid rgba(232, 168, 56, 0.3);
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px solid rgba(59, 130, 246, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -211,19 +225,22 @@
 }
 
 .searchingIcon {
-  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  color: #3b82f6;
 }
 
 .searchingTitle {
   font-size: 22px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #f1f5f9;
   margin-bottom: 8px;
+  font-family: 'Inter', 'Outfit', sans-serif;
 }
 
 .searchingSubtitle {
   font-size: 14px;
-  color: var(--text-secondary);
+  color: #64748b;
   margin-bottom: 24px;
 }
 
@@ -238,7 +255,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #E8A838;
+  background: #3b82f6;
   animation: dotBounce 1.2s ease-in-out infinite;
 }
 
@@ -252,18 +269,19 @@
 
 .cancelSearchBtn {
   padding: 12px 32px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 12px;
   color: #fca5a5;
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s;
+  font-family: 'Inter', 'Outfit', sans-serif;
 }
 
 .cancelSearchBtn:hover {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.35);
   transform: translateY(-1px);
 }
 
@@ -276,23 +294,68 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg-primary);
+  background: #0f172a;
   gap: 16px;
 }
 
 .loadingSpinner {
   width: 40px;
   height: 40px;
-  border: 3px solid var(--border-primary);
-  border-top-color: #E8A838;
+  border: 3px solid rgba(148, 163, 184, 0.1);
+  border-top-color: #3b82f6;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 .loadingText {
   font-size: 14px;
-  color: var(--text-muted);
+  color: #64748b;
   font-weight: 500;
+  font-family: 'Inter', 'Outfit', sans-serif;
+}
+
+/* ---------- Error Toast ---------- */
+
+.errorToast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  backdrop-filter: blur(16px);
+  color: #fca5a5;
+  font-size: 14px;
+  font-weight: 500;
+  animation: fadeInUp 0.3s ease;
+  max-width: 420px;
+  font-family: 'Inter', 'Outfit', sans-serif;
+}
+
+.errorToast svg {
+  flex-shrink: 0;
+  color: #ef4444;
+}
+
+.errorToast button {
+  background: none;
+  border: none;
+  color: #fca5a5;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.errorToast button:hover {
+  opacity: 1;
 }
 
 /* ---------- Responsive ---------- */
@@ -309,42 +372,4 @@
   .bookingOverlay {
     max-width: 100%;
   }
-}
-
-/* ---------- Error Toast ---------- */
-
-.errorToast {
-  position: fixed;
-  top: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 14px;
-  backdrop-filter: blur(12px);
-  color: #fca5a5;
-  font-size: 14px;
-  font-weight: 500;
-  animation: fadeInUp 0.3s ease;
-  max-width: 400px;
-}
-
-.errorToast button {
-  background: none;
-  border: none;
-  color: #fca5a5;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 4px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.errorToast button:hover {
-  opacity: 1;
 }

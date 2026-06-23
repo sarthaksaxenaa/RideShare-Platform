@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="https://img.icons8.com/color/120/000000/taxi.png" alt="RideShare Logo" />
-  <h1>RideShare Platform architecture</h1>
+  <img src="./rideshare-icon.png" alt="RideShare Logo" width="120" height="120" style="border-radius: 24px;" />
+  <h1>RideShare Platform</h1>
   <p><strong>An event-driven, real-time logistics and ride-hailing monorepo.</strong></p>
 
   <p>

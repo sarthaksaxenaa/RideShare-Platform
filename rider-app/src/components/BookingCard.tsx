@@ -154,7 +154,7 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
     pickupTimerRef.current = setTimeout(async () => {
       const results = await searchLocation(value);
       setPickupSuggestions(results);
-    }, 400);
+    }, 300);
   };
 
   // Drop input change with debounce
@@ -167,7 +167,7 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
     dropTimerRef.current = setTimeout(async () => {
       const results = await searchLocation(value);
       setDropSuggestions(results);
-    }, 400);
+    }, 300);
   };
 
   const selectPickup = (suggestion: LocationSuggestion) => {

@@ -151,9 +151,6 @@ function LoginPage() {
             <img src="/favicon.png" alt="RideShare" className={styles.brandIcon} />
             <span className={styles.brandName}>RideShare</span>
           </div>
-          <button className={styles.modeToggleTop} onClick={toggleMode}>
-            {mode === 'signin' ? 'Sign Up' : 'Sign In'}
-          </button>
         </div>
 
         {/* Form card */}

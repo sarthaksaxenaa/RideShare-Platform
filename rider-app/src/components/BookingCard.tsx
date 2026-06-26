@@ -85,21 +85,60 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // Geocode search function
+  // Store user's current position for biasing search results nearby
+  const userPosRef = useRef<{ lat: number; lng: number } | null>(null);
+
+  // Get user's position once for search biasing
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          userPosRef.current = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        },
+        () => { /* ignore — search will work without bias */ },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+      );
+    }
+  }, []);
+
+  // Production-grade geocode search: biased to user's location
   const searchLocation = async (query: string): Promise<LocationSuggestion[]> => {
-    if (query.trim().length < 3) return [];
+    if (query.trim().length < 2) return [];
     try {
       const params = new URLSearchParams({
         q: query,
         format: 'json',
         addressdetails: '1',
-        limit: '5',
+        limit: '8',
         countrycodes: 'in',
+        dedupe: '1',
       });
+
+      // Bias search results within ~50km of user's current position
+      if (userPosRef.current) {
+        const { lat, lng } = userPosRef.current;
+        const delta = 0.45; // ~50km in degrees
+        params.set('viewbox', `${lng - delta},${lat + delta},${lng + delta},${lat - delta}`);
+        params.set('bounded', '0'); // prefer within viewbox but also show outside
+      }
+
       const res = await fetch(`${NOMINATIM_URL}?${params}`, {
         headers: { 'Accept-Language': 'en' },
       });
-      return await res.json();
+      const data = await res.json();
+
+      // Sort by proximity to user if position available
+      if (userPosRef.current && Array.isArray(data) && data.length > 1) {
+        const uLat = userPosRef.current.lat;
+        const uLng = userPosRef.current.lng;
+        data.sort((a: LocationSuggestion, b: LocationSuggestion) => {
+          const distA = Math.abs(parseFloat(a.lat) - uLat) + Math.abs(parseFloat(a.lon) - uLng);
+          const distB = Math.abs(parseFloat(b.lat) - uLat) + Math.abs(parseFloat(b.lon) - uLng);
+          return distA - distB;
+        });
+      }
+
+      return data;
     } catch {
       return [];
     }

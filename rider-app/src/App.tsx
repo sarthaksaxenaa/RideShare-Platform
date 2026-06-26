@@ -70,7 +70,6 @@ function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        <ThemeToggle />
         <Routes>
           <Route
             path="/login"

@@ -50,7 +50,7 @@ function HomePage() {
     try { const u = JSON.parse(localStorage.getItem('user') || '{}'); return u.name || 'R'; } catch { return 'R'; }
   });
 
-  // Get rider's current location on mount
+  // Get rider's precise current location on mount
   useEffect(() => {
     if (!navigator.geolocation) {
       setRiderLocation(DEFAULT_CENTER);
@@ -58,17 +58,61 @@ function HomePage() {
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
+    let bestPosition: GeolocationPosition | null = null;
+    let settled = false;
+
+    const finalize = (pos: GeolocationPosition) => {
+      if (settled) return;
+      settled = true;
+      navigator.geolocation.clearWatch(watchId);
+      clearTimeout(timer);
+      setRiderLocation([pos.coords.latitude, pos.coords.longitude]);
+      setLocationLoading(false);
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        setRiderLocation([pos.coords.latitude, pos.coords.longitude]);
-        setLocationLoading(false);
+        if (!bestPosition || pos.coords.accuracy < bestPosition.coords.accuracy) {
+          bestPosition = pos;
+        }
+        // Finalize when we get accuracy under 100m
+        if (pos.coords.accuracy <= 100) {
+          finalize(pos);
+        }
       },
       () => {
-        setRiderLocation(DEFAULT_CENTER);
-        setLocationLoading(false);
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          if (bestPosition) {
+            finalize(bestPosition);
+          } else {
+            setRiderLocation(DEFAULT_CENTER);
+            setLocationLoading(false);
+          }
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
+
+    // Safety: after 8 seconds, use best available
+    const timer = setTimeout(() => {
+      if (!settled) {
+        if (bestPosition) {
+          finalize(bestPosition);
+        } else {
+          settled = true;
+          navigator.geolocation.clearWatch(watchId);
+          setRiderLocation(DEFAULT_CENTER);
+          setLocationLoading(false);
+        }
+      }
+    }, 8000);
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+      clearTimeout(timer);
+    };
   }, []);
 
   // Listen for nearby driver locations

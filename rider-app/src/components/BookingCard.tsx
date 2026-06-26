@@ -160,34 +160,87 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
     }
     setGettingLocation(true);
     setError('');
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-            { headers: { 'Accept-Language': 'en' } }
-          );
-          const data = await res.json();
-          const name = data.display_name?.split(',').slice(0, 3).join(', ') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-          setSelectedPickup({ name, lat, lng });
-          setPickupQuery(name);
-          if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
-        } catch {
-          setSelectedPickup({ name: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, lat, lng });
-          setPickupQuery(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
-          if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
+
+    // Use watchPosition to get the most precise GPS fix available.
+    // The browser refines accuracy over time — we wait for < 50m accuracy
+    // or take the best result after 8 seconds.
+    let bestPosition: GeolocationPosition | null = null;
+    let settled = false;
+
+    const finalize = async (position: GeolocationPosition) => {
+      if (settled) return;
+      settled = true;
+      navigator.geolocation.clearWatch(watchId);
+      clearTimeout(timer);
+
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+      try {
+        // Use zoom=18 for building-level reverse geocoding precision
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const data = await res.json();
+        // Build a precise address: road + neighbourhood + suburb
+        const addr = data.address || {};
+        const parts = [
+          addr.road || addr.pedestrian || addr.footway || '',
+          addr.neighbourhood || addr.suburb || addr.hamlet || '',
+          addr.city || addr.town || addr.village || addr.county || '',
+        ].filter(Boolean);
+        const name = parts.length > 0 ? parts.join(', ') : `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        setSelectedPickup({ name, lat, lng });
+        setPickupQuery(name);
+        if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
+      } catch {
+        const fallback = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        setSelectedPickup({ name: fallback, lat, lng });
+        setPickupQuery(fallback);
+        if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
+      }
+      setGettingLocation(false);
+    };
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const accuracy = position.coords.accuracy; // meters
+        // Keep the most accurate reading
+        if (!bestPosition || accuracy < bestPosition.coords.accuracy) {
+          bestPosition = position;
         }
-        setGettingLocation(false);
+        // If we have good enough accuracy (< 50 meters), finalize immediately
+        if (accuracy <= 50) {
+          finalize(position);
+        }
       },
       (err) => {
-        setError(`Location error: ${err.message}`);
-        setGettingLocation(false);
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          // If we have any position at all, use it
+          if (bestPosition) {
+            finalize(bestPosition);
+          } else {
+            setError(`Location error: ${err.message}`);
+            setGettingLocation(false);
+          }
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0, // Force fresh GPS reading, never use cache
+      }
     );
-  }, []);
+
+    // Safety timeout: after 8 seconds, use the best position we have
+    const timer = setTimeout(() => {
+      if (!settled && bestPosition) {
+        finalize(bestPosition);
+      }
+    }, 8000);
+  }, [onLocationChange, selectedDrop]);
 
   // Haversine helper for client-side fallback
   const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {

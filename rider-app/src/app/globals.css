@@ -7,7 +7,9 @@
 
 /* ── Base Reset ────────────────────────────── */
 
-* {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -17,18 +19,28 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #ffffff;
   color: #111827;
+  overflow-x: hidden;
 }
 
-/* ── Scrollbar (clean minimal) ─────────────── */
+/* ── Ensure full-height layouts work ───────── */
+html,
+body,
+#__next {
+  height: 100%;
+}
+
+/* ── Scrollbar (thin & minimal) ────────────── */
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -36,12 +48,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+  background: #e5e7eb;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #d1d5db;
 }
 
 /* ── Selection ─────────────────────────────── */
@@ -58,28 +70,45 @@ body {
   outline-offset: 2px;
 }
 
+/* ── Input autofill override ───────────────── */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 40px white inset !important;
+  -webkit-text-fill-color: #111827 !important;
+  font-size: 14px !important;
+}
+
 /* ── Leaflet overrides ─────────────────────── */
 
 .leaflet-container {
   width: 100%;
   height: 100%;
-  border-radius: 16px;
   z-index: 0;
+  font-family: var(--font-sans);
 }
 
 .leaflet-control-zoom {
   border: none !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
 }
 
 .leaflet-control-zoom a {
   background: #ffffff !important;
   color: #374151 !important;
-  border: 1px solid #e5e7eb !important;
-  font-size: 16px !important;
-  width: 32px !important;
-  height: 32px !important;
-  line-height: 32px !important;
+  border: none !important;
+  border-bottom: 1px solid #f3f4f6 !important;
+  font-size: 15px !important;
+  width: 30px !important;
+  height: 30px !important;
+  line-height: 30px !important;
+}
+
+.leaflet-control-zoom a:last-child {
+  border-bottom: none !important;
 }
 
 .leaflet-control-zoom a:hover {
@@ -89,17 +118,12 @@ body {
 /* ── Animations ────────────────────────────── */
 
 @keyframes pulse-dot {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
   }
   50% {
     box-shadow: 0 0 0 12px rgba(99, 102, 241, 0);
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
   }
 }
 

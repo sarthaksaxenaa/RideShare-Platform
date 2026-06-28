@@ -334,6 +334,13 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
     }
   }, [selectedPickup, selectedDrop]);
 
+  // Auto-estimate fare when both locations are set
+  useEffect(() => {
+    if (selectedPickup && selectedDrop && !estimates && !estimating) {
+      handleEstimate();
+    }
+  }, [selectedPickup, selectedDrop, estimates, estimating, handleEstimate]);
+
   const handleBook = useCallback(() => {
     if (!estimates || !selectedPickup || !selectedDrop || !selectedVehicle) return;
     const chosen = estimates.find(e => e.vehicleType === selectedVehicle);
@@ -344,8 +351,6 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
       chosen.fare
     );
   }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook]);
-
-  const canEstimate = !!selectedPickup && !!selectedDrop;
 
   return (
     <div className={styles.card}>
@@ -515,25 +520,18 @@ function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardP
 
       {/* Action Buttons */}
       <div className={styles.actions}>
-        {!estimates ? (
-          <button
-            className={styles.estimateBtn}
-            onClick={handleEstimate}
-            disabled={!canEstimate || estimating}
-          >
-            {estimating ? (
-              <><span className={styles.spinner} /> Calculating...</>
-            ) : (
-              <>Estimate Fare</>
-            )}
-          </button>
-        ) : (
+        {estimating && !estimates && (
+          <div className={styles.estimatingBar}>
+            <span className={styles.spinner} /> Calculating fare...
+          </div>
+        )}
+        {estimates && (
           <>
             <button
               className={styles.estimateBtn}
               onClick={() => { setEstimates(null); setSelectedVehicle(null); }}
             >
-              ← Change
+              Change Locations
             </button>
             <button
               className={styles.bookBtn}

@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Outfit } from 'next/font/google';
 import { Providers } from './providers';
 import './globals.css';
@@ -15,6 +15,10 @@ const outfit = Outfit({
   display: 'swap',
 });
 
+export const viewport: Viewport = {
+  themeColor: '#ffffff',
+};
+
 export const metadata: Metadata = {
   title: 'RideShare — Book rides instantly',
   description:
@@ -24,7 +28,6 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
-  themeColor: '#ffffff',
 };
 
 export default function RootLayout({

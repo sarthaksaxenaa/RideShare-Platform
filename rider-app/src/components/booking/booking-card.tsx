@@ -15,9 +15,10 @@ interface BookingCardProps {
   onBook: (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number) => void;
   loading?: boolean;
   onLocationChange?: (pickup: [number, number] | null, dropoff: [number, number] | null) => void;
+  onCancelBooking?: (reason: string) => void;
 }
 
-export default function BookingCard({ onBook, loading = false, onLocationChange }: BookingCardProps) {
+export default function BookingCard({ onBook, loading = false, onLocationChange, onCancelBooking }: BookingCardProps) {
   const userPosition = useLocationStore((s) => s.userPosition);
   const isLocating = useLocationStore((s) => s.isLocating);
   const acquirePreciseLocation = useLocationStore((s) => s.acquirePreciseLocation);
@@ -41,6 +42,18 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState('');
+
+  // Cancellation state
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const CANCEL_REASONS = [
+    'Booked by mistake',
+    'Wait time is too long',
+    'Driver is too far',
+    'Price is too high',
+    'Change of plans',
+    'Other'
+  ];
 
   // Refs
   const pickupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -541,7 +554,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
 
       {/* Action Buttons */}
       <div className="px-5 pb-5 pt-2 flex gap-3">
-        {estimates && (
+        {estimates && !loading && (
           <>
             <button
               onClick={() => { setEstimates(null); setSelectedVehicle(null); }}
@@ -551,18 +564,79 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
             </button>
             <button
               onClick={handleBook}
-              disabled={loading || !selectedVehicle}
+              disabled={!selectedVehicle}
               className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white text-sm font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
             >
-              {loading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                'Confirm Booking'
-              )}
+              Confirm Booking
             </button>
           </>
         )}
+
+        {loading && (
+          <button
+            onClick={() => setShowCancelModal(true)}
+            className="flex-1 py-3 rounded-xl bg-red-50 text-red-600 border border-red-200 text-sm font-semibold hover:bg-red-100 transition-colors cursor-pointer"
+          >
+            Cancel Booking
+          </button>
+        )}
       </div>
+
+      {/* Cancellation Modal */}
+      <AnimatePresence>
+        {showCancelModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            >
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Cancel Booking?</h3>
+              <p className="text-sm text-gray-500 mb-4">Please let us know why you are cancelling.</p>
+              
+              <div className="flex flex-col gap-2 mb-6">
+                {CANCEL_REASONS.map((reason) => (
+                  <label key={reason} className="flex items-center gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer hover:bg-gray-50 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50/50 transition-all">
+                    <input 
+                      type="radio" 
+                      name="cancel_reason" 
+                      value={reason}
+                      checked={cancelReason === reason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-600"
+                    />
+                    <span className="text-sm text-gray-700 font-medium">{reason}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Keep Booking
+                </button>
+                <button
+                  onClick={() => {
+                    if (!cancelReason) {
+                      toast.error('Please select a reason');
+                      return;
+                    }
+                    onCancelBooking?.(cancelReason);
+                    setShowCancelModal(false);
+                    setCancelReason('');
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors shadow-lg shadow-red-500/25"
+                >
+                  Cancel Ride
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

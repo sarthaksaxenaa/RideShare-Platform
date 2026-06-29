@@ -100,6 +100,19 @@ export default function RiderDashboardPage() {
     [socket, setSearching]
   );
 
+  const handleCancelBooking = useCallback((reason: string) => {
+    if (!socket) return;
+    const tripId = useTripStore.getState().data?.tripId;
+    if (!tripId) {
+      // If we don't have a tripId yet (network race condition), just reset local state
+      useTripStore.getState().reset();
+      return;
+    }
+    socket.emit('trip:cancel', { tripId, reason });
+    useTripStore.getState().reset();
+    toast.success('Booking cancelled');
+  }, [socket]);
+
   const firstName = user?.name?.split(' ')[0] || 'Rider';
 
   if (isDriver) return null;
@@ -155,6 +168,7 @@ export default function RiderDashboardPage() {
             onBook={handleBook}
             loading={tripState === 'SEARCHING'}
             onLocationChange={handleLocationChange}
+            onCancelBooking={handleCancelBooking}
           />
         </motion.div>
       </div>

@@ -110,13 +110,23 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
   };
 
   const formatAddress = (s: LocationSuggestion) => {
-    const addr = s.address || ({} as Record<string, string>);
-    const parts = [
-      (addr as Record<string, string>).road || (addr as Record<string, string>).pedestrian || '',
-      (addr as Record<string, string>).neighbourhood || (addr as Record<string, string>).suburb || '',
-      (addr as Record<string, string>).city || (addr as Record<string, string>).town || '',
-    ].filter(Boolean);
-    return parts.length > 0 ? parts.join(', ') : s.display_name.split(',').slice(0, 3).join(', ');
+    const addr = (s.address || {}) as Record<string, string>;
+    // Prioritize building/amenity/POI name for precise results
+    const poiName = addr.amenity || addr.building || addr.college || addr.university
+      || addr.school || addr.hospital || addr.office || addr.shop || addr.mall
+      || addr.tourism || addr.leisure || addr.aeroway || '';
+    const road = addr.road || addr.pedestrian || addr.highway || '';
+    const area = addr.neighbourhood || addr.suburb || addr.quarter || addr.village || '';
+    const city = addr.city || addr.town || addr.county || '';
+
+    // If we have a POI name, lead with it
+    if (poiName) {
+      const context = [area, city].filter(Boolean).join(', ');
+      return context ? `${poiName}, ${context}` : poiName;
+    }
+
+    const parts = [road, area, city].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : s.display_name.split(',').slice(0, 3).join(', ').trim();
   };
 
   const selectPickup = (s: LocationSuggestion) => {
@@ -158,14 +168,28 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
       const lat = pos.coords.latitude;
       const lng = pos.coords.longitude;
       try {
+        // Use zoom=19 for building-level precision + namedetails for POI names
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=18&addressdetails=1`,
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=19&addressdetails=1&namedetails=1&extratags=1`,
           { headers: { 'Accept-Language': 'en' } }
         );
         const data = await res.json();
         const addr = data.address || {};
-        const parts = [addr.road || addr.pedestrian || '', addr.neighbourhood || addr.suburb || '', addr.city || addr.town || ''].filter(Boolean);
-        const name = parts.length > 0 ? parts.join(', ') : `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        // Prioritize POI/building name (e.g. "NIET College") over road
+        const poiName = addr.amenity || addr.building || addr.college || addr.university
+          || addr.school || addr.hospital || addr.office || addr.shop || addr.mall
+          || (data.namedetails?.name) || '';
+        const road = addr.road || addr.pedestrian || '';
+        const area = addr.neighbourhood || addr.suburb || '';
+        const city = addr.city || addr.town || '';
+        let name = '';
+        if (poiName && typeof poiName === 'string') {
+          const context = [area, city].filter(Boolean).join(', ');
+          name = context ? `${poiName}, ${context}` : poiName;
+        } else {
+          const parts = [road, area, city].filter(Boolean);
+          name = parts.length > 0 ? parts.join(', ') : `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        }
         setSelectedPickup({ name, lat, lng });
         setPickupQuery(name);
         if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
@@ -239,7 +263,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
   }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook]);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/60 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/60">
       {/* Header */}
       <div className="px-5 pt-5 pb-4">
         <h3 className="text-lg font-bold text-gray-900 tracking-tight">Book a Ride</h3>
@@ -289,7 +313,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
           <AnimatePresence>
             {pickupFocused && pickupSuggestions.length > 0 && (
               <motion.ul initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto" style={{ listStyle: 'none' }}>
                 {pickupSuggestions.map((s, i) => (
                   <li key={i}><button onClick={() => selectPickup(s)}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer truncate">
@@ -315,8 +339,8 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
           </div>
           <AnimatePresence>
             {dropFocused && dropSuggestions.length > 0 && (
-              <motion.ul initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+              <motion.ul initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+                className="absolute z-50 left-0 right-0 bottom-full mb-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto" style={{ listStyle: 'none' }}>
                 {dropSuggestions.map((s, i) => (
                   <li key={i}><button onClick={() => selectDrop(s)}
                     className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer truncate">

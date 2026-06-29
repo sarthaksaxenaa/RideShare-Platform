@@ -60,29 +60,100 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  // GPS-biased search
+  // Reverse-geocoded city name for context-aware search
+  const [userCity, setUserCity] = useState('');
+
+  // Detect user's city from GPS for query enrichment
+  useEffect(() => {
+    if (userPosition && !userCity) {
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${userPosition.lat}&lon=${userPosition.lng}&format=json&zoom=10&addressdetails=1`,
+        { headers: { 'Accept-Language': 'en' } }
+      )
+        .then((r) => r.json())
+        .then((d) => {
+          const city = d.address?.city || d.address?.town || d.address?.county || d.address?.state_district || '';
+          if (city) setUserCity(city);
+        })
+        .catch(() => {});
+    }
+  }, [userPosition, userCity]);
+
+  // Smart dual-query search: runs a plain query + a context-enriched query in parallel
   const searchLocation = async (query: string): Promise<LocationSuggestion[]> => {
     if (query.trim().length < 2) return [];
-    try {
+
+    const buildParams = (q: string) => {
       const params = new URLSearchParams({
-        q: query, format: 'json', addressdetails: '1', limit: '8', countrycodes: 'in', dedupe: '1',
+        q, format: 'json', addressdetails: '1', limit: '15', countrycodes: 'in', dedupe: '1',
       });
       if (userPosition) {
-        const d = 0.45;
+        const d = 0.8; // wider viewbox for more results
         params.set('viewbox', `${userPosition.lng - d},${userPosition.lat + d},${userPosition.lng + d},${userPosition.lat - d}`);
         params.set('bounded', '0');
       }
-      const res = await fetch(`${NOMINATIM_URL}?${params}`, { headers: { 'Accept-Language': 'en' } });
-      const data = await res.json();
-      if (userPosition && Array.isArray(data) && data.length > 1) {
-        data.sort((a: LocationSuggestion, b: LocationSuggestion) => {
+      return params;
+    };
+
+    try {
+      // Run two queries in parallel:
+      // 1. Plain query (e.g. "alpha 2")
+      // 2. Context-enriched query (e.g. "alpha 2 Greater Noida")
+      const plainParams = buildParams(query);
+      const contextQuery = userCity && !query.toLowerCase().includes(userCity.toLowerCase())
+        ? `${query} ${userCity}`
+        : '';
+      const contextParams = contextQuery ? buildParams(contextQuery) : null;
+
+      const fetches: Promise<LocationSuggestion[]>[] = [
+        fetch(`${NOMINATIM_URL}?${plainParams}`, { headers: { 'Accept-Language': 'en' } })
+          .then((r) => r.json())
+          .catch(() => []),
+      ];
+
+      if (contextParams) {
+        fetches.push(
+          fetch(`${NOMINATIM_URL}?${contextParams}`, { headers: { 'Accept-Language': 'en' } })
+            .then((r) => r.json())
+            .catch(() => [])
+        );
+      }
+
+      const [plainResults, contextResults] = await Promise.all(fetches);
+
+      // Merge and deduplicate by rounding coordinates to ~100m precision
+      const seen = new Set<string>();
+      const merged: LocationSuggestion[] = [];
+
+      const addResults = (items: LocationSuggestion[]) => {
+        if (!Array.isArray(items)) return;
+        for (const item of items) {
+          // Dedupe key: round to 4 decimal places (~11m precision)
+          const key = `${parseFloat(item.lat).toFixed(4)},${parseFloat(item.lon).toFixed(4)}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            merged.push(item);
+          }
+        }
+      };
+
+      // Context results first (more relevant), then plain
+      addResults(contextResults || []);
+      addResults(plainResults || []);
+
+      // Sort by distance from user
+      if (userPosition && merged.length > 1) {
+        merged.sort((a, b) => {
           const dA = Math.abs(parseFloat(a.lat) - userPosition.lat) + Math.abs(parseFloat(a.lon) - userPosition.lng);
           const dB = Math.abs(parseFloat(b.lat) - userPosition.lat) + Math.abs(parseFloat(b.lon) - userPosition.lng);
           return dA - dB;
         });
       }
-      return data;
-    } catch { return []; }
+
+      return merged.slice(0, 12);
+    } catch {
+      return [];
+    }
   };
 
   const handlePickupChange = (value: string) => {
@@ -127,6 +198,31 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
 
     const parts = [road, area, city].filter(Boolean);
     return parts.length > 0 ? parts.join(', ') : s.display_name.split(',').slice(0, 3).join(', ').trim();
+  };
+
+  /** Returns two lines for richer dropdown display */
+  const formatSuggestionLines = (s: LocationSuggestion): { primary: string; secondary: string } => {
+    const addr = (s.address || {}) as Record<string, string>;
+    const poiName = addr.amenity || addr.building || addr.college || addr.university
+      || addr.school || addr.hospital || addr.office || addr.shop || addr.mall
+      || addr.tourism || addr.leisure || addr.aeroway || '';
+    const road = addr.road || addr.pedestrian || addr.highway || '';
+    const area = addr.neighbourhood || addr.suburb || addr.quarter || addr.village || '';
+    const city = addr.city || addr.town || addr.county || '';
+    const state = addr.state || '';
+
+    if (poiName) {
+      const secondary = [road, area, city, state].filter(Boolean).join(', ');
+      return { primary: poiName, secondary };
+    }
+
+    // Use display_name to extract a good primary
+    const displayParts = s.display_name.split(',').map((p: string) => p.trim());
+    const primary = displayParts[0] || road || area;
+    const secondary = [road, area, city, state].filter((v) => v && v !== primary).join(', ')
+      || displayParts.slice(1, 4).join(', ');
+
+    return { primary: primary || s.display_name.split(',')[0], secondary };
   };
 
   const selectPickup = (s: LocationSuggestion) => {
@@ -314,12 +410,21 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
             {pickupFocused && pickupSuggestions.length > 0 && (
               <motion.ul initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                 className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto" style={{ listStyle: 'none' }}>
-                {pickupSuggestions.map((s, i) => (
-                  <li key={i}><button onClick={() => selectPickup(s)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer truncate">
-                    {formatAddress(s)}
-                  </button></li>
-                ))}
+                {pickupSuggestions.map((s, i) => {
+                  const { primary, secondary } = formatSuggestionLines(s);
+                  return (
+                    <li key={i}><button onClick={() => selectPickup(s)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors cursor-pointer">
+                      <div className="flex items-start gap-2.5">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{primary}</p>
+                          {secondary && <p className="text-xs text-gray-400 truncate mt-0.5">{secondary}</p>}
+                        </div>
+                      </div>
+                    </button></li>
+                  );
+                })}
               </motion.ul>
             )}
           </AnimatePresence>
@@ -341,12 +446,21 @@ export default function BookingCard({ onBook, loading = false, onLocationChange 
             {dropFocused && dropSuggestions.length > 0 && (
               <motion.ul initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
                 className="absolute z-50 left-0 right-0 bottom-full mb-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto" style={{ listStyle: 'none' }}>
-                {dropSuggestions.map((s, i) => (
-                  <li key={i}><button onClick={() => selectDrop(s)}
-                    className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer truncate">
-                    {formatAddress(s)}
-                  </button></li>
-                ))}
+                {dropSuggestions.map((s, i) => {
+                  const { primary, secondary } = formatSuggestionLines(s);
+                  return (
+                    <li key={i}><button onClick={() => selectDrop(s)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 border-b border-gray-100 last:border-0 transition-colors cursor-pointer">
+                      <div className="flex items-start gap-2.5">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{primary}</p>
+                          {secondary && <p className="text-xs text-gray-400 truncate mt-0.5">{secondary}</p>}
+                        </div>
+                      </div>
+                    </button></li>
+                  );
+                })}
               </motion.ul>
             )}
           </AnimatePresence>

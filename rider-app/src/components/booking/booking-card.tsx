@@ -372,7 +372,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
   }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook]);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-lg shadow-gray-200/60">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
       {/* Header */}
       <div className="px-5 pt-5 pb-4">
         <h3 className="text-lg font-bold text-gray-900 tracking-tight">Book a Ride</h3>
@@ -394,6 +394,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
       <div className="px-5 flex flex-col gap-3">
         {/* Pickup */}
         <div ref={pickupWrapperRef} className="relative">
+          <p className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1"><span>📍</span> Pickup</p>
           <div className="relative">
             <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white shadow-sm" />
             <input
@@ -401,7 +402,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
               onChange={(e) => handlePickupChange(e.target.value)}
               onFocus={() => setPickupFocused(true)}
               placeholder="Pickup location"
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all hover:border-gray-300 focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/10 focus:bg-white"
+              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all hover:border-gray-400 focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/10"
             />
           </div>
           {/* GPS Button */}
@@ -409,7 +410,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
             type="button"
             onClick={handleUseCurrentLocation}
             disabled={gettingLocation}
-            className="mt-2 flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+            className="mt-1 flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer disabled:opacity-50"
           >
             {gettingLocation ? (
               <div className="w-3.5 h-3.5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
@@ -445,6 +446,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
 
         {/* Dropoff */}
         <div ref={dropWrapperRef} className="relative">
+          <p className="text-xs font-medium text-gray-500 mb-1.5 flex items-center gap-1"><span>📍</span> Destination</p>
           <div className="relative">
             <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white shadow-sm" />
             <input
@@ -452,7 +454,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
               onChange={(e) => handleDropChange(e.target.value)}
               onFocus={() => setDropFocused(true)}
               placeholder="Where to?"
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all hover:border-gray-300 focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/10 focus:bg-white"
+              className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all hover:border-gray-400 focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/10"
             />
           </div>
           <AnimatePresence>
@@ -494,14 +496,18 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
             className="overflow-hidden">
             {/* Trip info */}
-            <div className="flex items-center gap-4 px-5 py-3 mt-3 border-t border-gray-100">
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            <div className="flex items-center gap-2 px-5 py-3 mt-3 border-t border-gray-100 flex-wrap">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-full text-xs font-medium text-gray-600">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 {distance} km
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-full text-xs font-medium text-gray-600">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 ~{eta} min
+              </div>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 rounded-full text-xs font-medium text-green-600">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                No surge
               </div>
             </div>
 
@@ -514,7 +520,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
                   className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
                     selectedVehicle === est.vehicleType
                       ? 'border-indigo-500 bg-indigo-50/50 shadow-sm'
-                      : 'border-transparent hover:bg-gray-50'
+                      : 'border-gray-100 hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 hover:border-gray-200'
                   }`}
                 >
                   <span className="text-xl w-8 text-center">{est.icon}</span>
@@ -522,7 +528,10 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
                     <p className="text-sm font-semibold text-gray-900">{est.label}</p>
                     <p className="text-xs text-gray-400">{est.description}</p>
                   </div>
-                  <span className="text-sm font-bold text-gray-900">{formatCurrency(est.fare)}</span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-gray-900">{formatCurrency(est.fare)}</p>
+                    <p className="text-[10px] text-gray-400">estimated</p>
+                  </div>
                 </button>
               ))}
             </div>
@@ -567,7 +576,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
               disabled={!selectedVehicle}
               className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white text-sm font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
             >
-              Confirm Booking
+              {selectedVehicle ? `Book ${estimates?.find(e => e.vehicleType === selectedVehicle)?.label || selectedVehicle}` : 'Select a ride'}
             </button>
           </>
         )}

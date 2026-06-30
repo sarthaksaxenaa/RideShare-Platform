@@ -124,12 +124,12 @@ export default function RiderDashboardPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="mb-6"
+        className="mb-4"
       >
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+        <h1 className="text-lg font-semibold text-gray-900 tracking-tight">
           Hey, {firstName} 👋
         </h1>
-        <p className="text-sm text-gray-400 mt-1">Ready for your next ride?</p>
+        <p className="text-sm text-gray-500 mt-0.5">Ready for your next ride?</p>
       </motion.div>
 
       {/* Grid: Map + Booking */}

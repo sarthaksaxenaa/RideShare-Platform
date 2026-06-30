@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Left: Logo + Nav */}
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-6">
               <Link href="/dashboard" className="flex items-center gap-2.5 shrink-0">
                 <Image
                   src="/favicon.png"
@@ -129,22 +129,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             {/* Right: Status + User */}
             <div className="flex items-center gap-4">
               {/* Connection indicator */}
-              <div className="flex items-center gap-1.5">
-                <div
-                  className={cn(
-                    'w-2 h-2 rounded-full',
-                    isConnected ? 'bg-green-500' : 'bg-red-400'
-                  )}
-                />
-                <span className="text-xs text-gray-400 font-medium hidden sm:block">
-                  {isConnected ? 'Live' : 'Offline'}
-                </span>
+              <div className={cn(
+                'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
+                isConnected
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : 'bg-red-50 text-red-500 border border-red-200'
+              )}>
+                <div className={cn('w-1.5 h-1.5 rounded-full', isConnected ? 'bg-green-500' : 'bg-red-400')} />
+                <span className="hidden sm:block">{isConnected ? 'Online' : 'Offline'}</span>
               </div>
 
               {/* Role badge */}
               <span
                 className={cn(
-                  'px-2.5 py-1 rounded-md text-xs font-semibold',
+                  'px-3 py-1 rounded-full text-xs font-semibold',
                   isDriver
                     ? 'bg-green-50 text-green-700 border border-green-200'
                     : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
@@ -155,7 +153,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
               {/* User avatar + dropdown */}
               <div className="relative group">
-                <button className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
+                <button className="flex items-center gap-1.5 p-1 pr-2 rounded-full hover:bg-gray-100 transition-colors cursor-pointer">
                   <div
                     className={cn(
                       'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white',
@@ -164,6 +162,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   >
                     {initials}
                   </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
 
                 {/* Dropdown */}

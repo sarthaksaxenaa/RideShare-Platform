@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -14,6 +14,9 @@ interface MapViewProps {
   className?: string;
 }
 
+// OSRM public routing API (uses Contraction Hierarchies — a Dijkstra optimization)
+const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving';
+
 // Custom icons
 const createIcon = (color: string, size: number = 12) =>
   L.divIcon({
@@ -22,6 +25,24 @@ const createIcon = (color: string, size: number = 12) =>
     iconAnchor: [size / 2, size / 2],
     className: '',
   });
+
+const pickupIcon = L.divIcon({
+  html: `<div style="width:28px;height:28px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,0.2);border:2px solid #22c55e;">
+    <div style="width:10px;height:10px;background:#22c55e;border-radius:50%;"></div>
+  </div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+  className: '',
+});
+
+const dropoffIcon = L.divIcon({
+  html: `<div style="width:28px;height:28px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,0.2);border:2px solid #ef4444;">
+    <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;"></div>
+  </div>`,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+  className: '',
+});
 
 const driverIcon = L.divIcon({
   html: `<div style="width:32px;height:32px;background:#111827;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.25);border:2px solid white;">
@@ -53,7 +74,35 @@ export default function MapView({
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
-  const routeRef = useRef<L.Polyline | null>(null);
+  const routeLayerRef = useRef<L.LayerGroup | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Fetch real road route from OSRM
+  const fetchRoute = useCallback(async (
+    from: [number, number],
+    to: [number, number]
+  ): Promise<[number, number][] | null> => {
+    // Cancel any in-flight request
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+
+    try {
+      // OSRM expects lon,lat (not lat,lon)
+      const url = `${OSRM_URL}/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson&alternatives=false&steps=false`;
+      const res = await fetch(url, { signal: abortRef.current.signal });
+      const data = await res.json();
+
+      if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
+        // GeoJSON coordinates are [lon, lat] — convert to [lat, lon] for Leaflet
+        return data.routes[0].geometry.coordinates.map(
+          (coord: [number, number]) => [coord[1], coord[0]] as [number, number]
+        );
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }, []);
 
   // Initialize map
   useEffect(() => {
@@ -71,9 +120,11 @@ export default function MapView({
     }).addTo(map);
 
     markersRef.current = L.layerGroup().addTo(map);
+    routeLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
     return () => {
+      if (abortRef.current) abortRef.current.abort();
       map.remove();
       mapRef.current = null;
     };
@@ -87,12 +138,13 @@ export default function MapView({
     }
   }, [center]);
 
-  // Update markers
+  // Update markers and route
   useEffect(() => {
-    if (!markersRef.current) return;
+    if (!markersRef.current || !routeLayerRef.current) return;
     markersRef.current.clearLayers();
+    routeLayerRef.current.clearLayers();
 
-    // User location (blue pulse)
+    // User location (indigo pulse)
     if (center) {
       const userIcon = L.divIcon({
         html: `<div style="width:16px;height:16px;background:#6366f1;border-radius:50%;border:3px solid white;box-shadow:0 0 0 4px rgba(99,102,241,0.25), 0 2px 8px rgba(0,0,0,0.15);"></div>`,
@@ -103,36 +155,50 @@ export default function MapView({
       L.marker(center, { icon: userIcon }).addTo(markersRef.current);
     }
 
-    // Pickup
+    // Pickup marker
     if (pickup) {
-      L.marker(pickup, { icon: createIcon('#22c55e', 14) })
+      L.marker(pickup, { icon: pickupIcon })
         .bindPopup('<strong style="font-family:Inter,sans-serif;font-size:12px;">Pickup</strong>')
         .addTo(markersRef.current);
     }
 
-    // Dropoff
+    // Dropoff marker
     if (dropoff) {
-      L.marker(dropoff, { icon: createIcon('#ef4444', 14) })
+      L.marker(dropoff, { icon: dropoffIcon })
         .bindPopup('<strong style="font-family:Inter,sans-serif;font-size:12px;">Drop-off</strong>')
         .addTo(markersRef.current);
     }
 
-    // Route line
-    if (routeRef.current) {
-      routeRef.current.remove();
-      routeRef.current = null;
-    }
+    // Fetch and draw real road route
     if (pickup && dropoff && mapRef.current) {
-      routeRef.current = L.polyline([pickup, dropoff], {
-        color: '#6366f1',
-        weight: 3,
-        opacity: 0.6,
-        dashArray: '8, 8',
-      }).addTo(mapRef.current);
+      const map = mapRef.current;
+      const routeLayer = routeLayerRef.current;
 
-      // Fit bounds to show both markers
-      const bounds = L.latLngBounds([pickup, dropoff]);
-      mapRef.current.fitBounds(bounds, { padding: [60, 60] });
+      fetchRoute(pickup, dropoff).then((routeCoords) => {
+        if (!routeCoords || !routeLayer) return;
+
+        // Shadow / outline polyline for depth effect
+        L.polyline(routeCoords, {
+          color: '#4338ca',
+          weight: 7,
+          opacity: 0.15,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(routeLayer);
+
+        // Main route polyline
+        L.polyline(routeCoords, {
+          color: '#6366f1',
+          weight: 4,
+          opacity: 0.85,
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(routeLayer);
+
+        // Fit map to route bounds
+        const bounds = L.latLngBounds(routeCoords);
+        map.fitBounds(bounds, { padding: [60, 60], animate: true });
+      });
     }
 
     // Driver marker
@@ -146,7 +212,7 @@ export default function MapView({
     nearbyDrivers.forEach((d) => {
       L.marker([d.lat, d.lng], { icon: nearbyDriverIcon }).addTo(markersRef.current!);
     });
-  }, [center, pickup, dropoff, driverLocation, nearbyDrivers]);
+  }, [center, pickup, dropoff, driverLocation, nearbyDrivers, fetchRoute]);
 
   return (
     <div

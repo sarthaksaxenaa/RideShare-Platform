@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,14 @@ type Mode = 'signin' | 'signup';
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  // Auto-redirect if already logged in (persisted session)
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, router]);
 
   const [mode, setMode] = useState<Mode>('signin');
   const [role, setRole] = useState<UserRole>('RIDER');

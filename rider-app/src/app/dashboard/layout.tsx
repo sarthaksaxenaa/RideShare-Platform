@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,12 +19,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const disconnect = useSocketStore((s) => s.disconnect);
   const isConnected = useSocketStore((s) => s.isConnected);
 
-  // Auth guard
+  // Wait for zustand to hydrate from localStorage before checking auth.
+  // Without this, a page refresh would flash-redirect to /login because
+  // the initial SSR state has isAuthenticated=false before hydration.
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    if (!isAuthenticated) {
+    // zustand/persist fires rehydrate synchronously on first render,
+    // so by the time this effect runs the store is already hydrated.
+    setHydrated(true);
+  }, []);
+
+  // Auth guard — only fires after hydration
+  useEffect(() => {
+    if (hydrated && !isAuthenticated) {
       router.replace('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [hydrated, isAuthenticated, router]);
 
   // Socket connect on mount
   useEffect(() => {
@@ -34,7 +44,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return () => disconnect();
   }, [isAuthenticated, connect, disconnect]);
 
-  if (!isAuthenticated || !user) {
+  if (!hydrated || !isAuthenticated || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         <div className="flex flex-col items-center gap-3">

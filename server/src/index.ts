@@ -42,6 +42,7 @@ import webhooksRouter from "./routes/webhooks.js";
 import ratingsRouter from "./routes/ratings.js";
 import locationsRouter from "./routes/locations.js";
 import emergencyRouter from "./routes/emergency.js";
+import adminRouter from "./routes/admin.js";
 import { initSocket } from "./socket/index.js";
 
 // ── App & Server ────────────────────────────────────────────
@@ -125,6 +126,9 @@ app.use("/api/locations", locationsRouter);
 
 /** Emergency routes: /api/emergency — SOS & contacts */
 app.use("/api/emergency", emergencyRouter);
+
+/** Admin routes: /api/admin — Platform stats & overview */
+app.use("/api/admin", adminRouter);
 
 // ── Start ───────────────────────────────────────────────────
 

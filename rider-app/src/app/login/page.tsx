@@ -2,9 +2,9 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import Image from 'next/image';
 import { useAuthStore } from '@/stores/auth-store';
 import api from '@/lib/api';
 import type { UserRole } from '@/types/user';
@@ -84,53 +84,69 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full overflow-hidden">
+    <div className="flex min-h-screen w-full bg-[#0a0a0f] overflow-hidden">
+
       {/* ── Left Hero Panel ────────────────────────────────── */}
-      <div
-        className={`hidden lg:flex lg:w-[46%] xl:w-[44%] relative flex-col justify-between p-0 overflow-hidden ${
-          isDriver ? 'bg-[#061a0d]' : 'bg-[#0a0a0a]'
-        }`}
-      >
-        {/* Gradient orbs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div
-            className={`absolute -bottom-20 -left-20 w-[400px] h-[400px] rounded-full blur-[120px] opacity-15 ${
-              isDriver ? 'bg-emerald-500' : 'bg-indigo-500'
-            }`}
-          />
-          <div
-            className={`absolute -top-10 -right-10 w-[250px] h-[250px] rounded-full blur-[100px] opacity-10 ${
-              isDriver ? 'bg-green-400' : 'bg-blue-500'
-            }`}
-          />
+      <div className="hidden lg:flex lg:w-[46%] xl:w-[44%] relative flex-col justify-between overflow-hidden">
+        {/* Gradient background */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className={`absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full blur-[140px] opacity-20 ${
+            isDriver ? 'bg-emerald-500' : 'bg-indigo-500'
+          }`} />
+          <div className={`absolute -top-10 -right-10 w-[300px] h-[300px] rounded-full blur-[100px] opacity-15 ${
+            isDriver ? 'bg-green-400' : 'bg-purple-500'
+          }`} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] bg-blue-500/5 rounded-full blur-[80px]" />
+          {/* Grid pattern */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+            backgroundSize: '50px 50px',
+          }} />
         </div>
 
         {/* Content */}
         <div className="relative z-10 flex-1 flex flex-col justify-center px-12 xl:px-16">
-          <p className="text-[13px] text-white/40 mb-5 tracking-wide font-light leading-relaxed">
-            {isDriver
-              ? 'Drive with purpose — earn on your schedule.'
-              : 'Real-time rides, real-time trust.'}
-          </p>
+          {/* Back to home */}
+          <Link href="/" className="flex items-center gap-2 text-[13px] text-white/30 hover:text-white/60 transition-colors mb-10 w-fit">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back to home
+          </Link>
 
-          <h1 className="text-[clamp(40px,4.5vw,56px)] font-extrabold text-white leading-[1.08] tracking-[-1.5px] mb-0">
-            {isDriver ? (
-              <>
-                Earn on
-                <br />
-                your terms
-              </>
-            ) : (
-              <>
-                Book rides
-                <br />
-                instantly
-              </>
-            )}
-          </h1>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.25, 0.4, 0.25, 1] }}
+          >
+            <p className="text-[13px] text-white/30 mb-5 tracking-wide font-light leading-relaxed">
+              {isDriver
+                ? 'Drive with purpose — earn on your schedule.'
+                : 'Real-time rides, real-time trust.'}
+            </p>
+
+            <h1 className="text-[clamp(40px,4.5vw,60px)] font-black text-white leading-[1.05] tracking-[-2px] mb-0">
+              {isDriver ? (
+                <>
+                  Earn on
+                  <br />
+                  <span className="bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent">your terms</span>
+                </>
+              ) : (
+                <>
+                  Book rides
+                  <br />
+                  <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">instantly</span>
+                </>
+              )}
+            </h1>
+          </motion.div>
 
           {/* Stats */}
-          <div className="flex items-center gap-0 mt-12 pt-8 border-t border-white/[0.06]">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex items-center gap-0 mt-14 pt-8 border-t border-white/[0.06]"
+          >
             {[
               { value: '10K+', label: 'Active Riders' },
               { value: '99.9%', label: 'Uptime' },
@@ -139,255 +155,264 @@ export default function LoginPage() {
               <div key={stat.label} className="flex items-center">
                 {i > 0 && <div className="w-px h-8 bg-white/[0.06] mx-6" />}
                 <div className="flex flex-col gap-1">
-                  <span className="text-[20px] font-bold text-white tracking-tight">{stat.value}</span>
-                  <span className="text-[11px] text-white/30 font-medium tracking-wide">{stat.label}</span>
+                  <span className="text-[22px] font-black text-white tracking-tight">{stat.value}</span>
+                  <span className="text-[11px] text-white/25 font-medium tracking-wider uppercase">{stat.label}</span>
                 </div>
               </div>
             ))}
-          </div>
+          </motion.div>
         </div>
 
         {/* Footer */}
         <div className="relative z-10 px-12 xl:px-16 pb-8">
           <p className="text-[11px] text-white/15 font-medium">
-            © {new Date().getFullYear()} RideShare Inc.
+            © {new Date().getFullYear()} RideShare Platform. Built with precision.
           </p>
         </div>
       </div>
 
-      {/* ── Right Form Panel ───────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-h-screen bg-white">
+      {/* ── Right Form Panel (Dark Glassmorphism) ──────────── */}
+      <div className="flex-1 flex flex-col min-h-screen relative">
+        {/* Subtle background gradient */}
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f0f18] via-[#0a0a0f] to-[#0d0d15] pointer-events-none" />
+
         {/* Top bar */}
-        <div className="flex items-center px-8 sm:px-10 py-6 shrink-0">
+        <div className="relative z-10 flex items-center justify-between px-8 sm:px-10 py-6 shrink-0">
           <div className="flex items-center gap-2.5">
-            <Image
-              src="/favicon.png"
-              alt="RideShare"
-              width={30}
-              height={30}
-              className="rounded-lg"
-              priority
-            />
-            <span className="text-[17px] font-bold text-gray-900 tracking-tight">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <span className="text-[17px] font-bold text-white tracking-tight">
               RideShare
             </span>
           </div>
+          {/* Mobile: Back to home */}
+          <Link href="/" className="lg:hidden flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 transition-colors">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Home
+          </Link>
         </div>
 
-        {/* Form — perfectly centered */}
-        <div className="flex-1 flex items-center justify-center px-6 sm:px-10">
+        {/* Form — centered */}
+        <div className="relative z-10 flex-1 flex items-center justify-center px-6 sm:px-10">
           <motion.div
             key={mode}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="w-full max-w-[380px]"
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+            className="w-full max-w-[400px]"
           >
-            <h2 className="text-[28px] font-bold text-gray-900 tracking-tight mb-6">
-              {mode === 'signin' ? 'Sign In' : 'Create Account'}
-            </h2>
+            {/* Glassmorphism card */}
+            <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-7 sm:p-8 shadow-2xl shadow-black/20">
+              <h2 className="text-[26px] font-bold text-white tracking-tight mb-1">
+                {mode === 'signin' ? 'Welcome back' : 'Create account'}
+              </h2>
+              <p className="text-sm text-white/30 mb-6">
+                {mode === 'signin' ? 'Sign in to continue your journey' : 'Start riding in under 30 seconds'}
+              </p>
 
-            {/* Role Selector */}
-            <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1">
-              {(['RIDER', 'DRIVER'] as UserRole[]).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  className={`flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-                    role === r
-                      ? 'bg-white text-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  {r === 'RIDER' ? (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  ) : (
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2" ry="2"/><path d="M16 8h4l3 5v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                  )}
-                  {r === 'RIDER' ? 'Rider' : 'Driver'}
-                </button>
-              ))}
-            </div>
-
-            {/* Error */}
-            <AnimatePresence>
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  className="flex items-start gap-2.5 bg-red-50 border border-red-100 rounded-xl px-3.5 py-3 text-[13px] text-red-600 overflow-hidden"
-                >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                  <span className="leading-snug">{error}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {/* Name (signup) */}
-              <AnimatePresence>
-                {mode === 'signup' && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="flex flex-col gap-1.5 overflow-hidden"
+              {/* Role Selector */}
+              <div className="flex gap-1 mb-5 bg-white/[0.04] rounded-xl p-1 border border-white/[0.06]">
+                {(['RIDER', 'DRIVER'] as UserRole[]).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setRole(r)}
+                    className={`flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                      role === r
+                        ? `${r === 'DRIVER' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/20'}`
+                        : 'text-white/30 hover:text-white/50 border border-transparent'
+                    }`}
                   >
-                    <label htmlFor="name" className="text-[13px] font-semibold text-gray-600">
-                      Full Name
-                    </label>
-                    <input
-                      id="name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="John Doe"
-                      required
-                      minLength={2}
-                      autoComplete="name"
-                      className="w-full px-3.5 py-[11px] bg-white border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-300 outline-none transition-all hover:border-gray-300 focus:border-indigo-500 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
-                    />
+                    {r === 'RIDER' ? (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    ) : (
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2" ry="2"/><path d="M16 8h4l3 5v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    )}
+                    {r === 'RIDER' ? 'Rider' : 'Driver'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Error */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                    className="flex items-start gap-2.5 bg-red-500/10 border border-red-500/20 rounded-xl px-3.5 py-3 text-[13px] text-red-400 overflow-hidden"
+                  >
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span className="leading-snug">{error}</span>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Email */}
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="email" className="text-[13px] font-semibold text-gray-600">
-                  Email Address
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  autoComplete="email"
-                  className="w-full px-3.5 py-[11px] bg-white border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-300 outline-none transition-all hover:border-gray-300 focus:border-indigo-500 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
-                />
-              </div>
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                {/* Name (signup) */}
+                <AnimatePresence>
+                  {mode === 'signup' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="flex flex-col gap-1.5 overflow-hidden"
+                    >
+                      <label htmlFor="name" className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                        Full Name
+                      </label>
+                      <input
+                        id="name"
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="John Doe"
+                        required
+                        minLength={2}
+                        autoComplete="name"
+                        className="w-full px-3.5 py-[11px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[14px] text-white placeholder:text-white/20 outline-none transition-all hover:border-white/[0.15] focus:border-indigo-500/50 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-              {/* Password */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="password" className="text-[13px] font-semibold text-gray-600">
-                    Password
+                {/* Email */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="email" className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                    Email Address
                   </label>
-                  {mode === 'signin' && (
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    required
+                    autoComplete="email"
+                    className="w-full px-3.5 py-[11px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[14px] text-white placeholder:text-white/20 outline-none transition-all hover:border-white/[0.15] focus:border-indigo-500/50 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+                  />
+                </div>
+
+                {/* Password */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="password" className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                      Password
+                    </label>
+                    {mode === 'signin' && (
+                      <button
+                        type="button"
+                        onClick={() => toast.info('Password reset will be available soon.')}
+                        className="text-[11px] font-semibold text-indigo-400/70 hover:text-indigo-400 transition-colors cursor-pointer"
+                      >
+                        Forgot?
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                      minLength={6}
+                      autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                      className="w-full px-3.5 py-[11px] pr-10 bg-white/[0.04] border border-white/[0.08] rounded-xl text-[14px] text-white placeholder:text-white/20 outline-none transition-all hover:border-white/[0.15] focus:border-indigo-500/50 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+                    />
                     <button
                       type="button"
-                      onClick={() => toast.info('Password reset will be available soon.')}
-                      className="text-[12px] font-semibold text-red-500 hover:text-red-600 transition-colors cursor-pointer"
+                      tabIndex={-1}
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-white/20 hover:text-white/40 transition-colors cursor-pointer"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
-                      Forgot password?
+                      {showPassword ? (
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      ) : (
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      )}
                     </button>
+                  </div>
+                </div>
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className={`w-full py-3 mt-2 rounded-xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] ${
+                    isDriver
+                      ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:-translate-y-0.5'
+                      : 'bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:-translate-y-0.5'
+                  }`}
+                >
+                  {loading ? (
+                    <div className="w-[18px] h-[18px] border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                      {mode === 'signin' ? 'Sign In' : 'Create Account'}
+                    </>
                   )}
-                </div>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    minLength={6}
-                    autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                    className="w-full px-3.5 py-[11px] pr-10 bg-white border border-gray-200 rounded-xl text-[14px] text-gray-900 placeholder:text-gray-300 outline-none transition-all hover:border-gray-300 focus:border-indigo-500 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.08)]"
-                  />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                    ) : (
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                    )}
-                  </button>
-                </div>
+                </button>
+              </form>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-white/[0.06]" />
+                <span className="text-[11px] text-white/20 font-medium whitespace-nowrap">or continue with</span>
+                <div className="flex-1 h-px bg-white/[0.06]" />
               </div>
 
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className={`w-full py-3 mt-1 rounded-xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-lg active:scale-[0.98] ${
-                  isDriver
-                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-emerald-500/20 hover:shadow-emerald-500/30'
-                    : 'bg-gradient-to-r from-indigo-500 to-indigo-600 shadow-indigo-500/20 hover:shadow-indigo-500/30'
-                }`}
-              >
-                {loading ? (
-                  <div className="w-[18px] h-[18px] border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                    {mode === 'signin' ? 'Sign In' : 'Create Account'}
-                  </>
-                )}
-              </button>
-            </form>
+              {/* Social */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => toast.info('Google sign-in requires OAuth setup in .env')}
+                  className="flex-1 flex items-center justify-center gap-2 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] font-medium text-white/50 hover:bg-white/[0.07] hover:border-white/[0.12] hover:text-white/70 transition-all cursor-pointer active:scale-[0.98]"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.44 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                  Google
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toast.info('Apple sign-in requires OAuth setup in .env')}
+                  className="flex-1 flex items-center justify-center gap-2 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] font-medium text-white/50 hover:bg-white/[0.07] hover:border-white/[0.12] hover:text-white/70 transition-all cursor-pointer active:scale-[0.98]"
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.23 0-1.44.62-2.2.44-3.06-.4C3.79 16.17 4.36 9.53 8.82 9.27c1.28.07 2.16.72 2.91.76.96-.2 1.88-.76 2.96-.69 1.26.1 2.2.6 2.82 1.5-2.58 1.54-1.97 4.92.54 5.87-.45 1.18-.98 2.35-1.99 3.57zM12.03 9.2C11.88 7.15 13.5 5.45 15.43 5.3c.27 2.34-2.13 4.1-3.4 3.9z"/></svg>
+                  Apple
+                </button>
+              </div>
 
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-5">
-              <div className="flex-1 h-px bg-gray-100" />
-              <span className="text-[11px] text-gray-300 font-medium whitespace-nowrap">or continue with</span>
-              <div className="flex-1 h-px bg-gray-100" />
+              {/* Toggle */}
+              <p className="text-center mt-5 text-[13px] text-white/30">
+                {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
+                <button
+                  type="button"
+                  onClick={toggleMode}
+                  className="font-semibold text-indigo-400 hover:text-indigo-300 cursor-pointer transition-colors"
+                >
+                  {mode === 'signin' ? 'Sign Up' : 'Sign In'}
+                </button>
+              </p>
             </div>
-
-            {/* Social */}
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => toast.info('Google sign-in requires OAuth setup in .env')}
-                className="flex-1 flex items-center justify-center gap-2 py-[10px] bg-white border border-gray-200 rounded-xl text-[13px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer active:scale-[0.98]"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.44 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                Google
-              </button>
-              <button
-                type="button"
-                onClick={() => toast.info('Apple sign-in requires OAuth setup in .env')}
-                className="flex-1 flex items-center justify-center gap-2 py-[10px] bg-white border border-gray-200 rounded-xl text-[13px] font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer active:scale-[0.98]"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="#111"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.23 0-1.44.62-2.2.44-3.06-.4C3.79 16.17 4.36 9.53 8.82 9.27c1.28.07 2.16.72 2.91.76.96-.2 1.88-.76 2.96-.69 1.26.1 2.2.6 2.82 1.5-2.58 1.54-1.97 4.92.54 5.87-.45 1.18-.98 2.35-1.99 3.57zM12.03 9.2C11.88 7.15 13.5 5.45 15.43 5.3c.27 2.34-2.13 4.1-3.4 3.9z"/></svg>
-                Apple
-              </button>
-            </div>
-
-            {/* Toggle */}
-            <p className="text-center mt-5 text-[13px] text-gray-400">
-              {mode === 'signin' ? "Don't have an account?" : 'Already have an account?'}{' '}
-              <button
-                type="button"
-                onClick={toggleMode}
-                className="font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer"
-              >
-                {mode === 'signin' ? 'Sign Up' : 'Sign In'}
-              </button>
-            </p>
           </motion.div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-8 sm:px-10 py-5 text-[11px] text-gray-300 shrink-0">
+        <div className="relative z-10 flex items-center justify-between px-8 sm:px-10 py-5 text-[11px] text-white/15 shrink-0">
           <span>© {new Date().getFullYear()} RideShare Inc.</span>
           <div className="flex items-center gap-4">
             <button
               onClick={() => toast.info('Contact support: support@rideshare.app')}
-              className="text-gray-500 font-medium hover:text-gray-700 transition-colors cursor-pointer"
+              className="text-white/20 font-medium hover:text-white/40 transition-colors cursor-pointer"
             >
               Contact Us
             </button>
-            <span className="text-gray-400 font-medium">English</span>
+            <span className="text-white/15 font-medium">English</span>
           </div>
         </div>
       </div>

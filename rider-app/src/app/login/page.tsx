@@ -32,6 +32,39 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handleResetPassword = async () => {
+    if (!resetEmail.trim() || !resetPassword.trim()) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    if (resetPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await api.post('/auth/reset-password', {
+        email: resetEmail.trim().toLowerCase(),
+        role,
+        newPassword: resetPassword,
+      });
+      toast.success('Password reset! You can now sign in.');
+      setShowResetModal(false);
+      setResetEmail('');
+      setResetPassword('');
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      toast.error(axiosErr?.response?.data?.message || 'Failed to reset password');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   const isDriver = role === 'DRIVER';
   const isAdmin = role === 'ADMIN';
 
@@ -337,7 +370,7 @@ export default function LoginPage() {
                     {mode === 'signin' && (
                       <button
                         type="button"
-                        onClick={() => toast.info('Password reset will be available soon.')}
+                        onClick={() => { setShowResetModal(true); setResetEmail(email); }}
                         className="text-[11px] font-semibold text-indigo-400/70 hover:text-indigo-400 transition-colors cursor-pointer"
                       >
                         Forgot?
@@ -406,19 +439,11 @@ export default function LoginPage() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => toast.info('Google sign-in requires OAuth setup in .env')}
+                  onClick={() => toast.info('Google OAuth requires Google Cloud Console setup. Use email/password for now.')}
                   className="flex-1 flex items-center justify-center gap-2 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] font-medium text-white/50 hover:bg-white/[0.07] hover:border-white/[0.12] hover:text-white/70 transition-all cursor-pointer active:scale-[0.98]"
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.44 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                  Google
-                </button>
-                <button
-                  type="button"
-                  onClick={() => toast.info('Apple sign-in requires OAuth setup in .env')}
-                  className="flex-1 flex items-center justify-center gap-2 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] font-medium text-white/50 hover:bg-white/[0.07] hover:border-white/[0.12] hover:text-white/70 transition-all cursor-pointer active:scale-[0.98]"
-                >
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="white"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.52-3.23 0-1.44.62-2.2.44-3.06-.4C3.79 16.17 4.36 9.53 8.82 9.27c1.28.07 2.16.72 2.91.76.96-.2 1.88-.76 2.96-.69 1.26.1 2.2.6 2.82 1.5-2.58 1.54-1.97 4.92.54 5.87-.45 1.18-.98 2.35-1.99 3.57zM12.03 9.2C11.88 7.15 13.5 5.45 15.43 5.3c.27 2.34-2.13 4.1-3.4 3.9z"/></svg>
-                  Apple
+                  Continue with Google
                 </button>
               </div>
 
@@ -451,6 +476,74 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Reset Password Modal ──────────────────── */}
+      <AnimatePresence>
+        {showResetModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowResetModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-sm bg-[#12121a] border border-white/[0.08] rounded-2xl p-6 shadow-2xl"
+            >
+              <h3 className="text-[16px] font-bold text-white mb-1">Reset Password</h3>
+              <p className="text-[12px] text-white/30 mb-5">Enter your email and choose a new password</p>
+
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Email</label>
+                  <input
+                    type="email"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    className="w-full px-3.5 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none transition-all focus:border-indigo-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">New Password</label>
+                  <input
+                    type="password"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    placeholder="Min 6 characters"
+                    minLength={6}
+                    className="w-full px-3.5 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none transition-all focus:border-indigo-500/50"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-5">
+                <button
+                  onClick={() => setShowResetModal(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-white/[0.08] text-[13px] font-medium text-white/40 hover:bg-white/[0.04] transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleResetPassword}
+                  disabled={resetLoading}
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-[13px] font-semibold text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {resetLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    'Reset Password'
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

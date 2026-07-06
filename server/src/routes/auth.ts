@@ -207,4 +207,68 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────
+// POST /api/auth/reset-password — Reset password for an account
+// ─────────────────────────────────────────────────────────────
+
+router.post("/reset-password", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, role, newPassword } = req.body;
+
+    if (!email || !role || !newPassword) {
+      res.status(400).json({
+        error: "Validation error",
+        message: "Email, role, and new password are required.",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      res.status(400).json({
+        error: "Validation error",
+        message: "Password must be at least 6 characters.",
+      });
+      return;
+    }
+
+    // Find user by email
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+
+    if (!user) {
+      res.status(404).json({
+        error: "Not found",
+        message: "No account found with this email.",
+      });
+      return;
+    }
+
+    if (user.role !== role) {
+      res.status(403).json({
+        error: "Role mismatch",
+        message: `This email is registered as a ${user.role}. Please select the correct role.`,
+      });
+      return;
+    }
+
+    // Hash new password and update
+    const bcrypt = await import("bcryptjs");
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    res.status(200).json({
+      message: "Password reset successful. You can now sign in with your new password.",
+    });
+  } catch (error) {
+    console.error("[auth/reset-password] Error:", error);
+    res.status(500).json({
+      error: "Internal server error",
+      message: "Failed to reset password.",
+    });
+  }
+});
+
 export default router;

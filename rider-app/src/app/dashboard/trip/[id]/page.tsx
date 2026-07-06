@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useTripStore } from '@/stores/trip-store';
 import { formatCurrency } from '@/lib/utils';
+import RatingModal from '@/components/rating-modal';
 
 const MapView = lazy(() => import('@/components/map/map-view'));
 
@@ -66,9 +67,18 @@ export default function ActiveTripPage() {
 
   const [elapsed, setElapsed] = useState(0);
   const [showSOS, setShowSOS] = useState(false);
+  const [showRating, setShowRating] = useState(false);
 
   const isDriver = user?.role === 'DRIVER';
   const config = stateConfig[tripState] || stateConfig.SEARCHING;
+
+  // Auto-show rating modal when trip completes (riders only)
+  useEffect(() => {
+    if (tripState === 'COMPLETED' && !isDriver) {
+      const timer = setTimeout(() => setShowRating(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [tripState, isDriver]);
 
   // Timer
   useEffect(() => {
@@ -421,6 +431,20 @@ export default function ActiveTripPage() {
 
       {/* Footer spacer for mobile */}
       <div className="h-16 md:h-0" />
+
+      {/* Rating Modal */}
+      {showRating && tripData && (
+        <RatingModal
+          tripId={tripId}
+          driverName={tripData.driverName || 'Driver'}
+          fare={tripData.fare || 0}
+          onClose={() => {
+            setShowRating(false);
+            reset();
+            router.replace('/dashboard');
+          }}
+        />
+      )}
     </div>
   );
 }

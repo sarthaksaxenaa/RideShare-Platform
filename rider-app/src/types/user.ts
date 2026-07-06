@@ -1,6 +1,6 @@
 // ── User & Auth types ───────────────────────────────────────
 
-export type UserRole = 'RIDER' | 'DRIVER';
+export type UserRole = 'RIDER' | 'DRIVER' | 'ADMIN';
 
 export interface User {
   id: string;

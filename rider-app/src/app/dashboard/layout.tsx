@@ -46,8 +46,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   }
 
   const isDriver = user.role === 'DRIVER';
+  const isAdmin = user.role === 'ADMIN';
   const initials = getInitials(user.name);
-  const accent = isDriver ? 'emerald' : 'indigo';
+  const accent = isAdmin ? 'purple' : isDriver ? 'emerald' : 'indigo';
 
   const handleLogout = () => {
     disconnect();
@@ -79,13 +80,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       ),
     },
-    {
+    // Only show Admin nav for ADMIN role users
+    ...(isAdmin ? [{
       href: '/dashboard/admin',
       label: 'Admin',
       icon: (
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       ),
-    },
+    }] : []),
   ];
 
   const isActive = (href: string, exact?: boolean) => {
@@ -131,7 +133,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       className={cn(
                         'relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-200',
                         active
-                          ? isDriver ? 'text-emerald-700' : 'text-indigo-700'
+                          ? isDriver ? 'text-emerald-700' : isAdmin ? 'text-purple-700' : 'text-indigo-700'
                           : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100/70'
                       )}
                     >
@@ -144,7 +146,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                           layoutId="nav-pill"
                           className={cn(
                             'absolute -bottom-[13px] left-2 right-2 h-[2.5px] rounded-full',
-                            isDriver ? 'bg-emerald-500' : 'bg-indigo-500'
+                            isDriver ? 'bg-emerald-500' : isAdmin ? 'bg-purple-500' : 'bg-indigo-500'
                           )}
                           transition={{ type: 'spring', stiffness: 400, damping: 28 }}
                         />
@@ -177,10 +179,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   'px-2.5 py-1 rounded-full text-[11px] font-semibold border',
                   isDriver
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80'
-                    : 'bg-indigo-50 text-indigo-700 border-indigo-200/80'
+                    : isAdmin
+                      ? 'bg-purple-50 text-purple-700 border-purple-200/80'
+                      : 'bg-indigo-50 text-indigo-700 border-indigo-200/80'
                 )}
               >
-                {isDriver ? '🚗 Driver' : '🧑 Rider'}
+                {isDriver ? '🚗 Driver' : isAdmin ? '🛡️ Admin' : '🧑 Rider'}
               </span>
 
               {/* User avatar + dropdown */}
@@ -191,7 +195,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       'w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shadow-sm',
                       isDriver
                         ? 'bg-gradient-to-br from-emerald-500 to-green-600'
-                        : 'bg-gradient-to-br from-indigo-500 to-purple-600'
+                        : isAdmin
+                          ? 'bg-gradient-to-br from-purple-500 to-violet-600'
+                          : 'bg-gradient-to-br from-indigo-500 to-purple-600'
                     )}
                   >
                     {initials}
@@ -263,7 +269,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 className={cn(
                   'relative flex flex-col items-center justify-center gap-0.5 w-14 h-12 rounded-xl transition-all duration-200',
                   active
-                    ? isDriver ? 'text-emerald-600' : 'text-indigo-600'
+                    ? isDriver ? 'text-emerald-600' : isAdmin ? 'text-purple-600' : 'text-indigo-600'
                     : 'text-gray-400 hover:text-gray-600'
                 )}
               >
@@ -272,7 +278,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                     layoutId="mobile-nav-bg"
                     className={cn(
                       'absolute inset-0 rounded-xl',
-                      isDriver ? 'bg-emerald-50' : 'bg-indigo-50'
+                      isDriver ? 'bg-emerald-50' : isAdmin ? 'bg-purple-50' : 'bg-indigo-50'
                     )}
                     transition={{ type: 'spring', stiffness: 350, damping: 28 }}
                   />

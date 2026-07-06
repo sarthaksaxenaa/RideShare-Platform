@@ -15,6 +15,7 @@
 
 import { Router, Request, Response } from "express";
 import { authenticate } from "../middleware/auth.js";
+import { requireRole } from "../middleware/role.js";
 import { prisma } from "../lib/prisma.js";
 
 const router = Router();
@@ -26,6 +27,7 @@ const router = Router();
 router.get(
   "/stats",
   authenticate,
+  requireRole("ADMIN"),
   async (_req: Request, res: Response): Promise<void> => {
     try {
       const now = new Date();

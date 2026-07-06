@@ -71,10 +71,10 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
     }
 
     // Ensure role is one of the allowed values.
-    if (!["RIDER", "DRIVER"].includes(role)) {
+    if (!["RIDER", "DRIVER", "ADMIN"].includes(role)) {
       res.status(400).json({
         error: "Validation error",
-        message: 'Role must be either "RIDER" or "DRIVER".',
+        message: 'Role must be "RIDER", "DRIVER", or "ADMIN".',
       });
       return;
     }

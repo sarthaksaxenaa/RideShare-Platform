@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const isDriver = role === 'DRIVER';
+  const isAdmin = role === 'ADMIN';
 
   const toggleMode = () => {
     setMode((prev) => (prev === 'signin' ? 'signup' : 'signin'));
@@ -91,10 +92,10 @@ export default function LoginPage() {
         {/* Gradient background */}
         <div className="absolute inset-0 pointer-events-none">
           <div className={`absolute -bottom-20 -left-20 w-[500px] h-[500px] rounded-full blur-[140px] opacity-20 ${
-            isDriver ? 'bg-emerald-500' : 'bg-indigo-500'
+            isDriver ? 'bg-emerald-500' : isAdmin ? 'bg-purple-500' : 'bg-indigo-500'
           }`} />
           <div className={`absolute -top-10 -right-10 w-[300px] h-[300px] rounded-full blur-[100px] opacity-15 ${
-            isDriver ? 'bg-green-400' : 'bg-purple-500'
+            isDriver ? 'bg-green-400' : isAdmin ? 'bg-violet-400' : 'bg-purple-500'
           }`} />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] bg-blue-500/5 rounded-full blur-[80px]" />
           {/* Grid pattern */}
@@ -120,7 +121,9 @@ export default function LoginPage() {
             <p className="text-[13px] text-white/30 mb-5 tracking-wide font-light leading-relaxed">
               {isDriver
                 ? 'Drive with purpose — earn on your schedule.'
-                : 'Real-time rides, real-time trust.'}
+                : isAdmin
+                  ? 'Full platform control — manage everything.'
+                  : 'Real-time rides, real-time trust.'}
             </p>
 
             <h1 className="text-[clamp(40px,4.5vw,60px)] font-black text-white leading-[1.05] tracking-[-2px] mb-0">
@@ -129,6 +132,12 @@ export default function LoginPage() {
                   Earn on
                   <br />
                   <span className="bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent">your terms</span>
+                </>
+              ) : isAdmin ? (
+                <>
+                  Manage
+                  <br />
+                  <span className="bg-gradient-to-r from-purple-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">everything</span>
                 </>
               ) : (
                 <>
@@ -213,25 +222,41 @@ export default function LoginPage() {
 
               {/* Role Selector */}
               <div className="flex gap-1 mb-5 bg-white/[0.04] rounded-xl p-1 border border-white/[0.06]">
-                {(['RIDER', 'DRIVER'] as UserRole[]).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setRole(r)}
-                    className={`flex-1 py-2.5 rounded-[10px] text-[13px] font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-                      role === r
-                        ? `${r === 'DRIVER' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/20'}`
-                        : 'text-white/30 hover:text-white/50 border border-transparent'
-                    }`}
-                  >
-                    {r === 'RIDER' ? (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    ) : (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2" ry="2"/><path d="M16 8h4l3 5v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                    )}
-                    {r === 'RIDER' ? 'Rider' : 'Driver'}
-                  </button>
-                ))}
+                {(['RIDER', 'DRIVER', 'ADMIN'] as UserRole[]).map((r) => {
+                  const roleConfig: Record<string, { active: string; icon: JSX.Element; label: string }> = {
+                    RIDER: {
+                      active: 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/20',
+                      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+                      label: 'Rider',
+                    },
+                    DRIVER: {
+                      active: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20',
+                      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13" rx="2" ry="2"/><path d="M16 8h4l3 5v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>,
+                      label: 'Driver',
+                    },
+                    ADMIN: {
+                      active: 'bg-purple-500/15 text-purple-400 border border-purple-500/20',
+                      icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+                      label: 'Admin',
+                    },
+                  };
+                  const cfg = roleConfig[r];
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setRole(r)}
+                      className={`flex-1 py-2.5 rounded-[10px] text-[12px] font-semibold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                        role === r
+                          ? cfg.active
+                          : 'text-white/30 hover:text-white/50 border border-transparent'
+                      }`}
+                    >
+                      {cfg.icon}
+                      {cfg.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Error */}
@@ -346,7 +371,9 @@ export default function LoginPage() {
                   className={`w-full py-3 mt-2 rounded-xl text-[14px] font-semibold text-white flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98] ${
                     isDriver
                       ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:-translate-y-0.5'
-                      : 'bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:-translate-y-0.5'
+                      : isAdmin
+                        ? 'bg-gradient-to-r from-purple-500 via-violet-600 to-fuchsia-600 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 hover:-translate-y-0.5'
+                        : 'bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 hover:-translate-y-0.5'
                   }`}
                 >
                   {loading ? (

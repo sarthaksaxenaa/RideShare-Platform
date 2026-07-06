@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import api from '@/lib/api';
 import { useLocationStore } from '@/stores/location-store';
 import { formatCurrency, haversine } from '@/lib/utils';
+import PaymentSelector from '@/components/booking/payment-selector';
+import type { PaymentMethod } from '@/components/booking/payment-selector';
 import type { LocationSuggestion, SelectedLocation } from '@/types/booking';
 import type { VehicleEstimate, EstimateResponse } from '@/types/trip';
 
@@ -42,6 +44,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
 
   // Cancellation state
   const [showCancelModal, setShowCancelModal] = useState(false);
@@ -560,6 +563,10 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Action Buttons */}
+      {estimates && (
+        <PaymentSelector selected={paymentMethod} onChange={setPaymentMethod} />
+      )}
 
       {/* Action Buttons */}
       <div className="px-5 pb-5 pt-2 flex gap-3">

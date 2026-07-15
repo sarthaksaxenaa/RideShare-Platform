@@ -27,7 +27,7 @@ export default function ProfilePage() {
     if (!name.trim()) { toast.error('Name cannot be empty'); return; }
     setSaving(true);
     try {
-      await api.put('/auth/profile', { name: name.trim() });
+      await api.put('/users/me', { name: name.trim() });
       updateUser({ name: name.trim() });
       toast.success('Profile updated successfully');
     } catch {
@@ -42,7 +42,7 @@ export default function ProfilePage() {
     if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     setChangingPw(true);
     try {
-      await api.put('/auth/password', { currentPassword, newPassword });
+      await api.put('/users/me/password', { currentPassword, newPassword });
       toast.success('Password changed successfully');
       setCurrentPassword('');
       setNewPassword('');

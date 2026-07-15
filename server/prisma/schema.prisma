@@ -1,202 +1,103 @@
-// ──────────────────────────────────────────────────────────────
-// Prisma Schema — RideShare
-// ──────────────────────────────────────────────────────────────
-// This is the single source of truth for the database schema.
-// After editing, run:
-//   npx prisma migrate dev --name <migration_name>
-//   npx prisma generate
-// ──────────────────────────────────────────────────────────────
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  // SQLite is used here to eliminate the need for a local PostgreSQL server,
-  // drastically reducing manual setup work for the user. It works great for MVP.
   provider = "sqlite"
   url      = "file:./dev.db"
 }
 
-// ── Models ───────────────────────────────────────────────────
-
-/// Core user model shared by both riders and drivers.
-///
-/// Design decisions:
-/// - UUID primary key: avoids sequential ID enumeration attacks
-///   and makes future database sharding straightforward.
-/// - Single User model for both roles: keeps auth simple. Role-
-///   specific data (vehicle info, payment methods) will live in
-///   separate related models added in later phases.
-/// - Email is @unique so it doubles as a natural lookup key for
-///   login without needing a separate index.
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String   // bcrypt hash — never store plaintext
-  name      String
-  role      String
-  phone     String?  // optional phone number
-  avatarUrl String?  // optional profile picture URL
-  createdAt DateTime @default(now())
-
-  // ── Driver-specific fields ─────────────────────────────
-  vehicleNumber String?  // e.g., "DL 01 AB 1234"
-  vehicleType   String?  // e.g., "Sedan", "Bike"
-  vehicleModel  String?  // e.g., "Maruti Swift Dzire"
-
-  // ── Relations ─────────────────────────────────────────────
-  // A single User can be a rider on many trips AND a driver on
-  // many trips, but never both on the same trip. We use named
-  // relations to disambiguate the two foreign keys on Trip.
-  tripsAsRider  Trip[] @relation("RiderTrips")
-  tripsAsDriver Trip[] @relation("DriverTrips")
-
-  // 1:1 relation to the driver's current GPS position.
-  // Only drivers have a DriverLocation record; riders don't.
-  // The `?` makes it optional — it's null until the driver
-  // goes online for the first time.
-  location DriverLocation?
-
-  // Ratings given and received
-  ratingsGiven    Rating[] @relation("RatingsGiven")
-  ratingsReceived Rating[] @relation("RatingsReceived")
-
-  // Saved locations (Home, Work, etc.)
-  savedLocations SavedLocation[]
-
-  // Emergency contacts
-  emergencyContacts EmergencyContact[]
-}
-
-/// Represents a single ride from pickup to drop-off.
-///
-/// Design decisions:
-/// - `driverId` is nullable because when a trip is first created
-///   (status: REQUESTED), no driver has accepted yet.
-/// - `fare` is nullable because it's only calculated after the
-///   rider confirms and before the trip starts.
-/// - `stripePaymentIntentId` links to Stripe for payment tracking.
-///   We never store card numbers — Stripe handles all PCI compliance.
-/// - Coordinates are stored as plain Float rather than PostGIS
-///   geometry types for simplicity. At scale, we'd migrate to
-///   PostGIS for spatial indexing (ST_DWithin queries).
-model Trip {
-  id        String     @id @default(uuid())
-  status    String     @default("REQUESTED")
-
-  // ── Participants ──────────────────────────────────────────
-  riderId  String
-  rider    User   @relation("RiderTrips", fields: [riderId], references: [id])
-
-  driverId String?
-  driver   User?  @relation("DriverTrips", fields: [driverId], references: [id])
-
-  // ── Location ──────────────────────────────────────────────
-  pickupLat     Float
-  pickupLng     Float
-  pickupAddress String?
-  dropLat       Float
-  dropLng       Float
-  dropAddress   String?
-
-  // ── Route ─────────────────────────────────────────────────
-  distanceKm  Float?
-  durationMin Int?
-
-  // ── Pricing ───────────────────────────────────────────────
-  // Fare is in whole rupees (INR). e.g., ₹150 is stored as 150.
-  // Using Int avoids floating-point precision issues while keeping
-  // calculations simple for the Indian market.
-  fare         Int?
-  baseFare     Int?
-  distanceFare Int?
-  timeFare     Int?
-  platformFee  Int?
-  vehicleType  String?  // vehicle type used for this trip
-
-  // ── Payment ───────────────────────────────────────────────
-  stripePaymentIntentId String?
-  paymentStatus         String @default("PENDING")
-  paymentMethod         String @default("CARD")  // CARD, CASH, UPI, WALLET
-
-  // ── OTP ───────────────────────────────────────────────────
-  rideOtp String?  // 4-digit OTP shown to rider, driver must confirm
-
-  // ── Timestamps ────────────────────────────────────────────
-  createdAt   DateTime  @default(now())
-  completedAt DateTime?
-
-  // ── Relations ─────────────────────────────────────────────
-  rating Rating?
-}
-
-/// Stores the current GPS position of online drivers.
-///
-/// Design decisions:
-/// - Uses `driverId` as the primary key (1:1 with User) — there
-///   can only be ONE location record per driver, and we always
-///   upsert (insert or update) rather than insert new rows.
-/// - `@updatedAt` automatically refreshes on every write, which
-///   lets us filter out stale positions (e.g., a driver who
-///   disconnected 10 minutes ago without going offline).
-/// - This table is the HOT table — it's written to every 2
-///   seconds per online driver. Keeping it separate from User
-///   avoids write contention on the User table.
 model DriverLocation {
   driverId  String   @id
-  driver    User     @relation(fields: [driverId], references: [id])
-
   lat       Float
   lng       Float
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime
+  User      User     @relation(fields: [driverId], references: [id])
 }
 
-/// Rating left after a trip is completed.
-///
-/// Design decisions:
-/// - tripId is @unique so each trip can only be rated once.
-/// - stars is 1-5 integer rating.
-/// - tags stores quick feedback labels as JSON string (e.g., '["clean","polite"]').
-/// - Both rider and driver can rate each other; fromId/toId tracks direction.
+model EmergencyContact {
+  id     String @id
+  userId String
+  name   String
+  phone  String
+  User   User   @relation(fields: [userId], references: [id])
+}
+
 model Rating {
-  id        String   @id @default(uuid())
-  tripId    String   @unique
-  trip      Trip     @relation(fields: [tripId], references: [id])
-  fromId    String
-  from      User     @relation("RatingsGiven", fields: [fromId], references: [id])
-  toId      String
-  to        User     @relation("RatingsReceived", fields: [toId], references: [id])
-  stars     Int      // 1-5
-  comment   String?
-  tags      String?  // JSON array: '["clean_vehicle","good_driving"]'
-  createdAt DateTime @default(now())
+  id                       String   @id
+  tripId                   String   @unique
+  fromId                   String
+  toId                     String
+  stars                    Int
+  comment                  String?
+  tags                     String?
+  createdAt                DateTime @default(now())
+  User_Rating_toIdToUser   User     @relation("Rating_toIdToUser", fields: [toId], references: [id])
+  User_Rating_fromIdToUser User     @relation("Rating_fromIdToUser", fields: [fromId], references: [id])
+  Trip                     Trip     @relation(fields: [tripId], references: [id])
 }
 
-/// User's saved locations (Home, Work, Gym, etc.)
-///
-/// Design decisions:
-/// - @@unique([userId, label]) ensures one "Home" per user.
-/// - icon is an emoji string for display.
 model SavedLocation {
-  id        String   @id @default(uuid())
+  id        String   @id
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  label     String   // "Home", "Work", "Gym", custom name
+  label     String
   icon      String   @default("📍")
   lat       Float
   lng       Float
   address   String
   createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, label])
 }
 
-/// Emergency contacts for SOS feature.
-model EmergencyContact {
-  id     String @id @default(uuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-  name   String
-  phone  String
+model Trip {
+  id                       String    @id
+  status                   String    @default("REQUESTED")
+  riderId                  String
+  driverId                 String?
+  pickupLat                Float
+  pickupLng                Float
+  pickupAddress            String?
+  dropLat                  Float
+  dropLng                  Float
+  dropAddress              String?
+  distanceKm               Float?
+  durationMin              Int?
+  fare                     Int?
+  baseFare                 Int?
+  distanceFare             Int?
+  timeFare                 Int?
+  platformFee              Int?
+  vehicleType              String?
+  stripePaymentIntentId    String?
+  paymentStatus            String    @default("PENDING")
+  paymentMethod            String    @default("CARD")
+  rideOtp                  String?
+  createdAt                DateTime  @default(now())
+  completedAt              DateTime?
+  Rating                   Rating?
+  User_Trip_driverIdToUser User?     @relation("Trip_driverIdToUser", fields: [driverId], references: [id])
+  User_Trip_riderIdToUser  User      @relation("Trip_riderIdToUser", fields: [riderId], references: [id])
+}
+
+model User {
+  id                         String             @id
+  email                      String             @unique
+  password                   String
+  name                       String
+  role                       String
+  createdAt                  DateTime           @default(now())
+  avatarUrl                  String?
+  phone                      String?
+  vehicleModel               String?
+  vehicleNumber              String?
+  vehicleType                String?
+  DriverLocation             DriverLocation?
+  EmergencyContact           EmergencyContact[]
+  Rating_Rating_toIdToUser   Rating[]           @relation("Rating_toIdToUser")
+  Rating_Rating_fromIdToUser Rating[]           @relation("Rating_fromIdToUser")
+  SavedLocation              SavedLocation[]
+  Trip_Trip_driverIdToUser   Trip[]             @relation("Trip_driverIdToUser")
+  Trip_Trip_riderIdToUser    Trip[]             @relation("Trip_riderIdToUser")
 }

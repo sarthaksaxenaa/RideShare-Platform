@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, type FormEvent } from 'react';
+import React, { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -264,7 +264,7 @@ export default function LoginPage() {
               {/* Role Selector */}
               <div className="flex gap-1 mb-5 bg-white/[0.04] rounded-xl p-1 border border-white/[0.06]">
                 {(['RIDER', 'DRIVER', 'ADMIN'] as UserRole[]).map((r) => {
-                  const roleConfig: Record<string, { active: string; icon: JSX.Element; label: string }> = {
+                  const roleConfig: Record<string, { active: string; icon: React.ReactNode; label: string }> = {
                     RIDER: {
                       active: 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/20',
                       icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,

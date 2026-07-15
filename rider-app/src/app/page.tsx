@@ -279,9 +279,22 @@ export default function LandingPage() {
                           backgroundImage: 'linear-gradient(rgba(99,102,241,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.3) 1px, transparent 1px)',
                           backgroundSize: '20px 20px',
                         }} />
-                        <div className="absolute top-6 left-10 w-3 h-3 rounded-full bg-green-400 shadow-lg shadow-green-400/30" />
-                        <div className="absolute bottom-8 right-12 w-3 h-3 rounded-full bg-red-400 shadow-lg shadow-red-400/30" />
-                        <svg className="absolute top-6 left-11 opacity-40" width="120" height="60" viewBox="0 0 120 60"><path d="M0 0 Q60 60 120 20" fill="none" stroke="#818cf8" strokeWidth="2" strokeDasharray="4 4" /></svg>
+                        {/* Pickup dot (green) */}
+                        <div className="absolute top-6 left-10 w-3.5 h-3.5 rounded-full bg-green-400 shadow-lg shadow-green-400/40 z-10" />
+                        {/* Destination dot (red) */}
+                        <div className="absolute top-[70%] right-12 w-3.5 h-3.5 rounded-full bg-red-400 shadow-lg shadow-red-400/40 z-10" />
+                        {/* Route line connecting the dots */}
+                        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 128" preserveAspectRatio="none">
+                          <path
+                            d="M 47 30 C 130 90, 260 10, 340 90"
+                            fill="none"
+                            stroke="#818cf8"
+                            strokeWidth="2"
+                            strokeDasharray="6 4"
+                            strokeLinecap="round"
+                            opacity="0.5"
+                          />
+                        </svg>
                       </div>
                       {/* Ride option */}
                       <div className="p-3 rounded-xl bg-white/5 border border-white/5">

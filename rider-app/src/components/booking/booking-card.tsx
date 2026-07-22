@@ -46,6 +46,14 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
   const [error, setError] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
 
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoDescription, setPromoDescription] = useState('');
+  const [promoError, setPromoError] = useState('');
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [validatingPromo, setValidatingPromo] = useState(false);
+
   // Cancellation state
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -371,8 +379,30 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
     if (!estimates || !selectedPickup || !selectedDrop || !selectedVehicle) return;
     const chosen = estimates.find((e) => e.vehicleType === selectedVehicle);
     if (!chosen) return;
-    onBook({ lat: selectedPickup.lat, lng: selectedPickup.lng }, { lat: selectedDrop.lat, lng: selectedDrop.lng }, chosen.fare, paymentMethod);
-  }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook, paymentMethod]);
+    const finalFare = promoApplied ? Math.max(0, chosen.fare - promoDiscount) : chosen.fare;
+    onBook({ lat: selectedPickup.lat, lng: selectedPickup.lng }, { lat: selectedDrop.lat, lng: selectedDrop.lng }, finalFare, paymentMethod);
+  }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook, paymentMethod, promoApplied, promoDiscount]);
+
+  // Promo code validation
+  const handleApplyPromo = useCallback(async () => {
+    if (!promoCode.trim()) return;
+    setValidatingPromo(true);
+    setPromoError('');
+    try {
+      const chosenFare = estimates?.find((e) => e.vehicleType === selectedVehicle)?.fare || 0;
+      const res = await api.post('/trips/validate-promo', { code: promoCode, fare: chosenFare });
+      setPromoDiscount(res.data.discount);
+      setPromoDescription(res.data.description);
+      setPromoApplied(true);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      setPromoError(axiosErr?.response?.data?.message || 'Invalid promo code');
+      setPromoApplied(false);
+      setPromoDiscount(0);
+    } finally {
+      setValidatingPromo(false);
+    }
+  }, [promoCode, estimates, selectedVehicle]);
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
@@ -566,6 +596,46 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
       {/* Action Buttons */}
       {estimates && (
         <PaymentSelector selected={paymentMethod} onChange={setPaymentMethod} />
+      )}
+
+      {/* Promo Code */}
+      {estimates && selectedVehicle && !loading && (
+        <div className="px-5 pb-3">
+          {!promoApplied ? (
+            <div className="flex gap-2">
+              <input
+                value={promoCode}
+                onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
+                placeholder="Promo code"
+                className="flex-1 px-3.5 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/10 placeholder:text-gray-400 uppercase"
+              />
+              <button
+                onClick={handleApplyPromo}
+                disabled={!promoCode.trim() || validatingPromo}
+                className="px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:bg-indigo-100 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {validatingPromo ? '...' : 'Apply'}
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between px-3.5 py-2.5 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+              <div className="flex items-center gap-2">
+                <span className="text-green-600 text-sm">✅</span>
+                <div>
+                  <p className="text-xs font-semibold text-green-700 dark:text-green-400">{promoCode} applied!</p>
+                  <p className="text-[10px] text-green-600/70">{promoDescription} (−₹{promoDiscount})</p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setPromoApplied(false); setPromoDiscount(0); setPromoCode(''); }}
+                className="text-xs text-green-600 hover:text-red-500 cursor-pointer font-medium"
+              >
+                Remove
+              </button>
+            </div>
+          )}
+          {promoError && <p className="text-xs text-red-500 mt-1.5 px-1">{promoError}</p>}
+        </div>
       )}
 
       {/* Action Buttons */}

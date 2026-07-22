@@ -375,11 +375,11 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
   }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook, paymentMethod]);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-[0_8px_30px_rgba(0,0,0,0.08)]">
       {/* Header */}
       <div className="px-5 pt-5 pb-4">
-        <h3 className="text-lg font-bold text-gray-900 tracking-tight">Book a Ride</h3>
-        <p className="text-sm text-gray-400 mt-0.5">Where would you like to go?</p>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Book a Ride</h3>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Where would you like to go?</p>
       </div>
 
       {/* Error */}

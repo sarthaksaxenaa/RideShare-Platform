@@ -1,11 +1,15 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import SmoothScrollProvider from '@/components/smooth-scroll-provider';
+import { useThemeStore } from '@/stores/theme-store';
 
 export function Providers({ children }: { children: ReactNode }) {
+  // Initialize theme on first render — syncs <html> class with stored pref
+  const initializeTheme = useThemeStore((s) => s.initializeTheme);
+  useEffect(() => { initializeTheme(); }, [initializeTheme]);
   const [queryClient] = useState(
     () =>
       new QueryClient({

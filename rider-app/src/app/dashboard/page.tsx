@@ -152,10 +152,10 @@ export default function RiderDashboardPage() {
           transition={{ duration: 0.4 }}
           className="mb-4"
         >
-          <h1 className="text-lg font-semibold text-gray-900 tracking-tight">
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white tracking-tight">
             Hey, {firstName} 👋
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Ready for your next ride?</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Ready for your next ride?</p>
         </motion.div>
 
         {/* Grid: Map + Booking */}
@@ -165,7 +165,7 @@ export default function RiderDashboardPage() {
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="lg:col-span-3 h-[400px] lg:h-[600px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm"
+            className="lg:col-span-3 h-[400px] lg:h-[600px] rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm"
           >
             <Suspense fallback={<MapSkeleton />}>
               <MapView

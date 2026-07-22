@@ -53,6 +53,15 @@ export default function ProfilePage() {
   const [addSaving, setAddSaving] = useState(false);
   const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── Emergency Contacts State ─────────────────────────
+  interface EmergencyContact { id: string; name: string; phone: string; }
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
+  const [loadingContacts, setLoadingContacts] = useState(true);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [contactName, setContactName] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [savingContact, setSavingContact] = useState(false);
+
   const initials = getInitials(user?.name || 'U');
   const isDriver = user?.role === 'DRIVER';
 
@@ -69,6 +78,45 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => { fetchLocations(); }, [fetchLocations]);
+
+  // ── Fetch emergency contacts ────────────────────────
+  const fetchContacts = useCallback(async () => {
+    try {
+      const res = await api.get('/emergency/contacts');
+      setEmergencyContacts(res.data);
+    } catch { /* ignore */ }
+    finally { setLoadingContacts(false); }
+  }, []);
+
+  useEffect(() => { fetchContacts(); }, [fetchContacts]);
+
+  const handleAddContact = async () => {
+    if (!contactName.trim() || !contactPhone.trim()) {
+      toast.error('Name and phone are required'); return;
+    }
+    setSavingContact(true);
+    try {
+      await api.post('/emergency/contacts', {
+        name: contactName.trim(),
+        phone: contactPhone.trim(),
+      });
+      toast.success('Emergency contact added');
+      setContactName(''); setContactPhone('');
+      setShowAddContact(false);
+      fetchContacts();
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      toast.error(axiosErr?.response?.data?.message || 'Failed to add contact');
+    } finally { setSavingContact(false); }
+  };
+
+  const handleDeleteContact = async (id: string) => {
+    try {
+      await api.delete(`/emergency/contacts/${id}`);
+      setEmergencyContacts((prev) => prev.filter((c) => c.id !== id));
+      toast.success('Contact removed');
+    } catch { toast.error('Failed to delete contact'); }
+  };
 
   // ── Address search (Nominatim) ────────────────────────────
   /**
@@ -387,6 +435,103 @@ export default function ProfilePage() {
             {changingPw ? 'Changing...' : 'Update Password'}
           </button>
         </form>
+      </motion.div>
+
+      {/* ── Emergency Contacts ───────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+        className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 mb-6"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Emergency Contacts</h3>
+            <p className="text-xs text-gray-400 mt-0.5">Up to 3 contacts for SOS alerts during trips</p>
+          </div>
+          {emergencyContacts.length < 3 && (
+            <button
+              onClick={() => setShowAddContact(!showAddContact)}
+              className="text-xs font-semibold text-red-500 hover:text-red-600 transition-colors cursor-pointer"
+            >
+              {showAddContact ? '✕ Cancel' : '+ Add Contact'}
+            </button>
+          )}
+        </div>
+
+        {/* Add Contact Form */}
+        <AnimatePresence>
+          {showAddContact && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden mb-4"
+            >
+              <div className="p-4 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-100 dark:border-red-900">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    value={contactName}
+                    onChange={(e) => setContactName(e.target.value)}
+                    placeholder="Contact name"
+                    className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white outline-none focus:border-red-500 focus:ring-3 focus:ring-red-500/10 placeholder:text-gray-400"
+                  />
+                  <input
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="Phone number"
+                    type="tel"
+                    className="flex-1 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white outline-none focus:border-red-500 focus:ring-3 focus:ring-red-500/10 placeholder:text-gray-400"
+                  />
+                  <button
+                    onClick={handleAddContact}
+                    disabled={savingContact}
+                    className="px-5 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {savingContact ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Contacts List */}
+        {loadingContacts ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="w-5 h-5 border-2 border-gray-200 border-t-red-500 rounded-full animate-spin" />
+          </div>
+        ) : emergencyContacts.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-3xl mb-2">🚨</p>
+            <p className="text-sm text-gray-400">No emergency contacts yet</p>
+            <p className="text-xs text-gray-300 mt-1">Add contacts who will be notified if you trigger SOS during a trip</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {emergencyContacts.map((contact) => (
+              <div
+                key={contact.id}
+                className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-lg shrink-0">
+                  🚨
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{contact.name}</p>
+                  <p className="text-xs text-gray-400">{contact.phone}</p>
+                </div>
+                <button
+                  onClick={() => handleDeleteContact(contact.id)}
+                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all cursor-pointer"
+                  title="Remove contact"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       {/* Danger Zone */}

@@ -8,7 +8,9 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useTripStore } from '@/stores/trip-store';
 import { formatCurrency } from '@/lib/utils';
+import api from '@/lib/api';
 import RatingModal from '@/components/rating-modal';
+import MapSkeleton from '@/components/map/map-skeleton';
 
 const MapView = lazy(() => import('@/components/map/map-view'));
 
@@ -68,9 +70,70 @@ export default function ActiveTripPage() {
   const [elapsed, setElapsed] = useState(0);
   const [showSOS, setShowSOS] = useState(false);
   const [showRating, setShowRating] = useState(false);
+  const [fetchingTrip, setFetchingTrip] = useState(false);
 
   const isDriver = user?.role === 'DRIVER';
   const config = stateConfig[tripState] || stateConfig.SEARCHING;
+
+  // ── API Fallback: Hydrate trip store on page refresh ──────
+  // WHY: After a browser refresh, the Zustand trip-store is empty
+  // (state = 'IDLE'). Without this, the page would redirect to
+  // /dashboard. Instead, we fetch the trip from the API and
+  // restore the store so the page can render correctly.
+  useEffect(() => {
+    if (tripState !== 'IDLE' || fetchingTrip) return;
+    setFetchingTrip(true);
+    api.get(`/trips/${tripId}`)
+      .then((res) => {
+        const trip = res.data;
+        // Map API status to our store state
+        const statusMap: Record<string, () => void> = {
+          REQUESTED: () => useTripStore.getState().setSearching({
+            tripId: trip.id, pickupLat: trip.pickupLat, pickupLng: trip.pickupLng,
+            dropLat: trip.dropLat, dropLng: trip.dropLng, fare: trip.fare,
+          }),
+          MATCHED: () => {
+            useTripStore.getState().setSearching({
+              tripId: trip.id, pickupLat: trip.pickupLat, pickupLng: trip.pickupLng,
+              dropLat: trip.dropLat, dropLng: trip.dropLng, fare: trip.fare,
+            });
+            useTripStore.getState().setMatched({
+              tripId: trip.id, driverId: trip.driverId,
+              driverName: trip.driver?.name, fare: trip.fare,
+            });
+          },
+          STARTED: () => {
+            useTripStore.getState().setSearching({
+              tripId: trip.id, pickupLat: trip.pickupLat, pickupLng: trip.pickupLng,
+              dropLat: trip.dropLat, dropLng: trip.dropLng, fare: trip.fare,
+            });
+            useTripStore.getState().setInTransit();
+          },
+          COMPLETED: () => {
+            useTripStore.getState().setSearching({
+              tripId: trip.id, pickupLat: trip.pickupLat, pickupLng: trip.pickupLng,
+              dropLat: trip.dropLat, dropLng: trip.dropLng, fare: trip.fare,
+            });
+            useTripStore.getState().setCompleted(trip.fare);
+          },
+          CANCELLED: () => {
+            useTripStore.getState().setSearching({
+              tripId: trip.id, pickupLat: trip.pickupLat, pickupLng: trip.pickupLng,
+              dropLat: trip.dropLat, dropLng: trip.dropLng, fare: trip.fare,
+            });
+            useTripStore.getState().setCancelled();
+          },
+        };
+        const handler = statusMap[trip.status];
+        if (handler) handler();
+        else router.replace('/dashboard');
+      })
+      .catch(() => {
+        toast.error('Trip not found');
+        router.replace('/dashboard');
+      })
+      .finally(() => setFetchingTrip(false));
+  }, [tripState, tripId, fetchingTrip, router]);
 
   // Auto-show rating modal when trip completes (riders only)
   useEffect(() => {
@@ -87,12 +150,18 @@ export default function ActiveTripPage() {
     return () => clearInterval(interval);
   }, [tripState]);
 
-  // If trip is idle, redirect back
+  // If trip is idle AND we're not fetching, redirect back
   useEffect(() => {
-    if (tripState === 'IDLE') {
-      router.replace('/dashboard');
+    if (tripState === 'IDLE' && !fetchingTrip) {
+      // Don't redirect immediately — give the API fetch a chance
+      const timeout = setTimeout(() => {
+        if (useTripStore.getState().state === 'IDLE') {
+          router.replace('/dashboard');
+        }
+      }, 2000);
+      return () => clearTimeout(timeout);
     }
-  }, [tripState, router]);
+  }, [tripState, fetchingTrip, router]);
 
   // Driver location broadcasting
   useEffect(() => {

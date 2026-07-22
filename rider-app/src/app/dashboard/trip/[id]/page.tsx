@@ -423,19 +423,32 @@ export default function ActiveTripPage() {
                   exit={{ opacity: 0, height: 0 }}
                   className="bg-red-50 border border-red-200 rounded-xl p-4 overflow-hidden"
                 >
-                  <p className="text-sm font-semibold text-red-700 mb-2">Emergency Help</p>
+                  <p className="text-sm font-semibold text-red-700 mb-1">Emergency Help</p>
+                  <p className="text-xs text-red-400 mb-3">Your emergency contacts will receive your live location</p>
                   <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => toast.info('Calling 112...')}
-                      className="w-full py-2.5 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors cursor-pointer"
+                    <a
+                      href="tel:112"
+                      className="w-full py-2.5 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors text-center block"
                     >
-                      Call 112 (Emergency)
-                    </button>
+                      📞 Call 112 (Emergency)
+                    </a>
                     <button
-                      onClick={() => toast.info('Alert sent to emergency contacts')}
+                      onClick={async () => {
+                        try {
+                          await api.post('/emergency/alert', {
+                            tripId,
+                            lat: tripData?.pickupLat,
+                            lng: tripData?.pickupLng,
+                          });
+                          toast.success('🚨 SOS alert sent to your emergency contacts!');
+                          setShowSOS(false);
+                        } catch {
+                          toast.error('Failed to send SOS alert. Call 112 directly.');
+                        }
+                      }}
                       className="w-full py-2.5 bg-white text-red-600 text-sm font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
                     >
-                      Alert Emergency Contacts
+                      🚨 Alert Emergency Contacts
                     </button>
                   </div>
                 </motion.div>

@@ -95,5 +95,179 @@ router.get(
     }
   }
 );
+// ─────────────────────────────────────────────────────────────
+// GET /api/admin/users — Paginated user list with search
+// ─────────────────────────────────────────────────────────────
+//
+// 📚 PAGINATION
+// Instead of returning ALL users (which could be thousands),
+// we return a "page" at a time (20 users per page). The frontend
+// sends ?page=1 or ?page=2 to navigate. This keeps responses
+// fast and memory usage low.
+//
+// 📚 SEARCH
+// The `search` query param filters users by name OR email using
+// Prisma's `contains` with `mode: 'insensitive'` — this is a
+// case-insensitive LIKE query under the hood.
+
+router.get(
+  "/users",
+  authenticate,
+  requireRole("ADMIN"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const pageSize = 20;
+      const skip = (page - 1) * pageSize;
+      const search = (req.query.search as string) || '';
+      const role = req.query.role as string;
+
+      // Build the WHERE clause dynamically
+      const where: Record<string, unknown> = {};
+      if (search) {
+        where.OR = [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+        ];
+      }
+      if (role && ['RIDER', 'DRIVER', 'ADMIN'].includes(role)) {
+        where.role = role;
+      }
+
+      const [users, total] = await Promise.all([
+        prisma.user.findMany({
+          where,
+          skip,
+          take: pageSize,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            _count: {
+              select: {
+                tripsAsRider: true,
+                tripsAsDriver: true,
+              },
+            },
+          },
+        }),
+        prisma.user.count({ where }),
+      ]);
+
+      res.json({
+        users,
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
+      });
+    } catch (error) {
+      console.error("[admin/users] Error:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// PATCH /api/admin/users/:id/role — Change a user's role
+// ─────────────────────────────────────────────────────────────
+//
+// 📚 WHY PATCH (not PUT)?
+// PATCH means "partially update a resource" — we're only
+// changing the role field, not the entire user object.
+// PUT would imply replacing the whole user record.
+
+router.patch(
+  "/users/:id/role",
+  authenticate,
+  requireRole("ADMIN"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+
+      if (!role || !['RIDER', 'DRIVER', 'ADMIN'].includes(role)) {
+        res.status(400).json({ error: 'Invalid role. Must be RIDER, DRIVER, or ADMIN.' });
+        return;
+      }
+
+      // Prevent admin from changing their own role (safety net)
+      if (id === (req as Request & { user: { id: string } }).user.id) {
+        res.status(400).json({ error: 'You cannot change your own role.' });
+        return;
+      }
+
+      const updated = await prisma.user.update({
+        where: { id },
+        data: { role },
+        select: { id: true, name: true, email: true, role: true },
+      });
+
+      res.json({ message: `Role updated to ${role}`, user: updated });
+    } catch (error) {
+      console.error("[admin/users/role] Error:", error);
+      res.status(500).json({ error: "Failed to update role" });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// DELETE /api/admin/users/:id — Delete a user account
+// ─────────────────────────────────────────────────────────────
+//
+// 📚 CASCADING DELETES
+// When we delete a user, we need to also delete their related
+// records (ratings, saved locations, emergency contacts, etc.)
+// to avoid orphaned records. Prisma's onDelete cascade handles
+// some of this, but we explicitly clean up to be safe.
+//
+// 📚 WHY NOT SOFT DELETE?
+// Our Prisma schema doesn't have a `banned` field, so we do a
+// real delete for now. In production, add a `banned: Boolean`
+// field and filter banned users from login instead.
+
+router.delete(
+  "/users/:id",
+  authenticate,
+  requireRole("ADMIN"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+
+      // Prevent admin from deleting themselves
+      if (id === (req as Request & { user: { id: string } }).user.id) {
+        res.status(400).json({ error: 'You cannot delete your own account.' });
+        return;
+      }
+
+      // Check user exists
+      const user = await prisma.user.findUnique({ where: { id } });
+      if (!user) {
+        res.status(404).json({ error: 'User not found.' });
+        return;
+      }
+
+      // Delete related records first, then the user
+      await prisma.$transaction([
+        prisma.rating.deleteMany({ where: { OR: [{ fromId: id }, { toId: id }] } }),
+        prisma.savedLocation.deleteMany({ where: { userId: id } }),
+        prisma.emergencyContact.deleteMany({ where: { userId: id } }),
+        prisma.driverLocation.deleteMany({ where: { driverId: id } }),
+        prisma.trip.updateMany({ where: { driverId: id }, data: { driverId: null as unknown as string } }),
+        prisma.user.delete({ where: { id } }),
+      ]);
+
+      res.json({ message: `User ${user.name} (${user.email}) has been deleted.` });
+    } catch (error) {
+      console.error("[admin/users/delete] Error:", error);
+      res.status(500).json({ error: "Failed to delete user" });
+    }
+  }
+);
 
 export default router;

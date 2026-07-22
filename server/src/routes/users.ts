@@ -196,4 +196,56 @@ router.put(
   }
 );
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/users/me/stats — Driver/Rider stats
+// ─────────────────────────────────────────────────────────────
+
+router.get(
+  "/me/stats",
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const userRole = req.user!.role;
+
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      const whereClause = userRole === "DRIVER"
+        ? { driverId: userId }
+        : { riderId: userId };
+
+      const [totalTrips, completedTrips, todayTrips, todayEarnings, avgRating] = await Promise.all([
+        prisma.trip.count({ where: whereClause }),
+        prisma.trip.count({ where: { ...whereClause, status: "COMPLETED" } }),
+        prisma.trip.count({ where: { ...whereClause, status: "COMPLETED", completedAt: { gte: todayStart } } }),
+        prisma.trip.aggregate({
+          where: { ...whereClause, status: "COMPLETED", completedAt: { gte: todayStart } },
+          _sum: { fare: true },
+        }),
+        prisma.rating.aggregate({
+          where: { toId: userId },
+          _avg: { stars: true },
+          _count: true,
+        }),
+      ]);
+
+      res.status(200).json({
+        totalTrips,
+        completedTrips,
+        todayTrips,
+        todayEarnings: todayEarnings._sum.fare || 0,
+        rating: avgRating._avg.stars ? Math.round(avgRating._avg.stars * 10) / 10 : null,
+        totalRatings: avgRating._count,
+      });
+    } catch (error) {
+      console.error("[users/me/stats] Error:", error);
+      res.status(500).json({
+        error: "Internal server error",
+        message: "Failed to fetch stats.",
+      });
+    }
+  }
+);
+
 export default router;

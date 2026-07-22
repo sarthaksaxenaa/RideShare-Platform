@@ -32,6 +32,13 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Redirect non-admin users
+  useEffect(() => {
+    if (user && user.role !== 'ADMIN') {
+      router.replace('/dashboard');
+    }
+  }, [user, router]);
+
   const fetchStats = useCallback(async () => {
     try {
       const res = await api.get('/admin/stats');

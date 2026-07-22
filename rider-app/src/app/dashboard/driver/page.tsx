@@ -9,6 +9,7 @@ import { useSocketStore } from '@/stores/socket-store';
 import { useTripStore } from '@/stores/trip-store';
 import { useLocationStore } from '@/stores/location-store';
 import { formatCurrency } from '@/lib/utils';
+import api from '@/lib/api';
 
 const MapView = lazy(() => import('@/components/map/map-view'));
 
@@ -23,6 +24,8 @@ interface TripRequest {
   dropLng: number;
   fare: number;
   distanceKm: number;
+  pickupAddress?: string;
+  dropAddress?: string;
 }
 
 export default function DriverDashboardPage() {
@@ -38,6 +41,7 @@ export default function DriverDashboardPage() {
   const [tripRequests, setTripRequests] = useState<TripRequest[]>([]);
   const [todayEarnings, setTodayEarnings] = useState(0);
   const [todayTrips, setTodayTrips] = useState(0);
+  const [driverRating, setDriverRating] = useState<number | null>(null);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
 
   const isDriver = user?.role === 'DRIVER';
@@ -55,6 +59,16 @@ export default function DriverDashboardPage() {
     acquirePreciseLocation();
   }, [acquirePreciseLocation]);
 
+  // Fetch real driver stats from API
+  useEffect(() => {
+    if (!isDriver) return;
+    api.get('/users/me/stats').then((res) => {
+      setTodayEarnings(res.data.todayEarnings || 0);
+      setTodayTrips(res.data.todayTrips || 0);
+      setDriverRating(res.data.rating);
+    }).catch(() => {});
+  }, [isDriver]);
+
   // Send driver location periodically when online
   useEffect(() => {
     if (!socket || !isOnline || !userPosition) return;
@@ -70,9 +84,28 @@ export default function DriverDashboardPage() {
   useEffect(() => {
     if (!socket) return;
     const handleRequest = (data: TripRequest) => {
-      setTripRequests((prev) => {
-        if (prev.find((r) => r.tripId === data.tripId)) return prev;
-        return [...prev, data];
+      // Reverse-geocode pickup & drop addresses
+      const enrichWithAddresses = async (req: TripRequest): Promise<TripRequest> => {
+        try {
+          const [pickupRes, dropRes] = await Promise.all([
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${req.pickupLat}&lon=${req.pickupLng}&format=json&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'en' } }).then(r => r.json()),
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${req.dropLat}&lon=${req.dropLng}&format=json&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'en' } }).then(r => r.json()),
+          ]);
+          const fmt = (d: Record<string, unknown>) => {
+            const a = (d.address || {}) as Record<string, string>;
+            const parts = [a.amenity || a.building || a.road || '', a.neighbourhood || a.suburb || '', a.city || a.town || ''].filter(Boolean);
+            return parts.length > 0 ? parts.join(', ') : (d.display_name as string || '').split(',').slice(0, 2).join(',');
+          };
+          return { ...req, pickupAddress: fmt(pickupRes), dropAddress: fmt(dropRes) };
+        } catch {
+          return req;
+        }
+      };
+      enrichWithAddresses(data).then((enriched) => {
+        setTripRequests((prev) => {
+          if (prev.find((r) => r.tripId === enriched.tripId)) return prev;
+          return [...prev, enriched];
+        });
       });
       toast('New ride request!', { description: `${data.riderName} · ${formatCurrency(data.fare)}` });
     };
@@ -194,8 +227,8 @@ export default function DriverDashboardPage() {
               <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-base">⭐</div>
               <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Rating</p>
             </div>
-            <p className="text-xl font-bold text-gray-900">4.9</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">Avg from riders</p>
+            <p className="text-xl font-bold text-gray-900">{driverRating !== null ? driverRating : '—'}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{driverRating !== null ? 'Avg from riders' : 'No ratings yet'}</p>
           </div>
           <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
             <div className="flex items-center gap-2 mb-2">
@@ -329,9 +362,9 @@ export default function DriverDashboardPage() {
                         <div className="w-px h-6 bg-gray-300" />
                         <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white shadow-sm" />
                       </div>
-                      <div className="flex flex-col gap-3 text-xs text-gray-600">
-                        <span>Lat: {req.pickupLat.toFixed(4)}, Lng: {req.pickupLng.toFixed(4)}</span>
-                        <span>Lat: {req.dropLat.toFixed(4)}, Lng: {req.dropLng.toFixed(4)}</span>
+                      <div className="flex flex-col gap-3 text-xs text-gray-600 flex-1 min-w-0">
+                        <span className="truncate">{req.pickupAddress || `${req.pickupLat.toFixed(4)}, ${req.pickupLng.toFixed(4)}`}</span>
+                        <span className="truncate">{req.dropAddress || `${req.dropLat.toFixed(4)}, ${req.dropLng.toFixed(4)}`}</span>
                       </div>
                     </div>
 

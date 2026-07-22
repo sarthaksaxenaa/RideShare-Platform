@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export type PaymentMethod = 'UPI' | 'CARD' | 'WALLET' | 'CASH';
+export type PaymentMethod = 'UPI' | 'CARD' | 'CASH';
 
 interface PaymentSelectorProps {
   selected: PaymentMethod;
@@ -13,7 +13,6 @@ interface PaymentSelectorProps {
 const methods: { id: PaymentMethod; label: string; icon: string; sub: string }[] = [
   { id: 'UPI', label: 'UPI', icon: '📱', sub: 'Google Pay, PhonePe, Paytm' },
   { id: 'CARD', label: 'Card', icon: '💳', sub: 'Credit or Debit card' },
-  { id: 'WALLET', label: 'Wallet', icon: '👛', sub: 'RideShare Wallet · ₹0.00' },
   { id: 'CASH', label: 'Cash', icon: '💵', sub: 'Pay driver directly' },
 ];
 

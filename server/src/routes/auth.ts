@@ -79,6 +79,16 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({
+        error: "Validation error",
+        message: "Please provide a valid email address.",
+      });
+      return;
+    }
+
     // ── Check for existing user ─────────────────────────────
     const existingUser = await prisma.user.findUnique({
       where: { email },

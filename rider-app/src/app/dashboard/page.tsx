@@ -15,10 +15,10 @@ const MapView = lazy(() => import('@/components/map/map-view'));
 const DEFAULT_CENTER: [number, number] = [28.6139, 77.209];
 
 const quickActions = [
-  { icon: '🏠', label: 'Home', sub: 'Set home address', color: 'bg-amber-50 text-amber-600 border-amber-100' },
-  { icon: '💼', label: 'Work', sub: 'Set office address', color: 'bg-blue-50 text-blue-600 border-blue-100' },
-  { icon: '🕐', label: 'History', sub: 'Past rides', color: 'bg-purple-50 text-purple-600 border-purple-100' },
-  { icon: '🎁', label: 'Offers', sub: 'Deals & promos', color: 'bg-green-50 text-green-600 border-green-100' },
+  { icon: '🏠', label: 'Home', sub: 'Set home address', color: 'bg-amber-50 text-amber-600 border-amber-100', href: '/dashboard/profile' },
+  { icon: '💼', label: 'Work', sub: 'Set office address', color: 'bg-blue-50 text-blue-600 border-blue-100', href: '/dashboard/profile' },
+  { icon: '🕐', label: 'History', sub: 'Past rides', color: 'bg-purple-50 text-purple-600 border-purple-100', href: '/dashboard/history' },
+  { icon: '⭐', label: 'My Rating', sub: 'View feedback', color: 'bg-green-50 text-green-600 border-green-100', href: '/dashboard/profile' },
 ];
 
 const steps = [
@@ -49,18 +49,21 @@ export default function RiderDashboardPage() {
   const [nearbyDrivers, setNearbyDrivers] = useState<{ lat: number; lng: number }[]>([]);
 
   const isDriver = user?.role === 'DRIVER';
+  const isAdmin = user?.role === 'ADMIN';
 
   // Get precise location on mount
   useEffect(() => {
     acquirePreciseLocation();
   }, [acquirePreciseLocation]);
 
-  // If driver, redirect to driver dashboard
+  // Redirect drivers and admins to their dashboards
   useEffect(() => {
     if (isDriver) {
       router.replace('/dashboard/driver');
+    } else if (isAdmin) {
+      router.replace('/dashboard/admin');
     }
-  }, [isDriver, router]);
+  }, [isDriver, isAdmin, router]);
 
   // Listen for nearby drivers
   useEffect(() => {
@@ -95,7 +98,7 @@ export default function RiderDashboardPage() {
   );
 
   const handleBook = useCallback(
-    (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number) => {
+    (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number, paymentMethod: string = 'UPI') => {
       if (!socket) {
         toast.error('Not connected to server. Please refresh.');
         return;
@@ -114,6 +117,7 @@ export default function RiderDashboardPage() {
         dropLat: drop.lat,
         dropLng: drop.lng,
         fare,
+        paymentMethod,
       });
       toast.success('Searching for nearby drivers...');
     },
@@ -208,6 +212,7 @@ export default function RiderDashboardPage() {
               {quickActions.map((action) => (
                 <button
                   key={action.label}
+                  onClick={() => router.push(action.href)}
                   className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${action.color}`}
                 >
                   <span className="text-xl">{action.icon}</span>

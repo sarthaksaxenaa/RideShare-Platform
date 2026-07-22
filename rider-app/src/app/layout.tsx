@@ -24,7 +24,10 @@ export const metadata: Metadata = {
   description:
     'Real-time rides, real-time trust. Book your next ride instantly with RideShare.',
   icons: {
-    icon: '/favicon.png',
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.png', type: 'image/png' },
+    ],
     apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',

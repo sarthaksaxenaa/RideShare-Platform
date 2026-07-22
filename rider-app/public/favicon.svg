@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!--
+    📚 ADAPTIVE SVG FAVICON
+    
+    This favicon uses CSS media queries to automatically change
+    colors based on the user's OS theme (light/dark mode).
+    
+    HOW IT WORKS:
+    - In light mode: dark purple car on light background
+    - In dark mode: bright indigo car on dark background
+    
+    The browser reads `prefers-color-scheme` and applies the
+    correct styles — this is the same media query that CSS uses
+    for dark mode, but embedded inside an SVG.
+    
+    WHY SVG INSTEAD OF PNG/ICO?
+    - SVGs scale perfectly to any size (retina displays)
+    - SVGs support CSS animations and media queries
+    - One file replaces multiple PNG sizes (16x16, 32x32, etc.)
+  -->
+  <style>
+    .bg { fill: #eef2ff; }
+    .car { fill: #4f46e5; }
+    .wheel { fill: #312e81; }
+    .road { fill: #c7d2fe; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #1e1b4b; }
+      .car { fill: #818cf8; }
+      .wheel { fill: #e0e7ff; }
+      .road { fill: #3730a3; }
+    }
+  </style>
+  <!-- Background circle -->
+  <circle class="bg" cx="32" cy="32" r="30"/>
+  <!-- Road -->
+  <rect class="road" x="8" y="38" width="48" height="4" rx="2"/>
+  <!-- Car body -->
+  <path class="car" d="M16 30 L20 20 L44 20 L48 30 L50 30 L50 36 L14 36 L14 30 Z"/>
+  <!-- Windows -->
+  <path fill="white" fill-opacity="0.3" d="M22 21 L26 21 L24 29 L18 29 Z"/>
+  <path fill="white" fill-opacity="0.3" d="M28 21 L42 21 L46 29 L26 29 Z"/>
+  <!-- Wheels -->
+  <circle class="wheel" cx="22" cy="38" r="4"/>
+  <circle class="wheel" cx="42" cy="38" r="4"/>
+  <circle fill="white" fill-opacity="0.4" cx="22" cy="38" r="1.5"/>
+  <circle fill="white" fill-opacity="0.4" cx="42" cy="38" r="1.5"/>
+  <!-- Headlight -->
+  <rect fill="#fbbf24" x="48" y="27" width="3" height="3" rx="1"/>
+</svg>

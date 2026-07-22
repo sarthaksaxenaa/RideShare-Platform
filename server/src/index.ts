@@ -169,3 +169,55 @@ server.listen(PORT, () => {
   console.log(`   Health check: http://localhost:${PORT}/health`);
   console.log(`   Environment:  ${process.env.NODE_ENV || "development"}`);
 });
+
+// ── Graceful Shutdown ───────────────────────────────────────
+//
+// 📚 WHAT IS GRACEFUL SHUTDOWN?
+// When a server needs to stop (deployment, scaling, crash recovery),
+// it should:
+//   1. Stop accepting NEW connections
+//   2. Let in-progress requests FINISH
+//   3. Close database connections
+//   4. Then exit cleanly
+//
+// 📚 WHY DOES THIS MATTER?
+// Without graceful shutdown:
+//   - Active WebSocket connections drop immediately
+//   - In-progress database writes may corrupt data
+//   - Users see "connection lost" errors during deployments
+//
+// 📚 SIGTERM vs SIGINT:
+//   - SIGTERM: Sent by process managers (Docker, Kubernetes, Render)
+//     when they want the process to stop cleanly.
+//   - SIGINT: Sent when you press Ctrl+C in the terminal.
+//   Both should trigger the same cleanup.
+
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n⏳ ${signal} received. Starting graceful shutdown...`);
+
+  // 1. Stop accepting new connections
+  server.close(() => {
+    console.log('   ✅ HTTP server closed (no new connections)');
+  });
+
+  // 2. Disconnect all Socket.io clients
+  io.close(() => {
+    console.log('   ✅ Socket.io connections closed');
+  });
+
+  // 3. Disconnect from the database
+  try {
+    const { prisma } = await import('./lib/prisma.js');
+    await prisma.$disconnect();
+    console.log('   ✅ Database connection closed');
+  } catch (err) {
+    console.error('   ❌ Error closing database:', err);
+  }
+
+  console.log('👋 Shutdown complete. Goodbye!');
+  process.exit(0);
+};
+
+// Register shutdown handlers
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

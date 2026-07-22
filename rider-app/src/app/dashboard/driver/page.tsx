@@ -10,6 +10,7 @@ import { useTripStore } from '@/stores/trip-store';
 import { useLocationStore } from '@/stores/location-store';
 import { formatCurrency } from '@/lib/utils';
 import api from '@/lib/api';
+import MapSkeleton from '@/components/map/map-skeleton';
 
 const MapView = lazy(() => import('@/components/map/map-view'));
 
@@ -249,13 +250,7 @@ export default function DriverDashboardPage() {
             transition={{ delay: 0.15 }}
             className="lg:col-span-3 h-[400px] lg:h-[500px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm"
           >
-            <Suspense
-              fallback={
-                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                  <div className="w-8 h-8 border-3 border-gray-200 border-t-green-500 rounded-full animate-spin" />
-                </div>
-              }
-            >
+            <Suspense fallback={<MapSkeleton />}>
               <MapView
                 center={mapCenter}
                 zoom={14}

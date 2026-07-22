@@ -9,6 +9,7 @@ import { useSocketStore } from '@/stores/socket-store';
 import { useTripStore } from '@/stores/trip-store';
 import { useLocationStore } from '@/stores/location-store';
 import BookingCard from '@/components/booking/booking-card';
+import MapSkeleton from '@/components/map/map-skeleton';
 
 const MapView = lazy(() => import('@/components/map/map-view'));
 
@@ -166,13 +167,7 @@ export default function RiderDashboardPage() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="lg:col-span-3 h-[400px] lg:h-[600px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm"
           >
-            <Suspense
-              fallback={
-                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                  <div className="w-8 h-8 border-3 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
-                </div>
-              }
-            >
+            <Suspense fallback={<MapSkeleton />}>
               <MapView
                 center={mapCenter}
                 pickup={pickupCoords}

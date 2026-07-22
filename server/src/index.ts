@@ -104,11 +104,36 @@ app.use(express.json());
 
 // ── Routes ──────────────────────────────────────────────────
 
-/** Health check — used by load balancers, uptime monitors, and
- *  docker HEALTHCHECK to verify the server is alive. */
+/**
+ * Health check — used by load balancers, uptime monitors, and
+ * docker HEALTHCHECK to verify the server is alive.
+ *
+ * 📚 WHY INCLUDE UPTIME & MEMORY?
+ * - `uptime`: How long the server has been running (in seconds).
+ *   If this is very low and keeps resetting, it means the server
+ *   is crashing and restarting — a sign of an OOM or startup error.
+ * - `memory`: Heap usage in MB. If this keeps growing, you have
+ *   a memory leak. If it's near the Node.js limit (~1.7GB), the
+ *   process will crash with OOM.
+ */
 app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  const memUsage = process.memoryUsage();
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    memory: {
+      heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
+      heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
+      rssMB: Math.round(memUsage.rss / 1024 / 1024),
+    },
+    node: process.version,
+    env: process.env.NODE_ENV || 'development',
+  });
 });
+
+/** Lightweight ping — just returns 200 for the fastest possible check */
+app.get("/api/ping", (_req, res) => { res.send("pong"); });
 
 /** Auth routes: /api/auth/register, /api/auth/login
  *  Rate limited to 20 req/15min to prevent brute-force attacks */

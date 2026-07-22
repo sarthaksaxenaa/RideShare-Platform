@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  sitemap.xml — Search Engine Sitemap
+  
+  WHY THIS FILE?
+  A sitemap is like a "table of contents" for your website.
+  When Google's crawler visits your site, it reads this file
+  to discover ALL your public pages — instead of guessing by
+  following links.
+  
+  RULES:
+  - Only list PUBLIC pages (not dashboard, not API routes)
+  - <priority> tells Google which pages matter most (1.0 = highest)
+  - <changefreq> hints how often the page content changes
+  - <lastmod> is the last time the page was updated
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Landing Page — most important page for SEO -->
+  <url>
+    <loc>https://rideshare-platform.vercel.app/</loc>
+    <lastmod>2026-07-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Login Page — users searching "rideshare login" should find this -->
+  <url>
+    <loc>https://rideshare-platform.vercel.app/login</loc>
+    <lastmod>2026-07-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>

@@ -1,0 +1,18 @@
+# ──────────────────────────────────────────────────────────────
+# robots.txt — Instructions for Search Engine Crawlers
+# ──────────────────────────────────────────────────────────────
+# User-agent: *    → applies to ALL crawlers (Googlebot, Bingbot, etc.)
+# Allow: /         → let them crawl the landing page
+# Disallow: /dashboard  → block all authenticated pages (private data!)
+# Disallow: /api        → block API routes from appearing in search results
+# Sitemap:         → tell crawlers where to find our sitemap
+# ──────────────────────────────────────────────────────────────
+
+User-agent: *
+Allow: /
+Allow: /login
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /api
+
+Sitemap: https://rideshare-platform.vercel.app/sitemap.xml

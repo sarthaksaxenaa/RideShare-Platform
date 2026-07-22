@@ -43,6 +43,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { prisma } from '../lib/prisma.js';
 import { findNearbyDrivers } from '../services/matching.js';
 import { capturePayment, cancelPayment } from '../services/stripe.js';
+import { geocodeTripAddresses } from '../services/geocoding.js';
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -152,7 +153,26 @@ export function registerTripHandlers(
         },
       });
 
-      // ── 2. Find nearby available drivers ───────────────────
+      // ── 2. Reverse geocode addresses in background ─────────
+      // WHY BACKGROUND? We don't want to delay the ride matching
+      // by ~1 second waiting for Nominatim. Instead, we fire off
+      // the geocoding request and update the trip record later.
+      // The trip works fine without addresses — they're just a
+      // nice-to-have for history and receipts.
+      geocodeTripAddresses(pickupLat, pickupLng, dropLat, dropLng)
+        .then(({ pickupAddress, dropAddress }) => {
+          if (pickupAddress || dropAddress) {
+            prisma.trip.update({
+              where: { id: trip.id },
+              data: {
+                ...(pickupAddress && { pickupAddress }),
+                ...(dropAddress && { dropAddress }),
+              },
+            }).catch((err: Error) => console.error('[geocode] Failed to save addresses:', err.message));
+          }
+        });
+
+      // ── 3. Find nearby available drivers ───────────────────
       // The matching service queries the DriverLocation table
       // and excludes drivers who are already on active trips.
       const nearbyDrivers = await findNearbyDrivers(pickupLat, pickupLng);

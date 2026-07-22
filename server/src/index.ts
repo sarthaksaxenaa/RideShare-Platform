@@ -44,6 +44,7 @@ import locationsRouter from "./routes/locations.js";
 import emergencyRouter from "./routes/emergency.js";
 import adminRouter from "./routes/admin.js";
 import { initSocket } from "./socket/index.js";
+import { authLimiter, generalLimiter } from "./middleware/rate-limit.js";
 
 // ── App & Server ────────────────────────────────────────────
 
@@ -109,8 +110,12 @@ app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-/** Auth routes: /api/auth/register, /api/auth/login */
-app.use("/api/auth", authRouter);
+/** Auth routes: /api/auth/register, /api/auth/login
+ *  Rate limited to 20 req/15min to prevent brute-force attacks */
+app.use("/api/auth", authLimiter, authRouter);
+
+/** Apply general rate limit (100 req/15min) to all other API routes */
+app.use("/api", generalLimiter);
 
 /** Trip routes: /api/trips — CRUD, estimation, payment intents */
 app.use("/api/trips", tripsRouter);

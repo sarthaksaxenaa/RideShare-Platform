@@ -635,5 +635,105 @@ router.post(
     }
   }
 );
+// ── Promo Code Validation ───────────────────────────────────
+//
+// 📚 HOW PROMO CODES WORK:
+// 1. User enters a code in the booking card
+// 2. Frontend calls POST /api/trips/validate-promo
+// 3. Server checks if the code exists and is valid
+// 4. Returns the discount type and amount
+// 5. Frontend applies the discount to the fare estimate
+//
+// 📚 WHY AN IN-MEMORY MAP?
+// For an MVP, a simple Map of promo codes is sufficient.
+// In production, you'd use a database table with fields like:
+//   - code, discountType, discountValue, maxUses, currentUses,
+//     expiresAt, minFare, isActive
+// This would support admin CRUD operations, usage tracking,
+// and automatic expiration.
+
+/** Available promo codes — replace with DB table in production */
+const PROMO_CODES: Record<string, {
+  discountType: 'PERCENT' | 'FLAT';
+  discountValue: number;
+  description: string;
+  minFare: number;
+}> = {
+  'RIDE20': {
+    discountType: 'PERCENT',
+    discountValue: 20,
+    description: '20% off your ride!',
+    minFare: 50,
+  },
+  'FIRST50': {
+    discountType: 'PERCENT',
+    discountValue: 50,
+    description: '50% off for new users!',
+    minFare: 100,
+  },
+  'FLAT30': {
+    discountType: 'FLAT',
+    discountValue: 30,
+    description: '₹30 off your next ride!',
+    minFare: 80,
+  },
+};
+
+router.post(
+  '/validate-promo',
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { code, fare } = req.body;
+
+      if (!code || typeof code !== 'string') {
+        res.status(400).json({ error: 'Promo code is required' });
+        return;
+      }
+
+      // Normalize: uppercase and trim whitespace
+      const normalized = code.trim().toUpperCase();
+
+      const promo = PROMO_CODES[normalized];
+
+      if (!promo) {
+        res.status(404).json({
+          error: 'Invalid promo code',
+          message: `"${code}" is not a valid promo code.`,
+        });
+        return;
+      }
+
+      // Check minimum fare requirement
+      if (fare && fare < promo.minFare) {
+        res.status(400).json({
+          error: 'Minimum fare not met',
+          message: `This promo requires a minimum fare of ₹${promo.minFare}.`,
+        });
+        return;
+      }
+
+      // Calculate discount amount
+      let discount = 0;
+      if (promo.discountType === 'PERCENT') {
+        discount = fare ? Math.round((fare * promo.discountValue) / 100) : 0;
+      } else {
+        discount = promo.discountValue;
+      }
+
+      res.json({
+        valid: true,
+        code: normalized,
+        discountType: promo.discountType,
+        discountValue: promo.discountValue,
+        discount, // Calculated discount in rupees
+        description: promo.description,
+      });
+    } catch (error) {
+      console.error('[trips/validate-promo] Error:', error);
+      res.status(500).json({ error: 'Failed to validate promo code' });
+    }
+  }
+);
 
 export default router;

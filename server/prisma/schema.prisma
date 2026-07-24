@@ -23,8 +23,8 @@ model DriverLocation {
   driverId  String   @id
   lat       Float
   lng       Float
-  updatedAt DateTime
-  User      User     @relation(fields: [driverId], references: [id])
+  updatedAt DateTime @default(now()) @updatedAt
+  driver    User     @relation(fields: [driverId], references: [id])
 }
 
 model EmergencyContact {
@@ -32,21 +32,21 @@ model EmergencyContact {
   userId String
   name   String
   phone  String
-  User   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 model Rating {
-  id                       String   @id @default(uuid())
-  tripId                   String   @unique
-  fromId                   String
-  toId                     String
-  stars                    Int
-  comment                  String?
-  tags                     String?
-  createdAt                DateTime @default(now())
-  User_Rating_toIdToUser   User     @relation("Rating_toIdToUser", fields: [toId], references: [id])
-  User_Rating_fromIdToUser User     @relation("Rating_fromIdToUser", fields: [fromId], references: [id])
-  Trip                     Trip     @relation(fields: [tripId], references: [id])
+  id        String   @id @default(uuid())
+  tripId    String   @unique
+  fromId    String
+  toId      String
+  stars     Int
+  comment   String?
+  tags      String?
+  createdAt DateTime @default(now())
+  to        User     @relation("Rating_toIdToUser", fields: [toId], references: [id])
+  from      User     @relation("Rating_fromIdToUser", fields: [fromId], references: [id])
+  trip      Trip     @relation(fields: [tripId], references: [id])
 }
 
 model SavedLocation {
@@ -58,58 +58,59 @@ model SavedLocation {
   lng       Float
   address   String
   createdAt DateTime @default(now())
-  User      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, label])
 }
 
 model Trip {
-  id                       String    @id @default(uuid())
-  status                   String    @default("REQUESTED")
-  riderId                  String
-  driverId                 String?
-  pickupLat                Float
-  pickupLng                Float
-  pickupAddress            String?
-  dropLat                  Float
-  dropLng                  Float
-  dropAddress              String?
-  distanceKm               Float?
-  durationMin              Int?
-  fare                     Int?
-  baseFare                 Int?
-  distanceFare             Int?
-  timeFare                 Int?
-  platformFee              Int?
-  vehicleType              String?
-  stripePaymentIntentId    String?
-  paymentStatus            String    @default("PENDING")
-  paymentMethod            String    @default("CARD")
-  rideOtp                  String?
-  createdAt                DateTime  @default(now())
-  completedAt              DateTime?
-  Rating                   Rating?
-  User_Trip_driverIdToUser User?     @relation("Trip_driverIdToUser", fields: [driverId], references: [id])
-  User_Trip_riderIdToUser  User      @relation("Trip_riderIdToUser", fields: [riderId], references: [id])
+  id                    String    @id @default(uuid())
+  status                String    @default("REQUESTED")
+  riderId               String
+  driverId              String?
+  pickupLat             Float
+  pickupLng             Float
+  pickupAddress         String?
+  dropLat               Float
+  dropLng               Float
+  dropAddress           String?
+  distanceKm            Float?
+  durationMin           Int?
+  fare                  Int?
+  baseFare              Int?
+  distanceFare          Int?
+  timeFare              Int?
+  platformFee           Int?
+  vehicleType           String?
+  stripePaymentIntentId String?
+  paymentStatus         String    @default("PENDING")
+  paymentMethod         String    @default("CARD")
+  rideOtp               String?
+  createdAt             DateTime  @default(now())
+  completedAt           DateTime?
+  rating                Rating?
+  driver                User?     @relation("Trip_driverIdToUser", fields: [driverId], references: [id])
+  rider                 User      @relation("Trip_riderIdToUser", fields: [riderId], references: [id])
 }
 
 model User {
-  id                         String             @id @default(uuid())
-  email                      String             @unique
-  password                   String
-  name                       String
-  role                       String
-  createdAt                  DateTime           @default(now())
-  avatarUrl                  String?
-  phone                      String?
-  vehicleModel               String?
-  vehicleNumber              String?
-  vehicleType                String?
-  DriverLocation             DriverLocation?
-  EmergencyContact           EmergencyContact[]
-  Rating_Rating_toIdToUser   Rating[]           @relation("Rating_toIdToUser")
-  Rating_Rating_fromIdToUser Rating[]           @relation("Rating_fromIdToUser")
-  SavedLocation              SavedLocation[]
-  Trip_Trip_driverIdToUser   Trip[]             @relation("Trip_driverIdToUser")
-  Trip_Trip_riderIdToUser    Trip[]             @relation("Trip_riderIdToUser")
+  id               String             @id @default(uuid())
+  email            String             @unique
+  password         String
+  name             String
+  role             String
+  createdAt        DateTime           @default(now())
+  avatarUrl        String?
+  phone            String?
+  vehicleModel     String?
+  vehicleNumber    String?
+  vehicleType      String?
+  driverLocation   DriverLocation?
+  emergencyContacts EmergencyContact[]
+  ratingsReceived  Rating[]           @relation("Rating_toIdToUser")
+  ratingsGiven     Rating[]           @relation("Rating_fromIdToUser")
+  savedLocations   SavedLocation[]
+  tripsAsDriver    Trip[]             @relation("Trip_driverIdToUser")
+  tripsAsRider     Trip[]             @relation("Trip_riderIdToUser")
 }
+

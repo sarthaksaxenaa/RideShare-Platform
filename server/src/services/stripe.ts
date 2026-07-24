@@ -63,7 +63,7 @@ import Stripe from "stripe";
 const IS_MOCK_STRIPE = !process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('YOUR_STRIPE');
 
 const stripe = IS_MOCK_STRIPE ? null as any : new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-05-28",
+  apiVersion: "2025-02-24.acacia",
 });
 
 // ── Payment Operations ───────────────────────────────────────

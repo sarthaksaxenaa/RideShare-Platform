@@ -74,6 +74,41 @@ export default function LandingPage() {
 
   return (
     <div className="bg-[#0a0a0f] text-white overflow-hidden">
+      {/*
+        📚 JSON-LD STRUCTURED DATA
+        This <script> tag is invisible to users but readable by Google's
+        crawler. It uses Schema.org vocabulary to tell search engines:
+        - "This is a WebApplication" (not just a random page)
+        - "It's a TravelApplication" (helps Google categorize it)
+        - "It's free to use"
+        - "Sarthak Saxena built it"
+        
+        Test it at: https://search.google.com/test/rich-results
+      */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: 'RideShare',
+            applicationCategory: 'TravelApplication',
+            operatingSystem: 'Web',
+            url: 'https://rideshare-platform.vercel.app',
+            description: 'Real-time ride-hailing platform with live GPS tracking, Stripe payment integration, and intelligent driver matching.',
+            offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+            author: { '@type': 'Person', name: 'Sarthak Saxena', url: 'https://github.com/sarthaksaxenaa' },
+            featureList: [
+              'Real-time GPS tracking via Socket.io',
+              'Stripe Hold & Capture payments',
+              'Dijkstra-optimized driver matching',
+              'Dark mode support',
+              'Emergency SOS with live location sharing',
+              'Admin dashboard with user management',
+            ],
+          }),
+        }}
+      />
 
       {/* ━━ Navigation ━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">

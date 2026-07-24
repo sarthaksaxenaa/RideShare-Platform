@@ -80,7 +80,26 @@ export function initSocket(io: SocketIOServer): void {
   // agnostic and works identically on web and mobile.
   io.use((socket: Socket, next) => {
     try {
-      const token = socket.handshake.auth.token as string | undefined;
+      // 📚 TOKEN EXTRACTION PRIORITY:
+      // 1. HttpOnly cookie (from browser — most secure)
+      // 2. Auth payload (from mobile/API clients — fallback)
+      //
+      // For cookies in WebSocket upgrade requests, the browser
+      // sends them in the `Cookie` header. We parse it manually
+      // since Socket.io doesn't use Express's cookie-parser.
+      let token: string | undefined;
+
+      // Try cookie first
+      const cookieHeader = socket.handshake.headers.cookie;
+      if (cookieHeader) {
+        const match = cookieHeader.match(/(?:^|;\s*)jwt=([^;]*)/);
+        if (match) token = match[1];
+      }
+
+      // Fallback to auth payload
+      if (!token) {
+        token = socket.handshake.auth.token as string | undefined;
+      }
 
       if (!token) {
         return next(new Error('Authentication error'));

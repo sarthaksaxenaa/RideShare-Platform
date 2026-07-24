@@ -81,24 +81,43 @@ export function authenticate(
 ): void {
   try {
     // ── 1. Extract the token ──────────────────────────────
-    const authHeader = req.headers.authorization;
+    //
+    // 📚 PRIORITY ORDER:
+    // 1. HttpOnly cookie (most secure — JS can't read it)
+    // 2. Authorization header (fallback for mobile/API clients)
+    //
+    // Why check cookies first?
+    // HttpOnly cookies are immune to XSS attacks because
+    // JavaScript cannot access them via document.cookie.
+    // The Authorization header is kept as a fallback for
+    // non-browser clients (mobile apps, Postman, etc.)
+    //
+    let token: string | undefined;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    // Check HttpOnly cookie first
+    if (req.cookies?.jwt) {
+      token = req.cookies.jwt;
+    }
+    // Fallback to Authorization header
+    else {
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith("Bearer ")) {
+        token = authHeader.split(" ")[1];
+      }
+    }
+
+    if (!token) {
       res.status(401).json({
         error: "Authentication required",
-        message: "Please provide a valid Bearer token in the Authorization header.",
+        message: "Please log in to continue.",
       });
       return;
     }
-
-    const token = authHeader.split(" ")[1];
 
     // ── 2. Verify & decode ────────────────────────────────
     const secret = process.env.JWT_SECRET;
 
     if (!secret) {
-      // Fail fast — this is a server misconfiguration, not a
-      // client error. Log it but don't leak internals.
       console.error("[auth] JWT_SECRET is not set in environment variables.");
       res.status(500).json({ error: "Internal server error" });
       return;
@@ -110,7 +129,6 @@ export function authenticate(
     req.user = decoded;
     next();
   } catch (error) {
-    // jwt.verify throws on expiry, malformed tokens, etc.
     res.status(401).json({
       error: "Invalid or expired token",
       message: "Your session has expired. Please log in again.",

@@ -1,4 +1,28 @@
+/**
+ * ────────────────────────────────────────────────────────────
+ * Socket.io Client — Cookie-Based Authentication
+ * ────────────────────────────────────────────────────────────
+ *
+ * 📚 HOW SOCKET AUTH WORKS WITH HTTPONLY COOKIES:
+ *
+ * BEFORE: We read the JWT from localStorage and sent it in
+ * the `auth: { token }` handshake payload. This was insecure
+ * because XSS could steal the token from localStorage.
+ *
+ * AFTER: We set `withCredentials: true` on the Socket.io
+ * client. This tells the browser to include cookies (including
+ * our HttpOnly 'jwt' cookie) in the WebSocket upgrade request.
+ * The server's Socket.io middleware reads the cookie to verify
+ * the user's identity.
+ *
+ * The server-side socket middleware (`socket/index.ts`) now
+ * checks BOTH cookie and auth payload, so this works with the
+ * existing server code.
+ * ────────────────────────────────────────────────────────────
+ */
+
 import { io, Socket } from 'socket.io-client';
+import { useAuthStore } from '@/stores/auth-store';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
 
@@ -11,8 +35,9 @@ let socket: Socket | null = null;
 export function getSocket(): Socket | null {
   if (typeof window === 'undefined') return null;
 
-  const token = localStorage.getItem('token');
-  if (!token) return null;
+  // Check if user is authenticated (from Zustand store, not localStorage)
+  const isAuthenticated = useAuthStore.getState().isAuthenticated;
+  if (!isAuthenticated) return null;
 
   if (socket?.connected) return socket;
 
@@ -23,7 +48,13 @@ export function getSocket(): Socket | null {
   }
 
   socket = io(SOCKET_URL, {
-    auth: { token },
+    /**
+     * 📚 withCredentials: true
+     * This tells the browser to send cookies (including our
+     * HttpOnly 'jwt' cookie) with the WebSocket upgrade request.
+     * Without this, the cookie won't be sent cross-origin.
+     */
+    withCredentials: true,
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,

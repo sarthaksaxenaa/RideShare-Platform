@@ -45,6 +45,8 @@ import emergencyRouter from "./routes/emergency.js";
 import adminRouter from "./routes/admin.js";
 import { initSocket } from "./socket/index.js";
 import { authLimiter, generalLimiter } from "./middleware/rate-limit.js";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
 
 // ── App & Server ────────────────────────────────────────────
 
@@ -82,6 +84,24 @@ app.use(
     credentials: true, // Allow cookies / auth headers
   })
 );
+
+/**
+ * 📚 HELMET — Security Headers
+ * Sets HTTP headers that protect against common attacks:
+ *  - X-Content-Type-Options: nosniff (prevents MIME-type sniffing)
+ *  - X-Frame-Options: DENY (prevents clickjacking)
+ *  - X-XSS-Protection: 1 (enables browser XSS filters)
+ *  - Strict-Transport-Security (forces HTTPS)
+ */
+app.use(helmet());
+
+/**
+ * 📚 COOKIE PARSER
+ * Parses the Cookie header and populates req.cookies.
+ * Needed for HttpOnly cookie-based JWT authentication.
+ * Without this, req.cookies would be undefined.
+ */
+app.use(cookieParser());
 
 /**
  * STRIPE WEBHOOK ROUTE — must be registered BEFORE express.json().

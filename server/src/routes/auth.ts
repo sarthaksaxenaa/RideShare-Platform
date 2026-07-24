@@ -53,6 +53,25 @@ const router = Router();
  */
 const SALT_ROUNDS = 12;
 
+/**
+ * 📚 COOKIE CONFIGURATION
+ *
+ * HttpOnly cookies are the secure way to store JWTs:
+ *  - httpOnly: true  → JavaScript CANNOT read this cookie (blocks XSS theft)
+ *  - secure: true    → Only sent over HTTPS (prevents interception)
+ *  - sameSite: 'lax' → Sent on same-site requests + top-level navigations
+ *                       ('strict' would break OAuth redirects)
+ *  - maxAge: 7 days  → Cookie expires automatically
+ *  - path: '/'       → Available on all routes
+ */
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+  path: '/',
+};
+
 // ─────────────────────────────────────────────────────────────
 // POST /register
 // ─────────────────────────────────────────────────────────────
@@ -121,6 +140,9 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
       process.env.JWT_SECRET!,
       { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
+
+    // Set JWT as HttpOnly cookie (secure, invisible to JavaScript)
+    res.cookie('jwt', token, COOKIE_OPTIONS);
 
     // ── Respond ─────────────────────────────────────────────
     // Never return the hashed password to the client.
@@ -197,6 +219,9 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
       process.env.JWT_SECRET!,
       { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
     );
+
+    // Set JWT as HttpOnly cookie (secure, invisible to JavaScript)
+    res.cookie('jwt', token, COOKIE_OPTIONS);
 
     // ── Respond ─────────────────────────────────────────────
     res.status(200).json({
@@ -279,6 +304,21 @@ router.post("/reset-password", async (req: Request, res: Response): Promise<void
       message: "Failed to reset password.",
     });
   }
+});
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/auth/logout — Clear the auth cookie
+// ─────────────────────────────────────────────────────────────
+
+router.post("/logout", (_req: Request, res: Response): void => {
+  /**
+   * 📚 WHY A LOGOUT ENDPOINT?
+   * With HttpOnly cookies, the frontend can't clear the cookie
+   * via JavaScript (that's the whole point of HttpOnly!).
+   * So the server must clear it by setting maxAge to 0.
+   */
+  res.cookie('jwt', '', { ...COOKIE_OPTIONS, maxAge: 0 });
+  res.status(200).json({ message: 'Logged out successfully' });
 });
 
 export default router;

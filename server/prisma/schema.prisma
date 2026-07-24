@@ -2,6 +2,18 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/**
+ * 📚 DATABASE PROVIDER
+ *
+ * Currently using SQLite for local development (zero setup).
+ * For production, switch to PostgreSQL:
+ *
+ *   1. Change provider below:  "sqlite"  →  "postgresql"
+ *   2. Update .env DATABASE_URL to your PostgreSQL connection string
+ *   3. Run: npx prisma migrate dev --name switch-to-postgres
+ *
+ * Free PostgreSQL hosting: Neon (neon.tech), Supabase, Railway
+ */
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")

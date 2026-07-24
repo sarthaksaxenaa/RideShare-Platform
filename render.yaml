@@ -1,0 +1,39 @@
+# ────────────────────────────────────────────────────────
+# Render.com — Infrastructure as Code (IaC)
+# ────────────────────────────────────────────────────────
+#
+# This file tells Render exactly how to deploy the backend.
+# When you connect your GitHub repo to Render, it reads this
+# file and auto-configures everything.
+#
+# CI/CD Flow:
+#   1. You push code to GitHub
+#   2. Render detects the push (webhook)
+#   3. Render runs `npm install` + `npm run build`
+#   4. Render restarts the server with the new code
+#   5. Zero downtime — your API never goes offline
+# ────────────────────────────────────────────────────────
+
+services:
+  - type: web
+    name: rideshare-api
+    runtime: node
+    region: singapore  # Closest to India (matches Neon DB region)
+    rootDir: server
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false  # You'll set this manually in Render dashboard (secret)
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true  # Auto-deploy on every GitHub push

@@ -19,10 +19,31 @@ export const viewport: Viewport = {
   themeColor: '#ffffff',
 };
 
+/**
+ * 📚 metadataBase
+ * Sets the canonical base URL for the entire site. Next.js uses
+ * this to:
+ *  - Generate absolute URLs for OG images (relative paths like
+ *    '/og-image.jpg' become 'https://domain.com/og-image.jpg')
+ *  - Set the canonical <link> tag (tells Google "this is the
+ *    real URL, don't index duplicates")
+ *
+ * Without this, social platforms can't resolve relative image paths.
+ */
 export const metadata: Metadata = {
-  title: 'RideShare — Book rides instantly',
+  metadataBase: new URL('https://rideshare-platform.vercel.app'),
+  title: {
+    default: 'RideShare — Real-Time Ride Hailing Platform',
+    template: '%s | RideShare',  // Per-page titles become "Page Name | RideShare"
+  },
   description:
-    'Real-time rides, real-time trust. Book your next ride instantly with RideShare.',
+    'Book rides instantly with real-time GPS tracking, Stripe payments, and intelligent driver matching. Built with Next.js, Socket.io, and Prisma.',
+  keywords: [
+    'ride hailing', 'cab booking', 'real-time tracking', 'socket.io',
+    'next.js', 'stripe payments', 'rideshare', 'transportation app',
+  ],
+  authors: [{ name: 'Sarthak Saxena' }],
+  creator: 'Sarthak Saxena',
   icons: {
     icon: [
       { url: '/favicon.svg', type: 'image/svg+xml' },
@@ -31,6 +52,46 @@ export const metadata: Metadata = {
     apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
+
+  /**
+   * 📚 Open Graph Tags
+   * The Open Graph protocol (created by Facebook) tells social
+   * platforms how to display your link when shared. Without these,
+   * sharing your URL on LinkedIn/WhatsApp shows a plain text link.
+   * With them, it shows a rich card with image, title, description.
+   *
+   * og:type = 'website' tells platforms this is a general website
+   * (vs 'article', 'product', etc.)
+   */
+  openGraph: {
+    title: 'RideShare — Real-Time Ride Hailing Platform',
+    description: 'Book rides instantly with real-time GPS tracking, Stripe payments, and intelligent driver matching.',
+    url: 'https://rideshare-platform.vercel.app',
+    siteName: 'RideShare',
+    type: 'website',
+    locale: 'en_IN',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'RideShare — Real-Time Ride Hailing Platform',
+      },
+    ],
+  },
+
+  /**
+   * 📚 Twitter Card Tags
+   * Twitter has its own meta tag system (separate from OG).
+   * 'summary_large_image' shows a big image card instead of a
+   * small thumbnail — much more visually impactful.
+   */
+  twitter: {
+    card: 'summary_large_image',
+    title: 'RideShare — Real-Time Ride Hailing Platform',
+    description: 'Book rides instantly with real-time GPS tracking, Stripe payments, and intelligent driver matching.',
+    images: ['/og-image.jpg'],
+  },
 };
 
 export default function RootLayout({

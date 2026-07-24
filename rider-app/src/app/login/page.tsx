@@ -94,7 +94,7 @@ export default function LoginPage() {
           password,
           role,
         });
-        login(res.data.user, res.data.token);
+        login(res.data.user);
         router.replace('/dashboard');
       } else {
         const res = await api.post('/auth/login', {
@@ -102,7 +102,7 @@ export default function LoginPage() {
           password,
           role,
         });
-        login(res.data.user, res.data.token);
+        login(res.data.user);
         router.replace('/dashboard');
       }
     } catch (err: unknown) {
@@ -119,7 +119,7 @@ export default function LoginPage() {
       else if (status === 404)
         setError('No account found with this email. Please sign up first.');
       else if (status) setError(`Server error (${status}). Please try again.`);
-      else setError('Cannot connect to server. Please check if the backend is running.');
+      else setError('Service temporarily unavailable. Please try again in a moment.');
     } finally {
       setLoading(false);
     }

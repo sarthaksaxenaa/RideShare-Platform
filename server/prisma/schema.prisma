@@ -28,7 +28,7 @@ model DriverLocation {
 }
 
 model EmergencyContact {
-  id     String @id
+  id     String @id @default(uuid())
   userId String
   name   String
   phone  String
@@ -36,7 +36,7 @@ model EmergencyContact {
 }
 
 model Rating {
-  id                       String   @id
+  id                       String   @id @default(uuid())
   tripId                   String   @unique
   fromId                   String
   toId                     String
@@ -50,7 +50,7 @@ model Rating {
 }
 
 model SavedLocation {
-  id        String   @id
+  id        String   @id @default(uuid())
   userId    String
   label     String
   icon      String   @default("📍")
@@ -64,7 +64,7 @@ model SavedLocation {
 }
 
 model Trip {
-  id                       String    @id
+  id                       String    @id @default(uuid())
   status                   String    @default("REQUESTED")
   riderId                  String
   driverId                 String?
@@ -94,7 +94,7 @@ model Trip {
 }
 
 model User {
-  id                         String             @id
+  id                         String             @id @default(uuid())
   email                      String             @unique
   password                   String
   name                       String

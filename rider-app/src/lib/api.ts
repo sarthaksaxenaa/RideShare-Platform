@@ -1,33 +1,33 @@
 /**
  * ────────────────────────────────────────────────────────────
- * API Client — Axios Instance with Cookie-Based Auth
+ * API Client — Axios with Silent Token Refresh
  * ────────────────────────────────────────────────────────────
  *
- * 📚 HOW AUTHENTICATION WORKS NOW:
+ * 📚 HOW THE REFRESH FLOW WORKS:
  *
- * BEFORE (insecure):
- *   1. Login → server sends JWT in response body
- *   2. Frontend stores JWT in localStorage
- *   3. Every request → read from localStorage → set Authorization header
- *   ❌ Problem: Any XSS attack can steal the token via JavaScript
+ * 1. User makes an API call (e.g., GET /api/trips)
+ * 2. Access token cookie has expired (15 min lifetime)
+ * 3. Server returns 401 Unauthorized
+ * 4. Our response interceptor catches this 401
+ * 5. Interceptor calls POST /api/auth/refresh
+ *    → The browser automatically sends the refresh token cookie
+ *      (it has path: '/api/auth' so it's included)
+ * 6. Server validates refresh token, issues new access token cookie
+ * 7. Interceptor retries the ORIGINAL request → SUCCESS!
  *
- * AFTER (secure):
- *   1. Login → server sets JWT as HttpOnly cookie
- *   2. Frontend stores NOTHING (cookie is managed by the browser)
- *   3. Every request → browser automatically sends the cookie
- *   ✅ Secure: JavaScript CANNOT read HttpOnly cookies
+ * The user never sees any interruption. The entire flow is invisible.
  *
- * 📚 WHAT IS `withCredentials`?
- * By default, browsers don't send cookies on cross-origin requests.
- * Since our frontend (localhost:3000) and backend (localhost:3001)
- * are on different ports (= different origins), we need:
- *   - Frontend: `withCredentials: true` on axios
- *   - Backend: `credentials: true` in CORS config
- * This tells the browser "yes, include cookies for this domain."
+ * 📚 QUEUE MECHANISM:
+ * If multiple API calls fail simultaneously (common on page load),
+ * we don't want 10 parallel refresh calls. We use a flag
+ * (`isRefreshing`) and a queue (`failedQueue`) to:
+ *  - Send only ONE refresh request
+ *  - Queue all other failed requests
+ *  - Retry them ALL after the refresh succeeds
  * ────────────────────────────────────────────────────────────
  */
 
-import axios from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api';
 
@@ -35,26 +35,86 @@ const api = axios.create({
   baseURL: API_BASE,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
-
-  /**
-   * 📚 withCredentials: true
-   * This single line is what makes HttpOnly cookie auth work.
-   * Without it, the browser won't send the 'jwt' cookie to
-   * our backend, and every request would return 401.
-   */
-  withCredentials: true,
+  withCredentials: true,  // Send cookies cross-origin
 });
 
-// Handle 401s globally — auto-redirect to login
+// ── Refresh Token Queue ─────────────────────────────────────
+
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value: unknown) => void;
+  reject: (reason: unknown) => void;
+  config: InternalAxiosRequestConfig;
+}> = [];
+
+/**
+ * Process all queued requests after a successful token refresh.
+ * Each request is retried with the new access token (which is
+ * automatically included via the cookie — no manual header work).
+ */
+function processQueue(error: AxiosError | null) {
+  failedQueue.forEach((entry) => {
+    if (error) {
+      entry.reject(error);
+    } else {
+      // Retry the original request — the new access token cookie
+      // is automatically sent by the browser
+      entry.resolve(api(entry.config));
+    }
+  });
+  failedQueue = [];
+}
+
+// ── Response Interceptor — Silent Refresh ───────────────────
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      // Don't redirect if already on login page
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+  async (error: AxiosError) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // Only attempt refresh on 401 errors (not on login/register/refresh itself)
+    const isAuthEndpoint = originalRequest?.url?.includes('/auth/login')
+      || originalRequest?.url?.includes('/auth/register')
+      || originalRequest?.url?.includes('/auth/refresh')
+      || originalRequest?.url?.includes('/auth/logout');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+      // Mark this request as already retried (prevent infinite loops)
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        // Another refresh is already in progress — queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject, config: originalRequest });
+        });
+      }
+
+      isRefreshing = true;
+
+      try {
+        // Call the refresh endpoint — browser sends the jwt_refresh cookie
+        await axios.post(`${API_BASE}/auth/refresh`, {}, { withCredentials: true });
+
+        // Refresh succeeded! Process all queued requests
+        processQueue(null);
+
+        // Retry the original request
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed — token expired or invalid
+        processQueue(refreshError as AxiosError);
+
+        // Redirect to login
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   }
 );

@@ -54,23 +54,71 @@ const router = Router();
 const SALT_ROUNDS = 12;
 
 /**
- * 📚 COOKIE CONFIGURATION
+ * 📚 REFRESH TOKEN MECHANISM
  *
- * HttpOnly cookies are the secure way to store JWTs:
- *  - httpOnly: true  → JavaScript CANNOT read this cookie (blocks XSS theft)
- *  - secure: true    → Only sent over HTTPS (prevents interception)
- *  - sameSite: 'lax' → Sent on same-site requests + top-level navigations
- *                       ('strict' would break OAuth redirects)
- *  - maxAge: 7 days  → Cookie expires automatically
- *  - path: '/'       → Available on all routes
+ * WHY TWO TOKENS?
+ * A single long-lived token (7 days) is dangerous — if stolen,
+ * the attacker has a full week of access. With refresh tokens:
+ *
+ *   Access Token  (15 min)  → Used for every API call. Short-lived
+ *                              so if stolen, damage is limited.
+ *   Refresh Token (7 days)  → Used ONLY to get a new access token.
+ *                              Stored in a cookie that's sent ONLY
+ *                              to /api/auth/* (not every request).
+ *
+ * FLOW:
+ *   1. Login → Server sets both cookies
+ *   2. User makes API calls → Access token cookie is sent
+ *   3. Access token expires (15 min) → API returns 401
+ *   4. Frontend auto-calls /api/auth/refresh → Gets new access token
+ *   5. Frontend retries the original request → Works!
+ *   6. Refresh token expires (7 days) → User must login again
+ *
+ * WHY IS THIS SAFER?
+ * - Access token stolen? Attacker only has 15 minutes
+ * - Refresh token has `path: '/api/auth'` so it's ONLY sent to
+ *   auth endpoints, not to every API call — smaller attack surface
  */
-const COOKIE_OPTIONS = {
+const ACCESS_TOKEN_EXPIRY = '15m';   // Short-lived
+const REFRESH_TOKEN_EXPIRY = '7d';   // Long-lived
+
+/** Cookie config for the access token (sent on ALL requests) */
+const ACCESS_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
+  maxAge: 15 * 60 * 1000, // 15 minutes
   path: '/',
 };
+
+/** Cookie config for the refresh token (sent ONLY to /api/auth/*) */
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  path: '/api/auth', // 📚 Restricted path — only sent to auth endpoints!
+};
+
+/** Helper: generate both tokens and set cookies */
+function issueTokens(res: Response, user: { id: string; role: string; email: string }) {
+  const payload = { id: user.id, role: user.role, email: user.email };
+
+  const accessToken = jwt.sign(payload, process.env.JWT_SECRET!, {
+    expiresIn: ACCESS_TOKEN_EXPIRY,
+  });
+
+  const refreshToken = jwt.sign(
+    { ...payload, type: 'refresh' },  // 'type' distinguishes from access tokens
+    process.env.JWT_SECRET!,
+    { expiresIn: REFRESH_TOKEN_EXPIRY }
+  );
+
+  res.cookie('jwt', accessToken, ACCESS_COOKIE_OPTIONS);
+  res.cookie('jwt_refresh', refreshToken, REFRESH_COOKIE_OPTIONS);
+
+  return { accessToken, refreshToken };
+}
 
 // ─────────────────────────────────────────────────────────────
 // POST /register
@@ -134,20 +182,12 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
       },
     });
 
-    // ── Sign JWT ────────────────────────────────────────────
-    const token = jwt.sign(
-      { id: user.id, role: user.role, email: user.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-    );
-
-    // Set JWT as HttpOnly cookie (secure, invisible to JavaScript)
-    res.cookie('jwt', token, COOKIE_OPTIONS);
+    // ── Issue access + refresh tokens ────────────────────────
+    issueTokens(res, user);
 
     // ── Respond ─────────────────────────────────────────────
     // Never return the hashed password to the client.
     res.status(201).json({
-      token,
       user: {
         id: user.id,
         email: user.email,
@@ -213,19 +253,11 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // ── Sign JWT ────────────────────────────────────────────
-    const token = jwt.sign(
-      { id: user.id, role: user.role, email: user.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
-    );
-
-    // Set JWT as HttpOnly cookie (secure, invisible to JavaScript)
-    res.cookie('jwt', token, COOKIE_OPTIONS);
+    // ── Issue access + refresh tokens ────────────────────────
+    issueTokens(res, user);
 
     // ── Respond ─────────────────────────────────────────────
     res.status(200).json({
-      token,
       user: {
         id: user.id,
         email: user.email,
@@ -307,17 +339,103 @@ router.post("/reset-password", async (req: Request, res: Response): Promise<void
 });
 
 // ─────────────────────────────────────────────────────────────
-// POST /api/auth/logout — Clear the auth cookie
+// POST /api/auth/refresh — Issue a new access token
+// ─────────────────────────────────────────────────────────────
+
+router.post("/refresh", async (req: Request, res: Response): Promise<void> => {
+  /**
+   * 📚 HOW TOKEN REFRESH WORKS:
+   *
+   * 1. Frontend's access token expires (15 min)
+   * 2. API returns 401
+   * 3. Frontend's axios interceptor catches the 401
+   * 4. Interceptor calls POST /api/auth/refresh
+   * 5. This endpoint reads the refresh token from cookies
+   * 6. If valid → issue new access token (new 15 min)
+   * 7. If invalid → return 401 (user must login again)
+   *
+   * The refresh token cookie has path: '/api/auth', so the
+   * browser ONLY sends it to this endpoint — not to every
+   * API call. This reduces the attack surface.
+   */
+  try {
+    const refreshToken = req.cookies?.jwt_refresh;
+
+    if (!refreshToken) {
+      res.status(401).json({
+        error: 'No refresh token',
+        message: 'Please log in again.',
+      });
+      return;
+    }
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      res.status(500).json({ error: 'Internal server error' });
+      return;
+    }
+
+    // Verify the refresh token
+    const decoded = jwt.verify(refreshToken, secret) as {
+      id: string; role: string; email: string; type?: string;
+    };
+
+    // Ensure it's actually a refresh token, not an access token
+    if (decoded.type !== 'refresh') {
+      res.status(401).json({
+        error: 'Invalid token type',
+        message: 'Please log in again.',
+      });
+      return;
+    }
+
+    // Verify user still exists in DB (they might have been deleted)
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, role: true, email: true },
+    });
+
+    if (!user) {
+      res.status(401).json({
+        error: 'User not found',
+        message: 'Account no longer exists.',
+      });
+      return;
+    }
+
+    // Issue a fresh access token (refresh token stays the same)
+    const newAccessToken = jwt.sign(
+      { id: user.id, role: user.role, email: user.email },
+      secret,
+      { expiresIn: ACCESS_TOKEN_EXPIRY }
+    );
+
+    res.cookie('jwt', newAccessToken, ACCESS_COOKIE_OPTIONS);
+    res.status(200).json({ message: 'Token refreshed' });
+  } catch (error) {
+    // Refresh token expired or invalid → user must login again
+    res.cookie('jwt', '', { ...ACCESS_COOKIE_OPTIONS, maxAge: 0 });
+    res.cookie('jwt_refresh', '', { ...REFRESH_COOKIE_OPTIONS, maxAge: 0 });
+    res.status(401).json({
+      error: 'Refresh token expired',
+      message: 'Your session has expired. Please log in again.',
+    });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/auth/logout — Clear both auth cookies
 // ─────────────────────────────────────────────────────────────
 
 router.post("/logout", (_req: Request, res: Response): void => {
   /**
-   * 📚 WHY A LOGOUT ENDPOINT?
-   * With HttpOnly cookies, the frontend can't clear the cookie
-   * via JavaScript (that's the whole point of HttpOnly!).
-   * So the server must clear it by setting maxAge to 0.
+   * 📚 LOGOUT WITH REFRESH TOKENS
+   * Must clear BOTH cookies:
+   *  - jwt (access token)  → path: '/'
+   *  - jwt_refresh (refresh token) → path: '/api/auth'
    */
-  res.cookie('jwt', '', { ...COOKIE_OPTIONS, maxAge: 0 });
+  res.cookie('jwt', '', { ...ACCESS_COOKIE_OPTIONS, maxAge: 0 });
+  res.cookie('jwt_refresh', '', { ...REFRESH_COOKIE_OPTIONS, maxAge: 0 });
   res.status(200).json({ message: 'Logged out successfully' });
 });
 

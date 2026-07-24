@@ -15,7 +15,7 @@ generator client {
  * Free PostgreSQL hosting: Neon (neon.tech), Supabase, Railway
  */
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

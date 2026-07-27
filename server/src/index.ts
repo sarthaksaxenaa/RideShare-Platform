@@ -183,11 +183,21 @@ app.use("/api/admin", adminRouter);
 // ── Start ───────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3001;
+const HOST = '0.0.0.0'; // Bind to all interfaces (required by Render/Docker)
 
-server.listen(PORT, () => {
-  console.log(`🚗 RideShare Server running on port ${PORT}`);
+server.listen(Number(PORT), HOST, () => {
+  console.log(`🚗 RideShare Server running on ${HOST}:${PORT}`);
   console.log(`   Health check: http://localhost:${PORT}/health`);
   console.log(`   Environment:  ${process.env.NODE_ENV || "development"}`);
+});
+
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use`);
+  } else {
+    console.error('❌ Server error:', err);
+  }
+  process.exit(1);
 });
 
 // ── Graceful Shutdown ───────────────────────────────────────

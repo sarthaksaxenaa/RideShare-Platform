@@ -51,7 +51,10 @@ import { prisma } from '../lib/prisma.js';
 // Initialize with the secret key from environment variables.
 // The `apiVersion` is pinned to avoid breaking changes when
 // Stripe releases new API versions.
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+// Guard against missing key — app works without Stripe in mock mode.
+const IS_MOCK_STRIPE = !process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.includes('YOUR_STRIPE');
+
+const stripe = IS_MOCK_STRIPE ? null as any : new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-02-24.acacia',
 });
 
@@ -60,7 +63,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
  * generated in the Stripe Dashboard (or via `stripe listen`
  * in dev). It starts with `whsec_`.
  */
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET as string;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 const router = Router();
 

@@ -98,7 +98,7 @@ router.post(
           toId,
           stars,
           comment: comment || null,
-          tags: tags ? JSON.stringify(tags) : null,
+          tags: tags ? (typeof tags === 'string' ? tags : JSON.stringify(tags)) : null,
         },
       });
 

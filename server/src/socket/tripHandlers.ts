@@ -133,6 +133,25 @@ export function registerTripHandlers(
         return;
       }
 
+      // Guard: prevent duplicate active trips.
+      // A rider should not be able to request a new trip while
+      // they already have one that's REQUESTED, MATCHED, or STARTED.
+      const existingTrip = await prisma.trip.findFirst({
+        where: {
+          riderId: user.id,
+          status: { in: ['REQUESTED', 'MATCHED', 'STARTED'] },
+        },
+        select: { id: true, status: true },
+      });
+
+      if (existingTrip) {
+        socket.emit('trip:error', {
+          message: `You already have an active trip (${existingTrip.status}). Please complete or cancel it first.`,
+          tripId: existingTrip.id,
+        });
+        return;
+      }
+
       const { pickupLat, pickupLng, dropLat, dropLng, fare } = payload;
 
       // ── 1. Create the trip in the database ─────────────────

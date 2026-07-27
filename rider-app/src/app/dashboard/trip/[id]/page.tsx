@@ -345,8 +345,8 @@ export default function ActiveTripPage() {
                   <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
                     <span className="text-lg">🚗</span>
                     <div>
-                      <p className="text-xs font-semibold text-gray-700">Maruti Suzuki Swift</p>
-                      <p className="text-[10px] text-gray-400">DL 1C AB 1234 · White</p>
+                      <p className="text-xs font-semibold text-gray-700">{(tripData as any)?.driver?.vehicleModel || (tripData as any)?.vehicleType || 'Vehicle'}</p>
+                      <p className="text-[10px] text-gray-400">{(tripData as any)?.driver?.vehicleNumber || ''}</p>
                     </div>
                   </div>
                 </div>
@@ -391,7 +391,13 @@ export default function ActiveTripPage() {
             {!isDriver && (tripState === 'MATCHED' || tripState === 'IN_TRANSIT') && (
               <div className="grid grid-cols-3 gap-2">
                 <button
-                  onClick={() => toast.info('Calling driver...')}
+                  onClick={() => {
+                    if ((tripData as any)?.driver?.phone) {
+                      window.location.href = `tel:${(tripData as any).driver.phone}`;
+                    } else {
+                      toast.info('Driver phone number not available');
+                    }
+                  }}
                   className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>

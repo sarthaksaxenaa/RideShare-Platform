@@ -234,8 +234,14 @@ export default function RiderDashboardPage() {
             <p className="text-xs font-semibold text-indigo-200 uppercase tracking-wider mb-1">Limited Offer</p>
             <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">Get 20% off your first 3 rides!</h3>
             <p className="text-sm text-indigo-100 mb-4 max-w-md">Use code <span className="font-bold text-white bg-white/20 px-2 py-0.5 rounded">RIDE20</span> at checkout. Valid for new users.</p>
-            <button className="px-5 py-2.5 bg-white text-indigo-700 text-sm font-semibold rounded-xl hover:bg-indigo-50 transition-colors shadow-lg cursor-pointer">
-              Apply Code
+            <button 
+              onClick={() => {
+                navigator.clipboard.writeText('RIDE20');
+                toast.success('Promo code RIDE20 copied! Paste it in the booking form.');
+              }}
+              className="px-5 py-2.5 bg-white text-indigo-700 text-sm font-semibold rounded-xl hover:bg-indigo-50 transition-colors shadow-lg cursor-pointer"
+            >
+              Use RIDE20
             </button>
           </div>
           {/* Decorative circles */}

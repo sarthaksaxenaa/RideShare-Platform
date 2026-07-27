@@ -613,6 +613,8 @@ router.post(
       });
 
       // ── Create Stripe PaymentIntent (authorize only) ────────
+      // Note: createTripPaymentIntent internally converts rupees → paise
+      // (fare × 100) so we pass the rupee amount directly here.
       const paymentIntent = await createTripPaymentIntent(fare);
 
       // ── Link PaymentIntent to Trip ──────────────────────────

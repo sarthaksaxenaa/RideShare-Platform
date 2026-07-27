@@ -317,8 +317,7 @@ router.post("/reset-password", async (req: Request, res: Response): Promise<void
       return;
     }
 
-    // Hash new password and update
-    const bcrypt = await import("bcryptjs");
+    // Hash new password and update (bcrypt is imported at top of file)
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
     await prisma.user.update({

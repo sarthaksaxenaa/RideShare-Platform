@@ -108,16 +108,15 @@ export function registerDriverHandlers(
       });
 
       // ── 2. Check if driver has an active trip ──────────────
-      // A trip with status STARTED means the driver has picked
-      // up the rider and is en route to the drop-off. Only
-      // STARTED is checked (not MATCHED) because during MATCHED
-      // the driver is heading to the pickup — we still want
-      // the rider to see the driver approaching, but that's
-      // the trip room's job too.
+      // Check for BOTH 'MATCHED' and 'STARTED' statuses:
+      //   - MATCHED: driver is heading to pickup location
+      //   - STARTED: driver has picked up rider, en route to drop
+      // In both cases, only the trip's rider should see the
+      // driver's live location — NOT all connected users.
       const activeTrip = await prisma.trip.findFirst({
         where: {
           driverId: user.id,
-          status: 'STARTED',
+          status: { in: ['MATCHED', 'STARTED'] },
         },
         select: { id: true },
       });
@@ -139,11 +138,6 @@ export function registerDriverHandlers(
         // riders on the home screen. We use `io.emit()` to
         // broadcast to every connected socket. Riders use this
         // to render nearby driver markers on the map.
-        //
-        // WHY NOT `socket.broadcast.to('riders')`?
-        // We don't maintain a 'riders' room — riders connect
-        // from various screens and filtering is done client-side.
-        // A general broadcast is simpler and the payload is tiny.
         io.emit('driver:location', locationData);
       }
     } catch (err) {

@@ -20,7 +20,7 @@ services:
     runtime: node
     region: singapore  # Closest to India (matches Neon DB region)
     rootDir: server
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: npm install && npm run build
     startCommand: npm run start
     envVars:
       - key: NODE_ENV

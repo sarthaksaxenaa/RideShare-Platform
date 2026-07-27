@@ -412,8 +412,8 @@ export default function LandingPage() {
               © {new Date().getFullYear()} RideShare Platform. Built with precision.
             </p>
             <div className="flex items-center gap-6 text-xs text-gray-600">
-              <span className="hover:text-gray-300 transition-colors cursor-default">Privacy</span>
-              <span className="hover:text-gray-300 transition-colors cursor-default">Terms</span>
+              <Link href="/privacy" className="hover:text-gray-300 transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-gray-300 transition-colors">Terms</Link>
               <a href="mailto:support@rideshare.app" className="hover:text-gray-300 transition-colors">Support</a>
             </div>
           </div>

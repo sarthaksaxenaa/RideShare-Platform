@@ -36,16 +36,11 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
     });
 
     socket.on('connect_error', (err) => {
-      console.error('[Socket] Error:', err.message);
-      if (
-        err.message.includes('auth') ||
-        err.message.includes('token') ||
-        err.message.includes('jwt')
-      ) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
+      console.error('[Socket] Connection error:', err.message);
+      // Don't redirect to login on socket errors — the socket has
+      // auto-reconnection enabled and will keep trying. REST API
+      // interceptor already handles 401s with proper token refresh.
+      set({ isConnected: false });
     });
 
     // ── Trip events → Zustand trip store ──

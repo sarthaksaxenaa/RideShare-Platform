@@ -183,10 +183,11 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
     });
 
     // ── Issue access + refresh tokens ────────────────────────
-    issueTokens(res, user);
+    const { accessToken } = issueTokens(res, user);
 
     // ── Respond ─────────────────────────────────────────────
-    // Never return the hashed password to the client.
+    // Include accessToken in body for Socket.io auth fallback
+    // (cross-origin cookies may be blocked by browsers)
     res.status(201).json({
       user: {
         id: user.id,
@@ -194,6 +195,7 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
         name: user.name,
         role: user.role,
       },
+      accessToken,
     });
   } catch (error) {
     console.error("[auth/register] Unexpected error:", error);
@@ -254,9 +256,10 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
     }
 
     // ── Issue access + refresh tokens ────────────────────────
-    issueTokens(res, user);
+    const { accessToken } = issueTokens(res, user);
 
     // ── Respond ─────────────────────────────────────────────
+    // Include accessToken in body for Socket.io auth fallback
     res.status(200).json({
       user: {
         id: user.id,
@@ -264,6 +267,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
         name: user.name,
         role: user.role,
       },
+      accessToken,
     });
   } catch (error) {
     console.error("[auth/login] Unexpected error:", error);

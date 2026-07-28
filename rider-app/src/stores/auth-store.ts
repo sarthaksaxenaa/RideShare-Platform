@@ -52,10 +52,10 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
 
-      login: (user, _token?: string) => {
-        // Token is now in an HttpOnly cookie — we don't store it
-        // We only keep the user object for UI rendering
-        set({ user, token: null, isAuthenticated: true });
+      login: (user, token?: string) => {
+        // Store user for UI + token for Socket.io auth fallback
+        // (cross-origin cookies may be blocked by browsers)
+        set({ user, token: token || null, isAuthenticated: true });
       },
 
       logout: async () => {
@@ -79,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
       name: 'rideshare-auth',
       partialize: (state) => ({
         user: state.user,
-        // Don't persist token — it's in the HttpOnly cookie
+        token: state.token, // For Socket.io auth fallback
         isAuthenticated: state.isAuthenticated,
       }),
     }

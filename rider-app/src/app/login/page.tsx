@@ -94,7 +94,7 @@ export default function LoginPage() {
           password,
           role,
         });
-        login(res.data.user);
+        login(res.data.user, res.data.accessToken);
         router.replace('/dashboard');
       } else {
         const res = await api.post('/auth/login', {
@@ -102,7 +102,7 @@ export default function LoginPage() {
           password,
           role,
         });
-        login(res.data.user);
+        login(res.data.user, res.data.accessToken);
         router.replace('/dashboard');
       }
     } catch (err: unknown) {

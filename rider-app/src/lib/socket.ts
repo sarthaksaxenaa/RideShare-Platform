@@ -47,6 +47,9 @@ export function getSocket(): Socket | null {
     socket.disconnect();
   }
 
+  // Get the stored token for auth payload fallback
+  const token = useAuthStore.getState().token;
+
   socket = io(SOCKET_URL, {
     /**
      * 📚 withCredentials: true
@@ -55,6 +58,14 @@ export function getSocket(): Socket | null {
      * Without this, the cookie won't be sent cross-origin.
      */
     withCredentials: true,
+    /**
+     * 📚 auth.token fallback
+     * Cross-origin cookies between vercel.app and render.com are
+     * often blocked by browsers (SameSite policy). We also send
+     * the JWT in the auth payload so the server can authenticate
+     * via either method.
+     */
+    auth: token ? { token } : undefined,
     transports: ['websocket', 'polling'],
     reconnection: true,
     reconnectionAttempts: Infinity,

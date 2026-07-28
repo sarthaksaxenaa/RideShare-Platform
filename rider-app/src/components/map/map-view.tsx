@@ -140,13 +140,19 @@ export default function MapView({
     }
   }, [center]);
 
-  // Update markers and route
-  useEffect(() => {
-    if (!markersRef.current || !routeLayerRef.current) return;
-    markersRef.current.clearLayers();
-    routeLayerRef.current.clearLayers();
+  // Ref for user location marker (separate from route markers)
+  const userMarkerRef = useRef<L.Marker | null>(null);
 
-    // User location (indigo pulse)
+  // Update user location dot (separate effect to avoid route re-fetching)
+  useEffect(() => {
+    if (!mapRef.current || !markersRef.current) return;
+
+    // Remove old user marker
+    if (userMarkerRef.current) {
+      markersRef.current.removeLayer(userMarkerRef.current);
+      userMarkerRef.current = null;
+    }
+
     if (center) {
       const userIcon = L.divIcon({
         html: `<div style="width:16px;height:16px;background:#6366f1;border-radius:50%;border:3px solid white;box-shadow:0 0 0 4px rgba(99,102,241,0.25), 0 2px 8px rgba(0,0,0,0.15);"></div>`,
@@ -154,8 +160,24 @@ export default function MapView({
         iconAnchor: [8, 8],
         className: '',
       });
-      L.marker(center, { icon: userIcon }).addTo(markersRef.current);
+      userMarkerRef.current = L.marker(center, { icon: userIcon }).addTo(markersRef.current);
     }
+  }, [center]);
+
+  // Update route, pickup/drop markers, and driver markers
+  // NOTE: Does NOT depend on `center` — GPS refinements won't reset the route
+  useEffect(() => {
+    if (!markersRef.current || !routeLayerRef.current) return;
+
+    // Clear route + location markers (but NOT the user dot — that's separate)
+    routeLayerRef.current.clearLayers();
+
+    // Remove all non-user markers from markersRef
+    markersRef.current.eachLayer((layer) => {
+      if (layer !== userMarkerRef.current) {
+        markersRef.current!.removeLayer(layer);
+      }
+    });
 
     // Pickup marker
     if (pickup) {
@@ -214,7 +236,8 @@ export default function MapView({
     nearbyDrivers.forEach((d) => {
       L.marker([d.lat, d.lng], { icon: nearbyDriverIcon }).addTo(markersRef.current!);
     });
-  }, [center, pickup, dropoff, driverLocation, nearbyDrivers, fetchRoute]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickup, dropoff, driverLocation, nearbyDrivers, fetchRoute]);
 
   return (
     <div

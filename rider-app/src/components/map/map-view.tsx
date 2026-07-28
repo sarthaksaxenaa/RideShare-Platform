@@ -27,20 +27,22 @@ const createIcon = (color: string, size: number = 12) =>
   });
 
 const pickupIcon = L.divIcon({
-  html: `<div style="width:28px;height:28px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,0.2);border:2px solid #22c55e;">
-    <div style="width:10px;height:10px;background:#22c55e;border-radius:50%;"></div>
+  html: `<div style="display:flex;flex-direction:column;align-items:center;">
+    <div style="padding:3px 8px;background:#22c55e;border-radius:12px;font-size:10px;font-weight:700;color:white;font-family:Inter,sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(34,197,94,0.4);margin-bottom:4px;">Pickup</div>
+    <div style="width:14px;height:14px;background:#22c55e;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>
   </div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
+  iconSize: [60, 36],
+  iconAnchor: [30, 36],
   className: '',
 });
 
 const dropoffIcon = L.divIcon({
-  html: `<div style="width:28px;height:28px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 12px rgba(0,0,0,0.2);border:2px solid #ef4444;">
-    <div style="width:10px;height:10px;background:#ef4444;border-radius:50%;"></div>
+  html: `<div style="display:flex;flex-direction:column;align-items:center;">
+    <div style="padding:3px 8px;background:#ef4444;border-radius:12px;font-size:10px;font-weight:700;color:white;font-family:Inter,sans-serif;white-space:nowrap;box-shadow:0 2px 8px rgba(239,68,68,0.4);margin-bottom:4px;">Drop</div>
+    <div style="width:14px;height:14px;background:#ef4444;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.25);"></div>
   </div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
+  iconSize: [60, 36],
+  iconAnchor: [30, 36],
   className: '',
 });
 
@@ -177,27 +179,27 @@ export default function MapView({
       fetchRoute(pickup, dropoff).then((routeCoords) => {
         if (!routeCoords || !routeLayer) return;
 
-        // Shadow / outline polyline for depth effect
+        // Shadow / outline polyline for depth effect (Rapido-style blue)
         L.polyline(routeCoords, {
-          color: '#4338ca',
-          weight: 7,
-          opacity: 0.15,
+          color: '#1a73e8',
+          weight: 9,
+          opacity: 0.2,
           lineCap: 'round',
           lineJoin: 'round',
         }).addTo(routeLayer);
 
-        // Main route polyline
+        // Main route polyline — bright blue like Rapido
         L.polyline(routeCoords, {
-          color: '#6366f1',
-          weight: 4,
-          opacity: 0.85,
+          color: '#4285F4',
+          weight: 5,
+          opacity: 0.9,
           lineCap: 'round',
           lineJoin: 'round',
         }).addTo(routeLayer);
 
-        // Fit map to route bounds
+        // Fit map to route bounds with generous padding
         const bounds = L.latLngBounds(routeCoords);
-        map.fitBounds(bounds, { padding: [60, 60], animate: true });
+        map.fitBounds(bounds, { padding: [70, 70], animate: true });
       });
     }
 

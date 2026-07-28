@@ -4,11 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-export const metadata = {
-  title: 'Terms of Service - RideShare',
-  description: 'Terms of Service for the RideShare platform.',
-};
-
 export default function TermsOfService() {
   const sections = [
     { id: 'acceptance', title: 'Acceptance of Terms' },

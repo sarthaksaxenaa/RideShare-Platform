@@ -4,11 +4,6 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-export const metadata = {
-  title: 'Privacy Policy - RideShare',
-  description: 'Privacy Policy for the RideShare platform.',
-};
-
 export default function PrivacyPolicy() {
   const sections = [
     { id: 'collect', title: 'Information We Collect' },

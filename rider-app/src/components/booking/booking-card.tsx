@@ -492,8 +492,8 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
           </div>
           <AnimatePresence>
             {dropFocused && dropSuggestions.length > 0 && (
-              <motion.ul initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
-                className="absolute z-50 left-0 right-0 bottom-full mb-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto" style={{ listStyle: 'none' }}>
+              <motion.ul initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
+                className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-64 overflow-y-auto" style={{ listStyle: 'none' }}>
                 {dropSuggestions.map((s, i) => {
                   const { primary, secondary } = formatSuggestionLines(s);
                   return (

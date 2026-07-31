@@ -11,6 +11,34 @@ import type { UserRole } from '@/types/user';
 
 type Mode = 'signin' | 'signup';
 
+const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale = maxWidth / img.width;
+        canvas.width = maxWidth;
+        canvas.height = img.height * (scale < 1 ? scale : 1);
+        if (scale >= 1) canvas.width = img.width;
+        
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        } else {
+          resolve(event.target?.result as string);
+        }
+      };
+      img.onerror = (error) => reject(error);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
@@ -36,6 +64,53 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetPassword, setResetPassword] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
+
+  // Driver fields
+  const [phone, setPhone] = useState('');
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
+  const [vehicleType, setVehicleType] = useState('BIKE');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [faceImage, setFaceImage] = useState<string | null>(null);
+  const [vehicleImages, setVehicleImages] = useState<string[]>([]);
+
+  // Reset driver fields when role changes
+  useEffect(() => {
+    if (role !== 'DRIVER') {
+      setPhone('');
+      setAadhaarNumber('');
+      setVehicleNumber('');
+      setVehicleType('BIKE');
+      setFaceImage(null);
+      setVehicleImages([]);
+    }
+  }, [role]);
+
+  const handleFaceImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      try {
+        const compressed = await compressImage(e.target.files[0]);
+        setFaceImage(compressed);
+      } catch (err) {
+        console.error('Error compressing face image', err);
+      }
+    }
+  };
+
+  const handleVehicleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      try {
+        const compressedImages = await Promise.all(files.map(file => compressImage(file)));
+        setVehicleImages(prev => [...prev, ...compressedImages].slice(0, 5));
+      } catch (err) {
+        console.error('Error compressing vehicle images', err);
+      }
+    }
+  };
+  
+  const removeVehicleImage = (index: number) => {
+    setVehicleImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleResetPassword = async () => {
     if (!resetEmail.trim() || !resetPassword.trim()) {
@@ -74,6 +149,12 @@ export default function LoginPage() {
     setName('');
     setEmail('');
     setPassword('');
+    setPhone('');
+    setAadhaarNumber('');
+    setVehicleNumber('');
+    setVehicleType('BIKE');
+    setFaceImage(null);
+    setVehicleImages([]);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -88,12 +169,47 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
-        const res = await api.post('/auth/register', {
+        
+        const body: Record<string, unknown> = {
           name: name.trim(),
           email: email.trim().toLowerCase(),
           password,
           role,
-        });
+        };
+
+        if (role === 'DRIVER') {
+          if (!faceImage) {
+            setError('Please upload your face photo.');
+            setLoading(false);
+            return;
+          }
+          if (vehicleImages.length < 2 || vehicleImages.length > 5) {
+            setError('Please upload between 2 and 5 vehicle images.');
+            setLoading(false);
+            return;
+          }
+          Object.assign(body, {
+            phone,
+            aadhaarNumber: aadhaarNumber.replace(/\s/g, ''),
+            vehicleNumber,
+            vehicleType,
+            faceImageUrl: faceImage,
+            vehicleImages,
+          });
+        }
+
+        const res = await api.post('/auth/register', body);
+        
+        // Clear driver fields on successful registration
+        if (role === 'DRIVER') {
+          setPhone('');
+          setAadhaarNumber('');
+          setVehicleNumber('');
+          setVehicleType('BIKE');
+          setFaceImage(null);
+          setVehicleImages([]);
+        }
+        
         login(res.data.user, res.data.accessToken);
         router.replace('/dashboard');
       } else {
@@ -404,6 +520,139 @@ export default function LoginPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Driver Fields */}
+                <AnimatePresence>
+                  {mode === 'signup' && role === 'DRIVER' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="flex flex-col gap-4 overflow-hidden mt-2"
+                    >
+                      <div className="flex items-center gap-4 my-2">
+                        <div className="h-px bg-white/10 flex-1"></div>
+                        <span className="text-[11px] font-semibold text-white/40 uppercase tracking-wider">Driver Details</span>
+                        <div className="h-px bg-white/10 flex-1"></div>
+                      </div>
+
+                      {/* Phone */}
+                      <div className="flex flex-col gap-1.5">
+                        <label htmlFor="phone" className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                          Phone Number
+                        </label>
+                        <input
+                          id="phone"
+                          type="text"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          placeholder="+91 XXXXXXXXXX"
+                          required={mode === 'signup' && role === 'DRIVER'}
+                          className="w-full px-4 py-3 bg-white/[0.07] border border-white/10 rounded-xl text-sm text-white placeholder:text-gray-500 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                        />
+                      </div>
+
+                      {/* Aadhaar */}
+                      <div className="flex flex-col gap-1.5">
+                        <label htmlFor="aadhaar" className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                          Aadhaar Number
+                        </label>
+                        <input
+                          id="aadhaar"
+                          type="text"
+                          value={aadhaarNumber}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                            const formatted = val.replace(/(.{4})/g, '$1 ').trim();
+                            setAadhaarNumber(formatted);
+                          }}
+                          placeholder="XXXX XXXX XXXX"
+                          required={mode === 'signup' && role === 'DRIVER'}
+                          className="w-full px-4 py-3 bg-white/[0.07] border border-white/10 rounded-xl text-sm text-white placeholder:text-gray-500 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                        />
+                      </div>
+
+                      {/* Vehicle Type */}
+                      <div className="flex flex-col gap-1.5">
+                        <label htmlFor="vehicleType" className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                          Vehicle Type
+                        </label>
+                        <select
+                          id="vehicleType"
+                          value={vehicleType}
+                          onChange={(e) => setVehicleType(e.target.value)}
+                          className="w-full px-4 py-3 bg-white/[0.07] border border-white/10 rounded-xl text-sm text-white placeholder:text-gray-500 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 appearance-none"
+                        >
+                          <option value="BIKE" className="bg-[#12121a]">🏍️ Bike</option>
+                          <option value="AUTO" className="bg-[#12121a]">🛺 Auto Rickshaw</option>
+                          <option value="SEDAN" className="bg-[#12121a]">🚗 Sedan</option>
+                          <option value="SUV" className="bg-[#12121a]">🚙 SUV</option>
+                        </select>
+                      </div>
+
+                      {/* Vehicle Number */}
+                      <div className="flex flex-col gap-1.5">
+                        <label htmlFor="vehicleNumber" className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                          Vehicle Number
+                        </label>
+                        <input
+                          id="vehicleNumber"
+                          type="text"
+                          value={vehicleNumber}
+                          onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
+                          placeholder="e.g., UP16 AB 1234"
+                          required={mode === 'signup' && role === 'DRIVER'}
+                          className="w-full px-4 py-3 bg-white/[0.07] border border-white/10 rounded-xl text-sm text-white placeholder:text-gray-500 outline-none transition-all focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+                        />
+                      </div>
+
+                      {/* Face Photo Upload */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                          Upload Your Photo (Face)
+                        </label>
+                        <div className="flex items-center gap-4">
+                          <label className="cursor-pointer shrink-0">
+                            <div className="w-16 h-16 rounded-full bg-white/[0.07] border border-white/10 flex items-center justify-center overflow-hidden hover:border-indigo-500 transition-colors shadow-lg">
+                              {faceImage ? (
+                                <img src={faceImage} alt="Face preview" className="w-full h-full object-cover" />
+                              ) : (
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/40"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                              )}
+                            </div>
+                            <input type="file" accept="image/*" onChange={handleFaceImageUpload} className="hidden" />
+                          </label>
+                          <span className="text-xs text-white/40">Clear face photo required</span>
+                        </div>
+                      </div>
+
+                      {/* Vehicle Images */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                          Vehicle Photos (min 2, max 5 — from different angles)
+                        </label>
+                        <div className="grid grid-cols-2 gap-3 mt-1">
+                          {vehicleImages.map((img, i) => (
+                            <div key={i} className="relative rounded-xl overflow-hidden aspect-video border border-white/10 shadow-lg">
+                              <img src={img} alt={`Vehicle ${i + 1}`} className="w-full h-full object-cover" />
+                              <button type="button" onClick={() => removeVehicleImage(i)} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 hover:bg-red-500 transition-colors">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                              </button>
+                            </div>
+                          ))}
+                          {vehicleImages.length < 5 && (
+                            <label className="cursor-pointer rounded-xl bg-white/[0.07] border border-white/10 aspect-video flex flex-col items-center justify-center text-white/40 hover:text-white/60 hover:border-indigo-500 transition-all shadow-lg">
+                              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                              <span className="text-xs font-medium">Upload</span>
+                              <input type="file" accept="image/*" multiple onChange={handleVehicleImagesUpload} className="hidden" />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Submit */}
                 <button

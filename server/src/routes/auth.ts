@@ -126,7 +126,7 @@ function issueTokens(res: Response, user: { id: string; role: string; email: str
 
 router.post("/register", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, name, role } = req.body;
+    const { email, password, name, role, phone, aadhaarNumber, vehicleNumber, vehicleType, faceImageUrl, vehicleImages } = req.body;
 
     // ── Validation ──────────────────────────────────────────
     if (!email || !password || !name || !role) {
@@ -156,6 +156,33 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
+    if (role === 'DRIVER') {
+      if (!phone || !/^[0-9]{10}$/.test(phone)) {
+        res.status(400).json({ error: "Validation error", message: "Phone is required and must be 10 digits." });
+        return;
+      }
+      if (!aadhaarNumber || !/^[0-9]{12}$/.test(aadhaarNumber)) {
+        res.status(400).json({ error: "Validation error", message: "Aadhaar number is required and must be 12 digits." });
+        return;
+      }
+      if (!vehicleNumber || typeof vehicleNumber !== 'string' || vehicleNumber.trim() === '') {
+        res.status(400).json({ error: "Validation error", message: "Vehicle number is required." });
+        return;
+      }
+      if (!['BIKE', 'AUTO', 'SEDAN', 'SUV'].includes(vehicleType)) {
+        res.status(400).json({ error: "Validation error", message: "Vehicle type must be BIKE, AUTO, SEDAN, or SUV." });
+        return;
+      }
+      if (!faceImageUrl || typeof faceImageUrl !== 'string' || faceImageUrl.trim() === '') {
+        res.status(400).json({ error: "Validation error", message: "Face image URL is required." });
+        return;
+      }
+      if (!Array.isArray(vehicleImages) || vehicleImages.length < 2 || vehicleImages.length > 5) {
+        res.status(400).json({ error: "Validation error", message: "Vehicle images must be an array of 2 to 5 images." });
+        return;
+      }
+    }
+
     // ── Check for existing user ─────────────────────────────
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -179,6 +206,15 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
         password: hashedPassword,
         name,
         role,
+        // Driver-specific fields (null for riders)
+        ...(role === 'DRIVER' && {
+          phone,
+          aadhaarNumber,
+          vehicleNumber,
+          vehicleType,
+          faceImageUrl,
+          vehicleImages,
+        }),
       },
     });
 

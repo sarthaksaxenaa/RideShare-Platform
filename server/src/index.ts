@@ -120,7 +120,7 @@ app.use("/webhooks/stripe", express.raw({ type: "application/json" }), webhooksR
 /**
  * Parse JSON request bodies for all other routes.
  */
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // ── Routes ──────────────────────────────────────────────────
 

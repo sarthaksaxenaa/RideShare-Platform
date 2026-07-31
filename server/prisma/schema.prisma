@@ -105,6 +105,9 @@ model User {
   vehicleModel     String?
   vehicleNumber    String?
   vehicleType      String?
+  aadhaarNumber    String?
+  faceImageUrl     String?    @db.Text
+  vehicleImages    Json?
   driverLocation   DriverLocation?
   emergencyContacts EmergencyContact[]
   ratingsReceived  Rating[]           @relation("Rating_toIdToUser")

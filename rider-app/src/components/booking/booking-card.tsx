@@ -103,16 +103,16 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
     }
   }, [userPosition, userCity]);
 
-  // Smart dual-query search: runs a plain query + a context-enriched query in parallel
+  // Smart multi-source search: queries Nominatim (plain + context) + Photon in parallel
   const searchLocation = async (query: string): Promise<LocationSuggestion[]> => {
     if (query.trim().length < 2) return [];
 
-    const buildParams = (q: string) => {
+    const buildNominatimParams = (q: string) => {
       const params = new URLSearchParams({
         q, format: 'json', addressdetails: '1', limit: '15', countrycodes: 'in', dedupe: '1',
       });
       if (userPosition) {
-        const d = 0.8; // wider viewbox for more results
+        const d = 1.2; // wider viewbox for more results
         params.set('viewbox', `${userPosition.lng - d},${userPosition.lat + d},${userPosition.lng + d},${userPosition.lat - d}`);
         params.set('bounded', '0');
       }
@@ -120,14 +120,15 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
     };
 
     try {
-      // Run two queries in parallel:
-      // 1. Plain query (e.g. "alpha 2")
-      // 2. Context-enriched query (e.g. "alpha 2 Greater Noida")
-      const plainParams = buildParams(query);
+      // Run three queries in parallel for maximum coverage:
+      // 1. Nominatim plain query
+      // 2. Nominatim context-enriched query (with city name)
+      // 3. Photon API (better fuzzy matching, more POIs)
+      const plainParams = buildNominatimParams(query);
       const contextQuery = userCity && !query.toLowerCase().includes(userCity.toLowerCase())
         ? `${query} ${userCity}`
         : '';
-      const contextParams = contextQuery ? buildParams(contextQuery) : null;
+      const contextParams = contextQuery ? buildNominatimParams(contextQuery) : null;
 
       const fetches: Promise<LocationSuggestion[]>[] = [
         fetch(`${NOMINATIM_URL}?${plainParams}`, { headers: { 'Accept-Language': 'en' } })
@@ -143,7 +144,45 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
         );
       }
 
-      const [plainResults, contextResults] = await Promise.all(fetches);
+      // Photon API — uses Elasticsearch, better fuzzy search and more POIs
+      const photonParams = new URLSearchParams({ q: query, limit: '10', lang: 'en' });
+      if (userPosition) {
+        photonParams.set('lat', String(userPosition.lat));
+        photonParams.set('lon', String(userPosition.lng));
+      }
+      fetches.push(
+        fetch(`https://photon.komoot.io/api/?${photonParams}`)
+          .then((r) => r.json())
+          .then((data) => {
+            // Convert Photon GeoJSON format → Nominatim-compatible format
+            if (!data?.features) return [];
+            return data.features
+              .filter((f: { properties?: { country?: string } }) => !f.properties?.country || f.properties.country === 'India')
+              .map((f: { geometry: { coordinates: number[] }; properties: { name?: string; street?: string; city?: string; state?: string; postcode?: string; county?: string; district?: string; housenumber?: string; osm_key?: string; osm_value?: string } }) => ({
+                lat: String(f.geometry.coordinates[1]),
+                lon: String(f.geometry.coordinates[0]),
+                display_name: [
+                  f.properties.name,
+                  f.properties.housenumber ? `${f.properties.housenumber} ${f.properties.street || ''}`.trim() : f.properties.street,
+                  f.properties.district || f.properties.county,
+                  f.properties.city,
+                  f.properties.state,
+                  f.properties.postcode,
+                ].filter(Boolean).join(', '),
+                address: {
+                  road: f.properties.street,
+                  city: f.properties.city,
+                  state: f.properties.state,
+                  postcode: f.properties.postcode,
+                  county: f.properties.county || f.properties.district,
+                },
+                type: f.properties.osm_value || f.properties.osm_key || 'place',
+              }));
+          })
+          .catch(() => [])
+      );
+
+      const results = await Promise.all(fetches);
 
       // Merge and deduplicate by rounding coordinates to ~100m precision
       const seen = new Set<string>();
@@ -152,7 +191,6 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
       const addResults = (items: LocationSuggestion[]) => {
         if (!Array.isArray(items)) return;
         for (const item of items) {
-          // Dedupe key: round to 4 decimal places (~11m precision)
           const key = `${parseFloat(item.lat).toFixed(4)},${parseFloat(item.lon).toFixed(4)}`;
           if (!seen.has(key)) {
             seen.add(key);
@@ -161,9 +199,10 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
         }
       };
 
-      // Context results first (more relevant), then plain
-      addResults(contextResults || []);
-      addResults(plainResults || []);
+      // Merge all sources — context results first (most relevant), then plain, then photon
+      for (const resultSet of results.reverse()) {
+        addResults(resultSet || []);
+      }
 
       // Sort by distance from user
       if (userPosition && merged.length > 1) {

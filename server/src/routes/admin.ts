@@ -257,19 +257,17 @@ router.delete(
       // Trips have a non-nullable riderId, so we must delete rider trips
       // (not just nullify driverId). Driver trips get unlinked instead.
       await prisma.$transaction([
-        // 1. Delete all ratings (both given and received)
+        // 1. First delete all ratings for the user's trips
         prisma.rating.deleteMany({ where: { OR: [{ fromId: id }, { toId: id }] } }),
-        // 2. Delete saved locations
-        prisma.savedLocation.deleteMany({ where: { userId: id } }),
-        // 3. Delete emergency contacts
-        prisma.emergencyContact.deleteMany({ where: { userId: id } }),
-        // 4. Delete driver location
-        prisma.driverLocation.deleteMany({ where: { driverId: id } }),
-        // 5. Unlink user from trips where they were the DRIVER
-        prisma.trip.updateMany({ where: { driverId: id }, data: { driverId: null } }),
-        // 6. Delete trips where user was the RIDER (ratings already deleted above)
+        // 2. Delete all trips where user is rider
         prisma.trip.deleteMany({ where: { riderId: id } }),
-        // 7. Finally delete the user
+        // 3. Nullify driverId on trips where user is driver
+        prisma.trip.updateMany({ where: { driverId: id }, data: { driverId: null } }),
+        // 4. Delete related records (emergency contacts, saved locations, driver location)
+        prisma.emergencyContact.deleteMany({ where: { userId: id } }),
+        prisma.savedLocation.deleteMany({ where: { userId: id } }),
+        prisma.driverLocation.deleteMany({ where: { driverId: id } }),
+        // 5. Then delete the user
         prisma.user.delete({ where: { id } }),
       ]);
 

@@ -393,9 +393,9 @@ export default function ActiveTripPage() {
                 <button
                   onClick={() => {
                     if ((tripData as any)?.driver?.phone) {
-                      window.location.href = `tel:${(tripData as any).driver.phone}`;
+                      window.open(`tel:${(tripData as any).driver.phone}`);
                     } else {
-                      toast.info('Driver phone number not available');
+                      toast('Driver phone not available');
                     }
                   }}
                   className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"

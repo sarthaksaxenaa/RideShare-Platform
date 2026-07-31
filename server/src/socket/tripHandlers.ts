@@ -324,7 +324,7 @@ export function registerTripHandlers(
       // ── 6. Fetch driver's name for the rider UI ────────────
       const driver = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { name: true },
+        select: { name: true, phone: true, vehicleModel: true, vehicleNumber: true, vehicleType: true },
       });
 
       // ── 7. Notify both parties ─────────────────────────────
@@ -332,6 +332,12 @@ export function registerTripHandlers(
         tripId,
         driverId: user.id,
         driverName: driver?.name ?? 'Driver',
+        driver: {
+          phone: driver?.phone,
+          vehicleModel: driver?.vehicleModel,
+          vehicleNumber: driver?.vehicleNumber,
+          vehicleType: driver?.vehicleType,
+        },
       });
 
       console.log(`[socket] Trip ${tripId} matched with driver ${user.email}`);

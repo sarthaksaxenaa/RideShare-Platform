@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -12,6 +12,8 @@ interface MapViewProps {
   driverLocation?: { lat: number; lng: number } | null;
   nearbyDrivers?: { lat: number; lng: number }[];
   className?: string;
+  pickMode?: 'pickup' | 'drop' | null;
+  onMapClick?: (lat: number, lng: number) => void;
 }
 
 // OSRM public routing API (uses Contraction Hierarchies — a Dijkstra optimization)
@@ -72,6 +74,8 @@ export default function MapView({
   driverLocation,
   nearbyDrivers = [],
   className = '',
+  pickMode = null,
+  onMapClick,
 }: MapViewProps) {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -239,10 +243,44 @@ export default function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickup, dropoff, driverLocation, nearbyDrivers, fetchRoute]);
 
+  // Handle map click for pick mode
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    if (pickMode) {
+      map.getContainer().style.cursor = 'crosshair';
+      const handler = (e: L.LeafletMouseEvent) => {
+        onMapClickRef.current?.(e.latlng.lat, e.latlng.lng);
+      };
+      map.on('click', handler);
+      return () => {
+        map.off('click', handler);
+        map.getContainer().style.cursor = '';
+      };
+    } else {
+      map.getContainer().style.cursor = '';
+    }
+  }, [pickMode]);
+
   return (
-    <div
-      ref={containerRef}
-      className={`w-full h-full rounded-2xl overflow-hidden ${className}`}
-    />
+    <div className="relative w-full h-full">
+      <div
+        ref={containerRef}
+        className={`w-full h-full rounded-2xl overflow-hidden ${className}`}
+      />
+      {/* Pick mode banner */}
+      {pickMode && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] px-4 py-2.5 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-200 flex items-center gap-2.5">
+          <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${pickMode === 'pickup' ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span className="text-sm font-medium text-gray-800">
+            Tap map to set {pickMode === 'pickup' ? 'pickup' : 'drop-off'} location
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

@@ -18,9 +18,11 @@ interface BookingCardProps {
   loading?: boolean;
   onLocationChange?: (pickup: [number, number] | null, dropoff: [number, number] | null) => void;
   onCancelBooking?: (reason: string) => void;
+  onLocateOnMap?: (mode: 'pickup' | 'drop') => void;
+  mapPickedLocation?: { mode: 'pickup' | 'drop'; lat: number; lng: number } | null;
 }
 
-export default function BookingCard({ onBook, loading = false, onLocationChange, onCancelBooking }: BookingCardProps) {
+export default function BookingCard({ onBook, loading = false, onLocationChange, onCancelBooking, onLocateOnMap, mapPickedLocation }: BookingCardProps) {
   const userPosition = useLocationStore((s) => s.userPosition);
   const isLocating = useLocationStore((s) => s.isLocating);
   const acquirePreciseLocation = useLocationStore((s) => s.acquirePreciseLocation);
@@ -102,6 +104,51 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
         .catch(() => {});
     }
   }, [userPosition, userCity]);
+
+  // Handle location picked from map
+  useEffect(() => {
+    if (!mapPickedLocation) return;
+    const { mode, lat, lng } = mapPickedLocation;
+
+    // Reverse geocode the coordinates
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`, {
+      headers: { 'Accept-Language': 'en' },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        const name = [
+          data.display_name?.split(',')[0],
+          data.address?.suburb || data.address?.neighbourhood || data.address?.village || '',
+          data.address?.city || data.address?.town || data.address?.county || '',
+        ].filter(Boolean).join(', ');
+
+        if (mode === 'pickup') {
+          setSelectedPickup({ name, lat, lng });
+          setPickupQuery(name);
+          setPickupSuggestions([]);
+          if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
+        } else {
+          setSelectedDrop({ name, lat, lng });
+          setDropQuery(name);
+          setDropSuggestions([]);
+          if (onLocationChange) onLocationChange(selectedPickup ? [selectedPickup.lat, selectedPickup.lng] : null, [lat, lng]);
+        }
+      })
+      .catch(() => {
+        // Fallback: use raw coordinates
+        const name = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        if (mode === 'pickup') {
+          setSelectedPickup({ name, lat, lng });
+          setPickupQuery(name);
+          if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
+        } else {
+          setSelectedDrop({ name, lat, lng });
+          setDropQuery(name);
+          if (onLocationChange) onLocationChange(selectedPickup ? [selectedPickup.lat, selectedPickup.lng] : null, [lat, lng]);
+        }
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapPickedLocation]);
 
   // Smart multi-source search: queries Nominatim (plain + context) + Photon in parallel
   const searchLocation = async (query: string): Promise<LocationSuggestion[]> => {
@@ -497,20 +544,32 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
               className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all hover:border-gray-400 focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/10"
             />
           </div>
-          {/* GPS Button */}
-          <button
-            type="button"
-            onClick={handleUseCurrentLocation}
-            disabled={gettingLocation}
-            className="mt-1 flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer disabled:opacity-50"
-          >
-            {gettingLocation ? (
-              <div className="w-3.5 h-3.5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+          {/* GPS & Map buttons */}
+          <div className="mt-1 flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleUseCurrentLocation}
+              disabled={gettingLocation}
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+            >
+              {gettingLocation ? (
+                <div className="w-3.5 h-3.5 border-2 border-indigo-300 border-t-indigo-600 rounded-full animate-spin" />
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+              )}
+              {gettingLocation ? 'Getting location...' : 'Use current location'}
+            </button>
+            {onLocateOnMap && (
+              <button
+                type="button"
+                onClick={() => onLocateOnMap('pickup')}
+                className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all cursor-pointer"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Locate on map
+              </button>
             )}
-            {gettingLocation ? 'Getting precise location...' : 'Use my current location'}
-          </button>
+          </div>
           {/* Suggestions */}
           <AnimatePresence>
             {pickupFocused && pickupSuggestions.length > 0 && (
@@ -549,6 +608,17 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
               className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-all hover:border-gray-400 focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/10"
             />
           </div>
+          {/* Locate on map for dropoff */}
+          {onLocateOnMap && (
+            <button
+              type="button"
+              onClick={() => onLocateOnMap('drop')}
+              className="mt-1 flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all cursor-pointer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Locate on map
+            </button>
+          )}
           <AnimatePresence>
             {dropFocused && dropSuggestions.length > 0 && (
               <motion.ul initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}

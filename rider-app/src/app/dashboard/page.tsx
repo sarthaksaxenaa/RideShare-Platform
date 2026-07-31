@@ -48,6 +48,8 @@ export default function RiderDashboardPage() {
   const [pickupCoords, setPickupCoords] = useState<[number, number] | null>(null);
   const [dropCoords, setDropCoords] = useState<[number, number] | null>(null);
   const [nearbyDrivers, setNearbyDrivers] = useState<{ lat: number; lng: number }[]>([]);
+  const [mapPickMode, setMapPickMode] = useState<'pickup' | 'drop' | null>(null);
+  const [mapPickedLocation, setMapPickedLocation] = useState<{ mode: 'pickup' | 'drop'; lat: number; lng: number } | null>(null);
 
   const isDriver = user?.role === 'DRIVER';
   const isAdmin = user?.role === 'ADMIN';
@@ -140,6 +142,18 @@ export default function RiderDashboardPage() {
     useTripStore.getState().reset();
     toast.success('Booking cancelled');
   }, [socket]);
+
+  const handleLocateOnMap = useCallback((mode: 'pickup' | 'drop') => {
+    setMapPickMode(mode);
+    toast.info(`Tap on the map to set your ${mode === 'pickup' ? 'pickup' : 'drop-off'} location`);
+  }, []);
+
+  const handleMapClick = useCallback((lat: number, lng: number) => {
+    if (!mapPickMode) return;
+    setMapPickedLocation({ mode: mapPickMode, lat, lng });
+    setMapPickMode(null);
+    toast.success(`${mapPickMode === 'pickup' ? 'Pickup' : 'Drop-off'} location set!`);
+  }, [mapPickMode]);
 
   const firstName = user?.name?.split(' ')[0] || 'Rider';
 
@@ -257,6 +271,8 @@ export default function RiderDashboardPage() {
                 pickup={pickupCoords}
                 dropoff={dropCoords}
                 nearbyDrivers={nearbyDrivers}
+                pickMode={mapPickMode}
+                onMapClick={handleMapClick}
               />
             </Suspense>
           </motion.div>
@@ -273,6 +289,8 @@ export default function RiderDashboardPage() {
               loading={tripState === 'SEARCHING'}
               onLocationChange={handleLocationChange}
               onCancelBooking={handleCancelBooking}
+              onLocateOnMap={handleLocateOnMap}
+              mapPickedLocation={mapPickedLocation}
             />
           </motion.div>
         </div>

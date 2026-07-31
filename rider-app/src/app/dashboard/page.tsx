@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth-store';
 import { useSocketStore } from '@/stores/socket-store';
@@ -143,6 +143,89 @@ export default function RiderDashboardPage() {
 
   return (
     <div className="min-h-screen">
+      {/* ── Searching for Driver Overlay ──────────── */}
+      <AnimatePresence>
+        {tripState === 'SEARCHING' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-8 flex flex-col items-center text-center"
+            >
+              {/* Radar Animation */}
+              <div className="relative w-28 h-28 mb-6">
+                {/* Outer pulse rings */}
+                <div className="absolute inset-0 rounded-full border-2 border-indigo-400/30 animate-ping" style={{ animationDuration: '2s' }} />
+                <div className="absolute inset-2 rounded-full border-2 border-indigo-400/20 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
+                <div className="absolute inset-4 rounded-full border-2 border-indigo-400/15 animate-ping" style={{ animationDuration: '3s', animationDelay: '1s' }} />
+                {/* Center icon */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="1" y="3" width="15" height="13" rx="2" ry="2"/>
+                      <path d="M16 8h4l3 5v5h-7V8z"/>
+                      <circle cx="5.5" cy="18.5" r="2.5"/>
+                      <circle cx="18.5" cy="18.5" r="2.5"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text */}
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Searching for Driver</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                Please wait while we find a nearby driver to accept your ride...
+              </p>
+
+              {/* Ride Info */}
+              <div className="w-full bg-gray-50 dark:bg-gray-800 rounded-2xl p-4 mb-6">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-gray-500">Fare</span>
+                  <span className="font-bold text-gray-900 dark:text-white">
+                    ₹{useTripStore.getState().data?.fare || '—'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full"
+                      initial={{ width: '5%' }}
+                      animate={{ width: '95%' }}
+                      transition={{ duration: 60, ease: 'linear' }}
+                    />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-2 flex items-center justify-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  Connecting with nearby drivers
+                </p>
+              </div>
+
+              {/* Cancel Button */}
+              <button
+                onClick={() => {
+                  const tripId = useTripStore.getState().data?.tripId;
+                  if (socket && tripId) {
+                    socket.emit('trip:cancel', { tripId, reason: 'Cancelled while searching' });
+                  }
+                  useTripStore.getState().reset();
+                  toast.info('Ride search cancelled');
+                }}
+                className="w-full py-3 rounded-xl border-2 border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 transition-all cursor-pointer"
+              >
+                Cancel Search
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Hero Section: Map + Booking ──────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-8">
         {/* Greeting */}

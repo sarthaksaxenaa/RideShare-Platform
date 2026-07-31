@@ -99,7 +99,7 @@ export default function RiderDashboardPage() {
   );
 
   const handleBook = useCallback(
-    (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number, paymentMethod: string = 'UPI') => {
+    (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number, paymentMethod: string = 'UPI', vehicle?: { type: string; icon: string; label: string }) => {
       if (!socket) {
         toast.error('Not connected to server. Please refresh.');
         return;
@@ -111,6 +111,9 @@ export default function RiderDashboardPage() {
         dropLat: drop.lat,
         dropLng: drop.lng,
         fare,
+        vehicleType: vehicle?.type,
+        vehicleIcon: vehicle?.icon,
+        vehicleLabel: vehicle?.label,
       });
       socket.emit('trip:request', {
         pickupLat: pickup.lat,
@@ -119,6 +122,7 @@ export default function RiderDashboardPage() {
         dropLng: drop.lng,
         fare,
         paymentMethod,
+        vehicleType: vehicle?.type,
       });
       toast.success('Searching for nearby drivers...');
     },
@@ -164,21 +168,18 @@ export default function RiderDashboardPage() {
                 <div className="absolute inset-0 rounded-full border-2 border-indigo-400/30 animate-ping" style={{ animationDuration: '2s' }} />
                 <div className="absolute inset-2 rounded-full border-2 border-indigo-400/20 animate-ping" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }} />
                 <div className="absolute inset-4 rounded-full border-2 border-indigo-400/15 animate-ping" style={{ animationDuration: '3s', animationDelay: '1s' }} />
-                {/* Center icon */}
+                {/* Center icon — shows the booked vehicle type */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="1" y="3" width="15" height="13" rx="2" ry="2"/>
-                      <path d="M16 8h4l3 5v5h-7V8z"/>
-                      <circle cx="5.5" cy="18.5" r="2.5"/>
-                      <circle cx="18.5" cy="18.5" r="2.5"/>
-                    </svg>
+                    <span className="text-3xl">{useTripStore.getState().data?.vehicleIcon || '🚗'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Text */}
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Searching for Driver</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                Searching for {useTripStore.getState().data?.vehicleLabel || 'Driver'}
+              </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                 Please wait while we find a nearby driver to accept your ride...
               </p>

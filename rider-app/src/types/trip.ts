@@ -15,6 +15,9 @@ export interface TripData {
   driverId?: string;
   driverName?: string;
   fare?: number;
+  vehicleType?: string;
+  vehicleIcon?: string;
+  vehicleLabel?: string;
   pickupLat: number;
   pickupLng: number;
   dropLat: number;

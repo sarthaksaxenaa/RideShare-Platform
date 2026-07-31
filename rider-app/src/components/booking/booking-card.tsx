@@ -14,7 +14,7 @@ import type { VehicleEstimate, EstimateResponse } from '@/types/trip';
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
 interface BookingCardProps {
-  onBook: (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number, paymentMethod: string) => void;
+  onBook: (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number, paymentMethod: string, vehicle: { type: string; icon: string; label: string }) => void;
   loading?: boolean;
   onLocationChange?: (pickup: [number, number] | null, dropoff: [number, number] | null) => void;
   onCancelBooking?: (reason: string) => void;
@@ -380,7 +380,13 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
     const chosen = estimates.find((e) => e.vehicleType === selectedVehicle);
     if (!chosen) return;
     const finalFare = promoApplied ? Math.max(0, chosen.fare - promoDiscount) : chosen.fare;
-    onBook({ lat: selectedPickup.lat, lng: selectedPickup.lng }, { lat: selectedDrop.lat, lng: selectedDrop.lng }, finalFare, paymentMethod);
+    onBook(
+      { lat: selectedPickup.lat, lng: selectedPickup.lng },
+      { lat: selectedDrop.lat, lng: selectedDrop.lng },
+      finalFare,
+      paymentMethod,
+      { type: chosen.vehicleType, icon: chosen.icon, label: chosen.label }
+    );
   }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook, paymentMethod, promoApplied, promoDiscount]);
 
   // Promo code validation

@@ -253,14 +253,28 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
     const area = addr.neighbourhood || addr.suburb || addr.quarter || addr.village || '';
     const city = addr.city || addr.town || addr.county || '';
 
+    // The first part of display_name is usually the actual place name
+    const placeName = s.display_name?.split(',')[0]?.trim() || '';
+
     // If we have a POI name, lead with it
     if (poiName) {
       const context = [area, city].filter(Boolean).join(', ');
       return context ? `${poiName}, ${context}` : poiName;
     }
 
+    // Build from address parts, but always include the place name
     const parts = [road, area, city].filter(Boolean);
-    return parts.length > 0 ? parts.join(', ') : s.display_name.split(',').slice(0, 3).join(', ').trim();
+    if (parts.length > 0) {
+      // If the place name is different from road/area/city, prepend it
+      const result = parts.join(', ');
+      if (placeName && !result.toLowerCase().includes(placeName.toLowerCase())) {
+        return `${placeName}, ${result}`;
+      }
+      return result;
+    }
+
+    // Fallback: use first 3 parts of display_name
+    return s.display_name.split(',').slice(0, 3).join(', ').trim();
   };
 
   /** Returns two lines for richer dropdown display */

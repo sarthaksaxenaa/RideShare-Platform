@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -36,6 +36,8 @@ export default function AdminDashboardPage() {
   // User management state
   interface AdminUser {
     id: string; name: string; email: string; role: string; createdAt: string;
+    faceImageUrl?: string; vehicleImages?: string[]; aadhaarNumber?: string;
+    vehicleType?: string; vehicleNumber?: string;
     _count: { tripsAsRider: number; tripsAsDriver: number };
   }
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -45,6 +47,7 @@ export default function AdminDashboardPage() {
   const [usersPage, setUsersPage] = useState(1);
   const [usersTotalPages, setUsersTotalPages] = useState(1);
   const [activeTab, setActiveTab] = useState<'overview' | 'users'>('overview');
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
 
   // Redirect non-admin users
   useEffect(() => {
@@ -412,42 +415,84 @@ export default function AdminDashboardPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                     {users.map((u) => (
-                      <tr key={u.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="py-3 px-4">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{u.name}</p>
-                          <p className="text-xs text-gray-400">{u.email}</p>
-                        </td>
-                        <td className="py-3 px-4">
-                          <select
-                            value={u.role}
-                            onChange={(e) => handleChangeRole(u.id, e.target.value)}
-                            className="px-2 py-1 rounded-lg text-xs font-semibold border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-pointer outline-none focus:border-purple-500"
-                          >
-                            <option value="RIDER">🧑 Rider</option>
-                            <option value="DRIVER">🚗 Driver</option>
-                            <option value="ADMIN">🛡️ Admin</option>
-                          </select>
-                        </td>
-                        <td className="py-3 px-4 text-center">
-                          <span className="text-xs text-gray-500">
-                            {u._count.tripsAsRider + u._count.tripsAsDriver}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="text-xs text-gray-400">
-                            {new Date(u.createdAt).toLocaleDateString()}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            onClick={() => handleDeleteUser(u.id, u.name)}
-                            className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all cursor-pointer"
-                            title="Delete user"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                          </button>
-                        </td>
-                      </tr>
+                      <React.Fragment key={u.id}>
+                        <tr className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                          <td className="py-3 px-4">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{u.name}</p>
+                            <p className="text-xs text-gray-400">{u.email}</p>
+                          </td>
+                          <td className="py-3 px-4">
+                            <select
+                              value={u.role}
+                              onChange={(e) => handleChangeRole(u.id, e.target.value)}
+                              className="px-2 py-1 rounded-lg text-xs font-semibold border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-pointer outline-none focus:border-purple-500"
+                            >
+                              <option value="RIDER">🧑 Rider</option>
+                              <option value="DRIVER">🚗 Driver</option>
+                              <option value="ADMIN">🛡️ Admin</option>
+                            </select>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-xs text-gray-500">
+                              {u._count.tripsAsRider + u._count.tripsAsDriver}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-xs text-gray-400">
+                              {new Date(u.createdAt).toLocaleDateString()}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right flex items-center justify-end gap-2">
+                            {u.role === 'DRIVER' && (
+                              <button
+                                onClick={() => setExpandedUserId(expandedUserId === u.id ? null : u.id)}
+                                className="p-1.5 rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-all cursor-pointer"
+                                title="View details"
+                              >
+                                {expandedUserId === u.id ? 'Hide Details' : 'View Details'}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteUser(u.id, u.name)}
+                              className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all cursor-pointer"
+                              title="Delete user"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2h4a2 2 0 0 1 2 2v2"/></svg>
+                            </button>
+                          </td>
+                        </tr>
+                        {expandedUserId === u.id && u.role === 'DRIVER' && (
+                          <tr className="bg-gray-50/50 dark:bg-gray-800/50">
+                            <td colSpan={5} className="py-4 px-6">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-3">Driver Info</h4>
+                                  <div className="flex gap-4 items-start">
+                                    {u.faceImageUrl && (
+                                      <img src={u.faceImageUrl} alt="Driver Face" className="w-20 h-20 rounded-xl object-cover border border-gray-200" />
+                                    )}
+                                    <div className="text-sm flex flex-col gap-2 text-gray-600 dark:text-gray-300">
+                                      <p><span className="font-medium">Aadhaar:</span> {u.aadhaarNumber ? `XXXX XXXX ${u.aadhaarNumber.slice(-4)}` : 'N/A'}</p>
+                                      <p><span className="font-medium">Vehicle Type:</span> {u.vehicleType || 'N/A'}</p>
+                                      <p><span className="font-medium">Vehicle No:</span> {u.vehicleNumber || 'N/A'}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                                {u.vehicleImages && u.vehicleImages.length > 0 && (
+                                  <div>
+                                    <h4 className="text-sm font-semibold mb-3">Vehicle Images</h4>
+                                    <div className="flex gap-2 overflow-x-auto pb-2">
+                                      {u.vehicleImages.map((img, idx) => (
+                                        <img key={idx} src={img} alt={`Vehicle ${idx+1}`} className="w-24 h-24 rounded-lg object-cover border border-gray-200 shrink-0" />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>

@@ -6,6 +6,7 @@ import type { Socket } from 'socket.io-client';
 interface SocketState {
   socket: Socket | null;
   isConnected: boolean;
+  connectionStatus: 'connected' | 'connecting' | 'disconnected';
 
   // Actions
   connect: () => void;
@@ -15,6 +16,7 @@ interface SocketState {
 export const useSocketStore = create<SocketState>()((set, get) => ({
   socket: null,
   isConnected: false,
+  connectionStatus: 'disconnected',
 
   connect: () => {
     const existing = get().socket;
@@ -23,16 +25,20 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
     const socket = getSocket();
     if (!socket) return;
 
-    set({ socket });
+    set({ socket, connectionStatus: 'connecting' });
 
     socket.on('connect', () => {
       if (process.env.NODE_ENV === 'development') console.log('[Socket] Connected:', socket.id);
-      set({ isConnected: true });
+      set({ isConnected: true, connectionStatus: 'connected' });
     });
 
     socket.on('disconnect', (reason) => {
       if (process.env.NODE_ENV === 'development') console.log('[Socket] Disconnected:', reason);
-      set({ isConnected: false });
+      set({ isConnected: false, connectionStatus: 'disconnected' });
+    });
+
+    socket.io.on('reconnect_attempt', () => {
+      set({ connectionStatus: 'connecting' });
     });
 
     socket.on('connect_error', (err) => {
@@ -40,7 +46,7 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
       // Don't redirect to login on socket errors — the socket has
       // auto-reconnection enabled and will keep trying. REST API
       // interceptor already handles 401s with proper token refresh.
-      set({ isConnected: false });
+      set({ isConnected: false, connectionStatus: 'disconnected' });
     });
 
     // ── Trip events → Zustand trip store ──
@@ -101,6 +107,6 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
 
   disconnect: () => {
     disconnectSocket();
-    set({ socket: null, isConnected: false });
+    set({ socket: null, isConnected: false, connectionStatus: 'disconnected' });
   },
 }));

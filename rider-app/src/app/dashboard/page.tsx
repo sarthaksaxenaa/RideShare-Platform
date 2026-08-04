@@ -39,6 +39,7 @@ export default function RiderDashboardPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const socket = useSocketStore((s) => s.socket);
+  const connectionStatus = useSocketStore((s) => s.connectionStatus);
   const tripState = useTripStore((s) => s.state);
   const setSearching = useTripStore((s) => s.setSearching);
 
@@ -161,6 +162,23 @@ export default function RiderDashboardPage() {
 
   return (
     <div className="min-h-screen">
+      {/* ── Socket Connection Banner ──────────── */}
+      <AnimatePresence>
+        {connectionStatus !== 'connected' && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className={`w-full text-center py-2 text-sm font-medium text-white shadow-md z-50 flex items-center justify-center gap-2 overflow-hidden ${
+              connectionStatus === 'disconnected' ? 'bg-red-500' : 'bg-amber-500'
+            }`}
+          >
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+            {connectionStatus === 'disconnected' ? 'Connection lost. Reconnecting...' : 'Reconnecting...'}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── Searching for Driver Overlay ──────────── */}
       <AnimatePresence>
         {tripState === 'SEARCHING' && (

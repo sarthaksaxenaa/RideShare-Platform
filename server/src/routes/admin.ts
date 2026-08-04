@@ -146,6 +146,11 @@ router.get(
             email: true,
             role: true,
             createdAt: true,
+            faceImageUrl: true,
+            vehicleImages: true,
+            aadhaarNumber: true,
+            vehicleType: true,
+            vehicleNumber: true,
             _count: {
               select: {
                 tripsAsRider: true,

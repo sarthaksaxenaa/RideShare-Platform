@@ -150,8 +150,13 @@ router.post(
 
       res.status(200).json({
         message: "SOS alert triggered successfully.",
+        location: { lat, lng },
         contactsNotified: contacts.length,
-        contacts: contacts.map((c) => ({ name: c.name, phone: c.phone })),
+        contacts: contacts.map((c) => ({ 
+          name: c.name, 
+          phone: c.phone,
+          callLink: `tel:${c.phone}` 
+        })),
       });
     } catch (error) {
       console.error("[emergency/alert] Error:", error);

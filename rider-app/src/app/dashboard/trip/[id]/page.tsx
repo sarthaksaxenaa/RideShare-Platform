@@ -72,6 +72,8 @@ export default function ActiveTripPage() {
 
   const [elapsed, setElapsed] = useState(0);
   const [showSOS, setShowSOS] = useState(false);
+  const [sosContacts, setSosContacts] = useState<{name: string, phone: string, callLink: string}[] | null>(null);
+  const [sosLoading, setSosLoading] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [fetchingTrip, setFetchingTrip] = useState(false);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
@@ -549,35 +551,90 @@ export default function ActiveTripPage() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-red-50 border border-red-200 rounded-xl p-4 overflow-hidden"
+                  className="bg-red-50 border-2 border-red-500 rounded-xl p-4 overflow-hidden shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse"
                 >
-                  <p className="text-sm font-semibold text-red-700 mb-1">Emergency Help</p>
-                  <p className="text-xs text-red-400 mb-3">Your emergency contacts will receive your live location</p>
-                  <div className="flex flex-col gap-2">
+                  <p className="text-base font-bold text-red-700 mb-1">Emergency Help</p>
+                  <p className="text-xs text-red-500 mb-4 font-medium">Your emergency contacts will receive your live location.</p>
+                  <div className="flex flex-col gap-3">
                     <a
                       href="tel:112"
-                      className="w-full py-2.5 bg-red-500 text-white text-sm font-semibold rounded-lg hover:bg-red-600 transition-colors text-center block"
+                      className="w-full py-3 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors text-center block shadow-lg shadow-red-500/30"
                     >
-                      📞 Call 112 (Emergency)
+                      📞 CALL 112 (EMERGENCY)
                     </a>
+                    
                     <button
-                      onClick={async () => {
-                        try {
-                          await api.post('/emergency/alert', {
-                            tripId,
-                            lat: tripData?.pickupLat,
-                            lng: tripData?.pickupLng,
-                          });
-                          toast.success('🚨 SOS alert sent to your emergency contacts!');
-                          setShowSOS(false);
-                        } catch {
-                          toast.error('Failed to send SOS alert. Call 112 directly.');
+                      onClick={() => {
+                        if (navigator.share) {
+                          const lat = tripData?.pickupLat;
+                          const lng = tripData?.pickupLng;
+                          navigator.share({
+                            title: 'My Live Location',
+                            text: 'I need help! Here is my live location.',
+                            url: `https://www.google.com/maps?q=${lat},${lng}`,
+                          }).catch(console.error);
+                        } else {
+                          toast.error('Sharing not supported on this browser');
                         }
                       }}
-                      className="w-full py-2.5 bg-white text-red-600 text-sm font-medium rounded-lg border border-red-200 hover:bg-red-50 transition-colors cursor-pointer"
+                      className="w-full py-2.5 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors cursor-pointer text-center flex items-center justify-center gap-2"
                     >
-                      🚨 Alert Emergency Contacts
+                      📍 Share Live Location
                     </button>
+
+                    {!sosContacts ? (
+                      <button
+                        onClick={async () => {
+                          try {
+                            setSosLoading(true);
+                            const res = await api.post('/emergency/alert', {
+                              tripId,
+                              lat: tripData?.pickupLat,
+                              lng: tripData?.pickupLng,
+                            });
+                            setSosContacts(res.data.contacts || []);
+                            toast.success('🚨 SOS alert sent to your emergency contacts!');
+                          } catch {
+                            toast.error('Failed to send SOS alert. Call 112 directly.');
+                          } finally {
+                            setSosLoading(false);
+                          }
+                        }}
+                        disabled={sosLoading}
+                        className="w-full py-2.5 bg-red-100 text-red-700 text-sm font-bold rounded-lg border border-red-300 hover:bg-red-200 transition-colors cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70"
+                      >
+                        {sosLoading ? (
+                          <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          '🚨 Alert Emergency Contacts'
+                        )}
+                      </button>
+                    ) : (
+                      <div className="mt-2 bg-white rounded-lg p-3 border border-red-200">
+                        <p className="text-xs font-bold text-red-600 mb-2">Notified Contacts:</p>
+                        {sosContacts.length > 0 ? (
+                          <div className="flex flex-col gap-2">
+                            {sosContacts.map((c, i) => (
+                              <a
+                                key={i}
+                                href={c.callLink || `tel:${c.phone}`}
+                                className="flex items-center justify-between py-2 px-3 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                              >
+                                <div>
+                                  <p className="text-sm font-semibold text-gray-900">{c.name}</p>
+                                  <p className="text-xs text-gray-500">{c.phone}</p>
+                                </div>
+                                <span className="w-8 h-8 flex items-center justify-center bg-red-100 text-red-600 rounded-full">
+                                  📞
+                                </span>
+                              </a>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500 italic">No emergency contacts found.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}

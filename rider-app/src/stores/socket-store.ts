@@ -26,17 +26,17 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
     set({ socket });
 
     socket.on('connect', () => {
-      console.log('[Socket] Connected:', socket.id);
+      if (process.env.NODE_ENV === 'development') console.log('[Socket] Connected:', socket.id);
       set({ isConnected: true });
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('[Socket] Disconnected:', reason);
+      if (process.env.NODE_ENV === 'development') console.log('[Socket] Disconnected:', reason);
       set({ isConnected: false });
     });
 
     socket.on('connect_error', (err) => {
-      console.error('[Socket] Connection error:', err.message);
+      if (process.env.NODE_ENV === 'development') console.error('[Socket] Connection error:', err.message);
       // Don't redirect to login on socket errors — the socket has
       // auto-reconnection enabled and will keep trying. REST API
       // interceptor already handles 401s with proper token refresh.
@@ -47,7 +47,7 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
     const trip = useTripStore.getState();
 
     socket.on('trip:requested', (data) => {
-      console.log('[Trip] Requested:', data);
+      if (process.env.NODE_ENV === 'development') console.log('[Trip] Requested:', data);
       const current = useTripStore.getState().data;
       if (current) {
         useTripStore.setState({
@@ -58,7 +58,7 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
     });
 
     socket.on('trip:matched', (data) => {
-      console.log('[Trip] Matched:', data);
+      if (process.env.NODE_ENV === 'development') console.log('[Trip] Matched:', data);
       trip.setMatched({
         tripId: data.tripId,
         driverId: data.driverId,
@@ -68,22 +68,22 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
     });
 
     socket.on('trip:started', () => {
-      console.log('[Trip] Started');
+      if (process.env.NODE_ENV === 'development') console.log('[Trip] Started');
       useTripStore.getState().setInTransit();
     });
 
     socket.on('trip:completed', (data) => {
-      console.log('[Trip] Completed:', data);
+      if (process.env.NODE_ENV === 'development') console.log('[Trip] Completed:', data);
       useTripStore.getState().setCompleted(data?.fare);
     });
 
     socket.on('trip:cancelled', () => {
-      console.log('[Trip] Cancelled');
+      if (process.env.NODE_ENV === 'development') console.log('[Trip] Cancelled');
       useTripStore.getState().setCancelled();
     });
 
     socket.on('trip:already_taken', () => {
-      console.log('[Trip] Already taken');
+      if (process.env.NODE_ENV === 'development') console.log('[Trip] Already taken');
       useTripStore.getState().reset();
     });
 
@@ -92,7 +92,7 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
     });
 
     socket.on('driver:disconnected', () => {
-      console.log('[Trip] Driver disconnected');
+      if (process.env.NODE_ENV === 'development') console.log('[Trip] Driver disconnected');
       useTripStore.getState().setDriverDisconnected(true);
     });
 

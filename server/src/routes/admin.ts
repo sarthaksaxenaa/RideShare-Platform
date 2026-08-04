@@ -279,4 +279,79 @@ router.delete(
   }
 );
 
+// ─────────────────────────────────────────────────────────────
+// PROMO CODES
+// ─────────────────────────────────────────────────────────────
+
+router.get(
+  "/promos",
+  authenticate,
+  requireRole("ADMIN"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const promos = await prisma.promoCode.findMany({
+        orderBy: { createdAt: "desc" },
+      });
+      res.json(promos);
+    } catch (error) {
+      console.error("[admin/promos] Error:", error);
+      res.status(500).json({ error: "Failed to fetch promo codes" });
+    }
+  }
+);
+
+router.post(
+  "/promos",
+  authenticate,
+  requireRole("ADMIN"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { code, description, discountType, discountValue, maxDiscount, minFare, maxUses, expiresAt, isActive } = req.body;
+      const promo = await prisma.promoCode.create({
+        data: { code: code.toUpperCase(), description, discountType, discountValue, maxDiscount, minFare, maxUses, expiresAt: expiresAt ? new Date(expiresAt) : null, isActive }
+      });
+      res.status(201).json(promo);
+    } catch (error) {
+      console.error("[admin/promos/create] Error:", error);
+      res.status(500).json({ error: "Failed to create promo code" });
+    }
+  }
+);
+
+router.patch(
+  "/promos/:id",
+  authenticate,
+  requireRole("ADMIN"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+      const promo = await prisma.promoCode.update({
+        where: { id },
+        data: { isActive },
+      });
+      res.json(promo);
+    } catch (error) {
+      console.error("[admin/promos/update] Error:", error);
+      res.status(500).json({ error: "Failed to update promo code" });
+    }
+  }
+);
+
+router.delete(
+  "/promos/:id",
+  authenticate,
+  requireRole("ADMIN"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      await prisma.promoCode.delete({ where: { id } });
+      res.json({ message: "Promo code deleted" });
+    } catch (error) {
+      console.error("[admin/promos/delete] Error:", error);
+      res.status(500).json({ error: "Failed to delete promo code" });
+    }
+  }
+);
+
 export default router;

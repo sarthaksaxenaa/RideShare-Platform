@@ -336,7 +336,19 @@ router.get(
         return;
       }
 
-      res.status(200).json(trip);
+      let responseTrip = { ...trip };
+      if (!responseTrip.baseFare && responseTrip.vehicleType && responseTrip.distanceKm != null && responseTrip.durationMin != null) {
+        const breakdown = calculateFareBreakdown(responseTrip.vehicleType, responseTrip.distanceKm, responseTrip.durationMin);
+        responseTrip = {
+          ...responseTrip,
+          baseFare: breakdown.baseFare,
+          distanceFare: breakdown.distanceFare,
+          timeFare: breakdown.timeFare,
+          platformFee: breakdown.platformFee,
+        };
+      }
+
+      res.status(200).json(responseTrip);
     } catch (error) {
       console.error("[trips/get] Unexpected error:", error);
       res.status(500).json({
@@ -580,7 +592,7 @@ router.post(
   requireRole("RIDER"),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { pickupLat, pickupLng, dropLat, dropLng, fare } = req.body;
+      const { pickupLat, pickupLng, dropLat, dropLng, fare, baseFare, distanceFare, timeFare, platformFee, vehicleType, distanceKm, durationMin, paymentMethod } = req.body;
       const userId = req.user!.id;
 
       // ── Validation ──────────────────────────────────────────
@@ -608,6 +620,14 @@ router.post(
           dropLat,
           dropLng,
           fare,
+          baseFare,
+          distanceFare,
+          timeFare,
+          platformFee,
+          vehicleType,
+          distanceKm,
+          durationMin,
+          paymentMethod,
           status: "REQUESTED",
         },
       });
@@ -654,33 +674,6 @@ router.post(
 // This would support admin CRUD operations, usage tracking,
 // and automatic expiration.
 
-/** Available promo codes — replace with DB table in production */
-const PROMO_CODES: Record<string, {
-  discountType: 'PERCENT' | 'FLAT';
-  discountValue: number;
-  description: string;
-  minFare: number;
-}> = {
-  'RIDE20': {
-    discountType: 'PERCENT',
-    discountValue: 20,
-    description: '20% off your ride!',
-    minFare: 50,
-  },
-  'FIRST50': {
-    discountType: 'PERCENT',
-    discountValue: 50,
-    description: '50% off for new users!',
-    minFare: 100,
-  },
-  'FLAT30': {
-    discountType: 'FLAT',
-    discountValue: 30,
-    description: '₹30 off your next ride!',
-    minFare: 80,
-  },
-};
-
 router.post(
   '/validate-promo',
   authenticate,
@@ -696,12 +689,14 @@ router.post(
       // Normalize: uppercase and trim whitespace
       const normalized = code.trim().toUpperCase();
 
-      const promo = PROMO_CODES[normalized];
+      const promo = await prisma.promoCode.findUnique({
+        where: { code: normalized }
+      });
 
-      if (!promo) {
+      if (!promo || !promo.isActive || promo.currentUses >= promo.maxUses || (promo.expiresAt && promo.expiresAt < new Date())) {
         res.status(404).json({
           error: 'Invalid promo code',
-          message: `"${code}" is not a valid promo code.`,
+          message: `"${code}" is not a valid or active promo code.`,
         });
         return;
       }
@@ -719,9 +714,18 @@ router.post(
       let discount = 0;
       if (promo.discountType === 'PERCENT') {
         discount = fare ? Math.round((fare * promo.discountValue) / 100) : 0;
+        if (promo.maxDiscount && discount > promo.maxDiscount) {
+          discount = promo.maxDiscount;
+        }
       } else {
         discount = promo.discountValue;
       }
+
+      // Increment usage count
+      await prisma.promoCode.update({
+        where: { id: promo.id },
+        data: { currentUses: { increment: 1 } }
+      });
 
       res.json({
         valid: true,

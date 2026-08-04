@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
+import { useEffect, useState, useCallback, lazy, Suspense, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -67,13 +67,40 @@ export default function ActiveTripPage() {
   const driverDisconnected = useTripStore((s) => s.driverDisconnected);
   const reset = useTripStore((s) => s.reset);
 
+  const isDriver = user?.role === 'DRIVER';
+  const config = stateConfig[tripState] || stateConfig.SEARCHING;
+
   const [elapsed, setElapsed] = useState(0);
   const [showSOS, setShowSOS] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [fetchingTrip, setFetchingTrip] = useState(false);
+  const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
+  
+  const driverLocationRef = useRef(driverLocation);
+  useEffect(() => { driverLocationRef.current = driverLocation; }, [driverLocation]);
 
-  const isDriver = user?.role === 'DRIVER';
-  const config = stateConfig[tripState] || stateConfig.SEARCHING;
+  useEffect(() => {
+    if (isDriver || tripState !== 'MATCHED' || !tripData) return;
+
+    const fetchEta = async () => {
+      const loc = driverLocationRef.current;
+      if (!loc) return;
+      try {
+        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${loc.lng},${loc.lat};${tripData.pickupLng},${tripData.pickupLat}?overview=false`);
+        const data = await res.json();
+        if (data.routes && data.routes[0]) {
+          setEtaSeconds(data.routes[0].duration);
+        }
+      } catch (err) {
+        console.error('Failed to fetch ETA', err);
+      }
+    };
+
+    fetchEta();
+    const interval = setInterval(fetchEta, 15000);
+    return () => clearInterval(interval);
+  }, [isDriver, tripState, tripData]);
+
 
   // ── API Fallback: Hydrate trip store on page refresh ──────
   // WHY: After a browser refresh, the Zustand trip-store is empty
@@ -289,31 +316,126 @@ export default function ActiveTripPage() {
           )}
         </AnimatePresence>
 
+        {/* ── ETA Badge ───────────────────────────── */}
+        {!isDriver && (tripState === 'MATCHED' || tripState === 'IN_TRANSIT') && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl p-4 flex items-center justify-between text-white shadow-lg"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">
+                {tripState === 'IN_TRANSIT' ? '🛣️' : '⏱️'}
+              </div>
+              <div>
+                <p className="text-sm font-semibold opacity-90">
+                  {tripState === 'IN_TRANSIT' ? 'En route to destination' : 'Driver arriving in'}
+                </p>
+                <p className="text-xl font-bold">
+                  {tripState === 'IN_TRANSIT' ? 'Enjoy your ride!' : etaSeconds !== null ? `${Math.ceil(etaSeconds / 60)} min` : 'Calculating...'}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* ── Main Grid ───────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-          {/* Map (2 cols) */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="lg:col-span-2 h-[350px] lg:h-[450px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm"
-          >
-            <Suspense
-              fallback={
-                <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                  <div className="w-8 h-8 border-3 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
+          {tripState === 'COMPLETED' ? (
+            <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 printable-receipt">
+              <style>{`@media print { body * { visibility: hidden; } .printable-receipt, .printable-receipt * { visibility: visible; } .printable-receipt { position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none; } .hide-on-print { display: none !important; } }`}</style>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 text-3xl">✓</div>
+                <h2 className="text-2xl font-bold text-gray-900">Trip Receipt</h2>
+                <p className="text-sm text-gray-500">{new Date((tripData as any)?.completedAt || Date.now()).toLocaleString()}</p>
+                <p className="text-xs text-gray-400 mt-1 font-mono">ID: {tripId.split('-')[0]}</p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex justify-between items-start pb-6 border-b border-gray-100">
+                  <div className="flex-1">
+                    <p className="text-xs text-gray-500 mb-1">Pickup</p>
+                    <p className="text-sm font-medium text-gray-900">{(tripData as any)?.pickupAddress || `${tripData?.pickupLat.toFixed(4)}, ${tripData?.pickupLng.toFixed(4)}`}</p>
+                  </div>
+                  <div className="px-4 text-gray-300">→</div>
+                  <div className="flex-1 text-right">
+                    <p className="text-xs text-gray-500 mb-1">Drop-off</p>
+                    <p className="text-sm font-medium text-gray-900">{(tripData as any)?.dropAddress || `${tripData?.dropLat.toFixed(4)}, ${tripData?.dropLng.toFixed(4)}`}</p>
+                  </div>
                 </div>
-              }
+
+                <div className="grid grid-cols-2 gap-4 pb-6 border-b border-gray-100">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1">Distance</p>
+                    <p className="text-sm font-medium text-gray-900">{(tripData as any)?.distanceKm?.toFixed(1) || '--'} km</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500 mb-1">Duration</p>
+                    <p className="text-sm font-medium text-gray-900">{(tripData as any)?.durationMin || '--'} min</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pb-6 border-b border-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-4">Fare Breakdown</h3>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Base Fare</span>
+                    <span className="font-medium">{formatCurrency((tripData as any)?.baseFare || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Distance Charge</span>
+                    <span className="font-medium">{formatCurrency((tripData as any)?.distanceFare || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Time Charge</span>
+                    <span className="font-medium">{formatCurrency((tripData as any)?.timeFare || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Platform Fee</span>
+                    <span className="font-medium">{formatCurrency((tripData as any)?.platformFee || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold pt-3 mt-3 border-t border-gray-100">
+                    <span>Total Amount</span>
+                    <span>{formatCurrency(tripData?.fare || 0)}</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Payment Method</span>
+                  <span className="font-medium px-3 py-1 bg-gray-100 rounded-lg">{(tripData as any)?.paymentMethod || 'CARD'}</span>
+                </div>
+
+                <div className="flex gap-3 mt-6 hide-on-print">
+                  <button onClick={() => window.print()} className="flex-1 py-3 bg-indigo-50 text-indigo-700 font-semibold rounded-xl hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    Download Receipt
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+              className="lg:col-span-2 h-[350px] lg:h-[450px] rounded-2xl overflow-hidden border border-gray-200 shadow-sm"
             >
-              <MapView
-                center={mapCenter}
-                pickup={tripData ? [tripData.pickupLat, tripData.pickupLng] : null}
-                dropoff={tripData ? [tripData.dropLat, tripData.dropLng] : null}
-                driverLocation={driverLocation}
-              />
-            </Suspense>
-          </motion.div>
+              <Suspense
+                fallback={
+                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                    <div className="w-8 h-8 border-3 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
+                  </div>
+                }
+              >
+                <MapView
+                  center={mapCenter}
+                  pickup={tripData ? [tripData.pickupLat, tripData.pickupLng] : null}
+                  dropoff={tripData ? [tripData.dropLat, tripData.dropLng] : null}
+                  driverLocation={driverLocation}
+                />
+              </Suspense>
+            </motion.div>
+          )}
 
           {/* Right Panel */}
           <motion.div

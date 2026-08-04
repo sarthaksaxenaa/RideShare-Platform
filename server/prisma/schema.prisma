@@ -117,3 +117,18 @@ model User {
   tripsAsRider     Trip[]             @relation("Trip_riderIdToUser")
 }
 
+model PromoCode {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  description String
+  discountType String  @default("FLAT")  // FLAT or PERCENT
+  discountValue Int    // Flat amount in rupees or percentage
+  maxDiscount  Int?    // Max discount cap for percentage type
+  minFare      Int     @default(0)  // Minimum fare to apply
+  maxUses      Int     @default(100)
+  currentUses  Int     @default(0)
+  expiresAt    DateTime?
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+}
+

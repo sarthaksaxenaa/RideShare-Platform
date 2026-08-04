@@ -39,6 +39,11 @@ router.get(
           phone: true,
           avatarUrl: true,
           createdAt: true,
+          vehicleModel: true,
+          vehicleNumber: true,
+          vehicleType: true,
+          aadhaarNumber: true,
+          faceImageUrl: true,
         },
       });
 

@@ -39,6 +39,9 @@ export default function DriverDashboardPage() {
   const acquirePreciseLocation = useLocationStore((s) => s.acquirePreciseLocation);
 
   const [isOnline, setIsOnline] = useState(false);
+  const [onlineSince, setOnlineSince] = useState<Date | null>(null);
+  const [onlineElapsed, setOnlineElapsed] = useState(0);
+  const [driverProfile, setDriverProfile] = useState<any>(null);
   const [tripRequests, setTripRequests] = useState<TripRequest[]>([]);
   const [todayEarnings, setTodayEarnings] = useState(0);
   const [todayTrips, setTodayTrips] = useState(0);
@@ -67,6 +70,10 @@ export default function DriverDashboardPage() {
       setTodayEarnings(res.data.todayEarnings || 0);
       setTodayTrips(res.data.todayTrips || 0);
       setDriverRating(res.data.rating);
+    }).catch(() => {});
+    
+    api.get('/users/me').then((res) => {
+      setDriverProfile(res.data);
     }).catch(() => {});
   }, [isDriver]);
 
@@ -135,10 +142,36 @@ export default function DriverDashboardPage() {
     if (!socket) { toast.error('Not connected to server'); return; }
     const next = !isOnline;
     setIsOnline(next);
+    
+    if (next) {
+      setOnlineSince(new Date());
+      setOnlineElapsed(0);
+    } else {
+      setOnlineSince(null);
+      setOnlineElapsed(0);
+    }
+
     socket.emit('driver:toggle', { online: next });
     toast(next ? 'You are now online — ride requests will appear here' : 'You are now offline');
     if (!next) setTripRequests([]);
   }, [socket, isOnline]);
+
+  // Timer for online elapsed time
+  useEffect(() => {
+    if (!isOnline || !onlineSince) return;
+    const interval = setInterval(() => {
+      setOnlineElapsed(Math.floor((new Date().getTime() - onlineSince.getTime()) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isOnline, onlineSince]);
+
+  const formatOnlineTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hrs > 0) return `${hrs}h ${mins}m`;
+    return `${mins}m ${secs}s`;
+  };
 
   const acceptTrip = useCallback(
     (tripId: string) => {
@@ -237,9 +270,49 @@ export default function DriverDashboardPage() {
               <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider">Online</p>
             </div>
             <p className="text-xl font-bold text-gray-900">{isOnline ? 'Active' : '—'}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">{isOnline ? 'Receiving requests' : 'Offline'}</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">{isOnline ? `Online for ${formatOnlineTime(onlineElapsed)}` : 'Offline'}</p>
           </div>
         </motion.div>
+
+        {/* ── Driver Profile ───────────────────────── */}
+        {driverProfile && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="mb-6 bg-white rounded-2xl border border-gray-200 p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-indigo-100 flex items-center justify-center border-2 border-indigo-50">
+                {driverProfile.faceImageUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={driverProfile.faceImageUrl} alt="Driver" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-bold text-indigo-700">{firstName[0]}</span>
+                )}
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">{driverProfile.name}</h3>
+                <p className="text-sm text-gray-500">{driverProfile.email} • {driverProfile.phone || 'No phone'}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-gray-400">Member since {new Date(driverProfile.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">
+                    Aadhaar: {driverProfile.aadhaarNumber ? `XXXX XXXX ${driverProfile.aadhaarNumber.slice(-4)}` : 'Not provided'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+              <div className="text-2xl">
+                {driverProfile.vehicleType === 'bike' ? '🏍️' : driverProfile.vehicleType === 'auto' ? '🛺' : driverProfile.vehicleType === 'suv' ? '🚙' : '🚗'}
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">{driverProfile.vehicleType || 'Vehicle'}</p>
+                <p className="text-sm font-bold text-gray-900">{driverProfile.vehicleNumber || '—'}</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* ── Map + Requests Grid ─────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

@@ -77,7 +77,9 @@ export async function createTripPaymentIntent(
   const amountInPaise = Math.round(fareInRupees * 100);
 
   if (IS_MOCK_STRIPE) {
-    console.log(`[Stripe Mock] Created PaymentIntent for ₹${fareInRupees} (${amountInPaise} paise)`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Stripe Mock] Created PaymentIntent for ₹${fareInRupees} (${amountInPaise} paise)`);
+    }
     return {
       id: `pi_mock_${Date.now()}`,
       client_secret: `pi_mock_secret_${Date.now()}`,
@@ -104,7 +106,9 @@ export async function capturePayment(
   paymentIntentId: string
 ): Promise<Stripe.PaymentIntent> {
   if (IS_MOCK_STRIPE) {
-    console.log(`[Stripe Mock] Captured PaymentIntent ${paymentIntentId}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Stripe Mock] Captured PaymentIntent ${paymentIntentId}`);
+    }
     return { id: paymentIntentId, status: 'succeeded' } as unknown as Stripe.PaymentIntent;
   }
 
@@ -116,7 +120,9 @@ export async function cancelPayment(
   paymentIntentId: string
 ): Promise<Stripe.PaymentIntent> {
   if (IS_MOCK_STRIPE) {
-    console.log(`[Stripe Mock] Cancelled PaymentIntent ${paymentIntentId}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Stripe Mock] Cancelled PaymentIntent ${paymentIntentId}`);
+    }
     return { id: paymentIntentId, status: 'canceled' } as unknown as Stripe.PaymentIntent;
   }
 

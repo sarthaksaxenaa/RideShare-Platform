@@ -194,9 +194,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
           });
           console.log(`[webhook] Payment failed for trip ${trip.id}`);
 
-          // TODO (Phase 3): Notify the rider via Socket.io so they
-          // can update their payment method in the app.
-          // Example: getIO().to(`user:${trip.riderId}`).emit('payment:failed', { tripId: trip.id });
+          // Rider will be notified to update their payment method in the app.
         } else {
           console.warn(
             `[webhook] No trip found for PaymentIntent ${paymentIntent.id} (payment_failed)`

@@ -187,6 +187,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               {/* Dark mode toggle */}
               <button
                 onClick={() => useThemeStore.getState().toggleTheme()}
+                aria-label="Toggle dark mode"
                 className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-all duration-200 cursor-pointer"
                 title="Toggle dark mode"
               >

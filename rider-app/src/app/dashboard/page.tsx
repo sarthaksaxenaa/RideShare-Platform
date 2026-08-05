@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useEffect, useState, useCallback, useMemo, lazy, Suspense, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -37,6 +37,8 @@ const trustBadges = [
 
 export default function RiderDashboardPage() {
   const router = useRouter();
+  const bookingRef = useRef<HTMLDivElement>(null);
+  const [initialPromoCode, setInitialPromoCode] = useState('');
   const user = useAuthStore((s) => s.user);
   const socket = useSocketStore((s) => s.socket);
   const connectionStatus = useSocketStore((s) => s.connectionStatus);
@@ -297,12 +299,14 @@ export default function RiderDashboardPage() {
 
           {/* Booking Card (2 cols) */}
           <motion.div
+            ref={bookingRef}
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="lg:col-span-2"
           >
             <BookingCard
+              initialPromoCode={initialPromoCode}
               onBook={handleBook}
               loading={tripState === 'SEARCHING'}
               onLocationChange={handleLocationChange}
@@ -356,8 +360,9 @@ export default function RiderDashboardPage() {
             <p className="text-sm text-indigo-100 mb-4 max-w-md">Use code <span className="font-bold text-white bg-white/20 px-2 py-0.5 rounded">RIDE20</span> at checkout. Valid for new users.</p>
             <button 
               onClick={() => {
-                navigator.clipboard.writeText('RIDE20');
-                toast.success('Promo code RIDE20 copied! Paste it in the booking form.');
+                setInitialPromoCode('RIDE20');
+                bookingRef.current?.scrollIntoView({ behavior: 'smooth' });
+                toast.success('Promo code RIDE20 ready! Book a ride to use it.');
               }}
               className="px-5 py-2.5 bg-white text-indigo-700 text-sm font-semibold rounded-xl hover:bg-indigo-50 transition-colors shadow-lg cursor-pointer"
             >

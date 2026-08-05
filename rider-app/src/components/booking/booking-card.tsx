@@ -20,9 +20,10 @@ interface BookingCardProps {
   onCancelBooking?: (reason: string) => void;
   onLocateOnMap?: (mode: 'pickup' | 'drop') => void;
   mapPickedLocation?: { mode: 'pickup' | 'drop'; lat: number; lng: number } | null;
+  initialPromoCode?: string;
 }
 
-export default function BookingCard({ onBook, loading = false, onLocationChange, onCancelBooking, onLocateOnMap, mapPickedLocation }: BookingCardProps) {
+export default function BookingCard({ onBook, loading = false, onLocationChange, onCancelBooking, onLocateOnMap, mapPickedLocation, initialPromoCode }: BookingCardProps) {
   const userPosition = useLocationStore((s) => s.userPosition);
   const isLocating = useLocationStore((s) => s.isLocating);
   const acquirePreciseLocation = useLocationStore((s) => s.acquirePreciseLocation);
@@ -49,7 +50,13 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('UPI');
 
   // Promo code state
-  const [promoCode, setPromoCode] = useState('');
+  const [promoCode, setPromoCode] = useState(initialPromoCode || '');
+  
+  useEffect(() => {
+    if (initialPromoCode) {
+      setPromoCode(initialPromoCode);
+    }
+  }, [initialPromoCode]);
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [promoDescription, setPromoDescription] = useState('');
   const [promoError, setPromoError] = useState('');

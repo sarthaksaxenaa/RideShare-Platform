@@ -461,11 +461,11 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
       const durMin = Math.round(distKm * 2 + 5);
       const ckm = Math.max(0, distKm - 2);
       setEstimates([
-        { vehicleType: 'bike', label: 'Bike', icon: '🏍️', description: 'Fastest in traffic', fare: Math.round(23 + ckm * 9), baseFare: 23, distanceFare: Math.round(ckm * 9), timeFare: 0, platformFee: 10, ratePerKm: 9, timeCharge: 0 },
-        { vehicleType: 'auto', label: 'Auto', icon: '🛺', description: 'No surge pricing', fare: Math.round(35 + ckm * 12 + durMin), baseFare: 35, distanceFare: Math.round(ckm * 12), timeFare: durMin, platformFee: 10, ratePerKm: 12, timeCharge: 1 },
-        { vehicleType: 'economy', label: 'Economy', icon: '🚗', description: 'Comfortable & affordable', fare: Math.round(48 + ckm * 14 + durMin), baseFare: 48, distanceFare: Math.round(ckm * 14), timeFare: durMin, platformFee: 10, ratePerKm: 14, timeCharge: 1 },
-        { vehicleType: 'sedan', label: 'Sedan', icon: '🚘', description: 'Spacious & smooth', fare: Math.round(65 + ckm * 18 + Math.round(durMin * 1.5)), baseFare: 65, distanceFare: Math.round(ckm * 18), timeFare: Math.round(durMin * 1.5), platformFee: 10, ratePerKm: 18, timeCharge: 1.5 },
-        { vehicleType: 'premium', label: 'Premium', icon: '✨', description: 'Luxury experience', fare: Math.round(85 + ckm * 24 + durMin * 2), baseFare: 85, distanceFare: Math.round(ckm * 24), timeFare: durMin * 2, platformFee: 10, ratePerKm: 24, timeCharge: 2 },
+        { vehicleType: 'bike', label: 'Bike', icon: '🏍️', description: 'Fastest in traffic', fare: Math.round(23 + ckm * 9), baseFare: 23, distanceFare: Math.round(ckm * 9), timeFare: 0, platformFee: 10, ratePerKm: 9, timeCharge: 0, surgeMultiplier: 1.0, surgeLabel: '' },
+        { vehicleType: 'auto', label: 'Auto', icon: '🛺', description: 'No surge pricing', fare: Math.round(35 + ckm * 12 + durMin), baseFare: 35, distanceFare: Math.round(ckm * 12), timeFare: durMin, platformFee: 10, ratePerKm: 12, timeCharge: 1, surgeMultiplier: 1.0, surgeLabel: '' },
+        { vehicleType: 'economy', label: 'Economy', icon: '🚗', description: 'Comfortable & affordable', fare: Math.round(48 + ckm * 14 + durMin), baseFare: 48, distanceFare: Math.round(ckm * 14), timeFare: durMin, platformFee: 10, ratePerKm: 14, timeCharge: 1, surgeMultiplier: 1.0, surgeLabel: '' },
+        { vehicleType: 'sedan', label: 'Sedan', icon: '🚘', description: 'Spacious & smooth', fare: Math.round(65 + ckm * 18 + Math.round(durMin * 1.5)), baseFare: 65, distanceFare: Math.round(ckm * 18), timeFare: Math.round(durMin * 1.5), platformFee: 10, ratePerKm: 18, timeCharge: 1.5, surgeMultiplier: 1.0, surgeLabel: '' },
+        { vehicleType: 'premium', label: 'Premium', icon: '✨', description: 'Luxury experience', fare: Math.round(85 + ckm * 24 + durMin * 2), baseFare: 85, distanceFare: Math.round(ckm * 24), timeFare: durMin * 2, platformFee: 10, ratePerKm: 24, timeCharge: 2, surgeMultiplier: 1.0, surgeLabel: '' },
       ]);
       setDistance(distKm);
       setEta(durMin);
@@ -674,10 +674,18 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 ~{eta} min
               </div>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 rounded-full text-xs font-medium text-green-600">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-                No surge
-              </div>
+              {estimates[0]?.surgeMultiplier && estimates[0].surgeMultiplier > 1 ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 rounded-full text-xs font-medium text-amber-600 border border-amber-200">
+                  <span className="animate-pulse text-amber-500 drop-shadow-md">⚡</span>
+                  <span>{estimates[0].surgeMultiplier}x Surge</span>
+                  <span className="text-[10px] opacity-75 ml-0.5">({estimates[0].surgeLabel})</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 rounded-full text-xs font-medium text-green-600">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                  No surge
+                </div>
+              )}
             </div>
 
             {/* Vehicle list */}
@@ -697,8 +705,17 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
                     <p className="text-sm font-semibold text-gray-900">{est.label}</p>
                     <p className="text-xs text-gray-400">{est.description}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900">{formatCurrency(est.fare)}</p>
+                  <div className="text-right flex flex-col items-end justify-center">
+                    <div className="flex items-center gap-1.5">
+                      {est.surgeMultiplier && est.surgeMultiplier > 1 && (
+                        <span className="text-xs text-gray-400 line-through">
+                          {formatCurrency(Math.round((est.fare - est.platformFee) / est.surgeMultiplier + est.platformFee))}
+                        </span>
+                      )}
+                      <p className={`text-sm font-bold ${est.surgeMultiplier && est.surgeMultiplier > 1 ? 'text-amber-600' : 'text-gray-900'}`}>
+                        {formatCurrency(est.fare)}
+                      </p>
+                    </div>
                     <p className="text-[10px] text-gray-400">estimated</p>
                   </div>
                 </button>

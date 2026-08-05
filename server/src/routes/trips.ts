@@ -147,6 +147,23 @@ const AVERAGE_SPEED_KMH = 30;
  */
 const PLATFORM_FEE = 10; // ₹10 flat platform fee
 
+function getSurgeMultiplier(): { multiplier: number; label: string } {
+  const now = new Date();
+  const hour = now.getHours();
+  const day = now.getDay();
+
+  if ((day === 5 || day === 6) && hour >= 19 && hour < 23) {
+    return { multiplier: 1.4, label: "Weekend Evening Surge" };
+  }
+  if ((hour >= 8 && hour < 10) || (hour >= 17 && hour < 20)) {
+    return { multiplier: 1.3, label: "Peak Hour Surge" };
+  }
+  if (hour >= 23 || hour < 5) {
+    return { multiplier: 1.5, label: "Late Night Surge" };
+  }
+  return { multiplier: 1.0, label: "" };
+}
+
 function calculateFare(
   vehicleType: string,
   distanceKm: number,
@@ -158,7 +175,9 @@ function calculateFare(
   const chargeableDistance = Math.max(0, distanceKm - pricing.baseDistanceKm);
   const distanceFare = chargeableDistance * pricing.ratePerKm;
   const timeFare = Math.round(durationMin * pricing.timeChargePerMin);
-  const total = pricing.baseFare + distanceFare + timeFare + PLATFORM_FEE;
+  const { multiplier } = getSurgeMultiplier();
+  const subtotal = (pricing.baseFare + distanceFare + timeFare) * multiplier;
+  const total = subtotal + PLATFORM_FEE;
 
   return Math.round(total);
 }
@@ -170,21 +189,25 @@ function calculateFareBreakdown(
   vehicleType: string,
   distanceKm: number,
   durationMin: number
-): { baseFare: number; distanceFare: number; timeFare: number; platformFee: number; total: number } {
+): { baseFare: number; distanceFare: number; timeFare: number; platformFee: number; total: number; surgeMultiplier: number; surgeLabel: string } {
   const pricing = VEHICLE_PRICING[vehicleType];
-  if (!pricing) return { baseFare: 0, distanceFare: 0, timeFare: 0, platformFee: 0, total: 0 };
+  if (!pricing) return { baseFare: 0, distanceFare: 0, timeFare: 0, platformFee: 0, total: 0, surgeMultiplier: 1.0, surgeLabel: "" };
 
   const chargeableDistance = Math.max(0, distanceKm - pricing.baseDistanceKm);
-  const distanceFare = Math.round(chargeableDistance * pricing.ratePerKm);
-  const timeFare = Math.round(durationMin * pricing.timeChargePerMin);
-  const total = pricing.baseFare + distanceFare + timeFare + PLATFORM_FEE;
+  const distanceFare = chargeableDistance * pricing.ratePerKm;
+  const timeFare = durationMin * pricing.timeChargePerMin;
+  const { multiplier, label } = getSurgeMultiplier();
+  const subtotal = (pricing.baseFare + distanceFare + timeFare) * multiplier;
+  const total = subtotal + PLATFORM_FEE;
 
   return {
-    baseFare: pricing.baseFare,
-    distanceFare,
-    timeFare,
+    baseFare: Math.round(pricing.baseFare * multiplier),
+    distanceFare: Math.round(distanceFare * multiplier),
+    timeFare: Math.round(timeFare * multiplier),
     platformFee: PLATFORM_FEE,
     total: Math.round(total),
+    surgeMultiplier: multiplier,
+    surgeLabel: label,
   };
 }
 
@@ -416,6 +439,8 @@ router.post(
           vehicleType,
           label: pricing.label,
           icon: pricing.icon,
+          surgeMultiplier: getSurgeMultiplier().multiplier,
+          surgeLabel: getSurgeMultiplier().label,
         });
         return;
       }
@@ -436,6 +461,8 @@ router.post(
             platformFee: breakdown.platformFee,
             ratePerKm: pricing.ratePerKm,
             timeCharge: pricing.timeChargePerMin,
+            surgeMultiplier: breakdown.surgeMultiplier,
+            surgeLabel: breakdown.surgeLabel,
           };
         }
       );
@@ -788,6 +815,104 @@ router.get(
       );
     } catch (error) {
       console.error("[trips/messages] Unexpected error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/trips/driver/earnings — Driver earnings dashboard
+// ─────────────────────────────────────────────────────────────
+
+router.get(
+  "/driver/earnings",
+  authenticate,
+  requireRole("DRIVER"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const now = new Date();
+
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const weekStart = new Date(todayStart);
+      weekStart.setDate(weekStart.getDate() - 6);
+      const monthStart = new Date(todayStart);
+      monthStart.setDate(monthStart.getDate() - 29);
+
+      const allCompletedTrips = await prisma.trip.findMany({
+        where: { driverId: userId, status: "COMPLETED" },
+        include: { rider: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+      });
+
+      let totalEarnings = 0;
+      let todayEarnings = 0;
+      let todayTrips = 0;
+      let weeklyEarnings = 0;
+      let weeklyTrips = 0;
+      let monthlyEarnings = 0;
+      let monthlyTrips = 0;
+
+      const dailyBreakdownMap = new Map<string, number>();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(todayStart);
+        d.setDate(d.getDate() - i);
+        dailyBreakdownMap.set(d.toLocaleDateString("en-US", { weekday: "short" }), 0);
+      }
+
+      allCompletedTrips.forEach((trip) => {
+        const fare = trip.fare || 0;
+        totalEarnings += fare;
+
+        const tripDate = trip.createdAt;
+
+        if (tripDate >= todayStart) {
+          todayEarnings += fare;
+          todayTrips++;
+        }
+        if (tripDate >= weekStart) {
+          weeklyEarnings += fare;
+          weeklyTrips++;
+          const dayStr = tripDate.toLocaleDateString("en-US", { weekday: "short" });
+          if (dailyBreakdownMap.has(dayStr)) {
+            dailyBreakdownMap.set(dayStr, dailyBreakdownMap.get(dayStr)! + fare);
+          }
+        }
+        if (tripDate >= monthStart) {
+          monthlyEarnings += fare;
+          monthlyTrips++;
+        }
+      });
+
+      const dailyBreakdown = Array.from(dailyBreakdownMap.entries()).map(([date, earnings]) => ({ date, earnings }));
+      const recentTrips = allCompletedTrips.slice(0, 10).map((t) => ({
+        id: t.id,
+        fare: t.fare,
+        distance: t.distanceKm,
+        date: t.createdAt,
+        riderName: t.rider?.name || "Rider",
+      }));
+
+      const avgRating = await prisma.rating.aggregate({
+        where: { toId: userId },
+        _avg: { stars: true },
+      });
+
+      res.json({
+        totalEarnings,
+        totalTrips: allCompletedTrips.length,
+        averageRating: avgRating._avg.stars ? Math.round(avgRating._avg.stars * 10) / 10 : 0,
+        todayEarnings,
+        todayTrips,
+        weeklyEarnings,
+        weeklyTrips,
+        monthlyEarnings,
+        monthlyTrips,
+        recentTrips,
+        dailyBreakdown,
+      });
+    } catch (error) {
+      console.error("[trips/driver/earnings] Error:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   }

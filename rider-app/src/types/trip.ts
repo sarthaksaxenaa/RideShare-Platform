@@ -52,6 +52,8 @@ export interface VehicleEstimate {
   platformFee: number;
   ratePerKm: number;
   timeCharge: number;
+  surgeMultiplier?: number;
+  surgeLabel?: string;
 }
 
 export interface EstimateResponse {

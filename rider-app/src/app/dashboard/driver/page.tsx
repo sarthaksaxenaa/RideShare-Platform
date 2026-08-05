@@ -47,6 +47,7 @@ export default function DriverDashboardPage() {
   const [todayTrips, setTodayTrips] = useState(0);
   const [driverRating, setDriverRating] = useState<number | null>(null);
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
+  const [earningsData, setEarningsData] = useState<any>(null);
 
   const isDriver = user?.role === 'DRIVER';
   const firstName = user?.name?.split(' ')[0] || 'Driver';
@@ -70,6 +71,13 @@ export default function DriverDashboardPage() {
       setTodayEarnings(res.data.todayEarnings || 0);
       setTodayTrips(res.data.todayTrips || 0);
       setDriverRating(res.data.rating);
+    }).catch(() => {});
+    
+    api.get('/trips/driver/earnings').then((res) => {
+      setEarningsData(res.data);
+      if (res.data.todayEarnings !== undefined) setTodayEarnings(res.data.todayEarnings);
+      if (res.data.todayTrips !== undefined) setTodayTrips(res.data.todayTrips);
+      if (res.data.averageRating !== undefined) setDriverRating(res.data.averageRating);
     }).catch(() => {});
     
     api.get('/users/me').then((res) => {
@@ -465,6 +473,140 @@ export default function DriverDashboardPage() {
             </AnimatePresence>
           </motion.div>
         </div>
+
+        {/* ── Earnings Section ───────────────────── */}
+        {earningsData && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mt-8"
+          >
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Earnings Overview</h2>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              {/* Earnings Cards (horizontal scroll on mobile implicitly via flex-wrap or grid) */}
+              <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-5 text-white shadow-lg shadow-indigo-500/20">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">💰</div>
+                    <span className="text-indigo-100 text-xs font-semibold px-2 py-1 bg-white/10 rounded-full">Today</span>
+                  </div>
+                  <p className="text-3xl font-bold mb-1">{formatCurrency(earningsData.todayEarnings || 0)}</p>
+                  <p className="text-sm text-indigo-100">{earningsData.todayTrips || 0} trips completed</p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-5 text-white shadow-lg shadow-purple-500/20">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">📅</div>
+                    <span className="text-purple-100 text-xs font-semibold px-2 py-1 bg-white/10 rounded-full">This Week</span>
+                  </div>
+                  <p className="text-3xl font-bold mb-1">{formatCurrency(earningsData.weeklyEarnings || 0)}</p>
+                  <p className="text-sm text-purple-100">{earningsData.weeklyTrips || 0} trips completed</p>
+                </div>
+
+                <div className="bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl p-5 text-white shadow-lg shadow-pink-500/20">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">🏆</div>
+                    <span className="text-pink-100 text-xs font-semibold px-2 py-1 bg-white/10 rounded-full">This Month</span>
+                  </div>
+                  <p className="text-3xl font-bold mb-1">{formatCurrency(earningsData.monthlyEarnings || 0)}</p>
+                  <p className="text-sm text-pink-100">{earningsData.monthlyTrips || 0} trips completed</p>
+                </div>
+              </div>
+
+              {/* Average Rating */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm flex flex-col justify-center items-center text-center">
+                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Average Rating</p>
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg key={star} className={`w-8 h-8 ${star <= Math.round(earningsData.averageRating || 0) ? 'text-yellow-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <p className="text-3xl font-bold text-gray-900">{earningsData.averageRating ? earningsData.averageRating.toFixed(1) : '—'}<span className="text-lg text-gray-400 font-medium">/5.0</span></p>
+                <p className="text-sm text-gray-400 mt-1">Based on recent trips</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Weekly Bar Chart */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
+                <h3 className="text-base font-bold text-gray-900 mb-6">Weekly Breakdown</h3>
+                <div className="h-48 flex items-end justify-between gap-2 px-2">
+                  {earningsData.dailyBreakdown?.map((day: any, i: number) => {
+                    const maxEarnings = Math.max(...earningsData.dailyBreakdown.map((d: any) => d.earnings), 1);
+                    const heightPercent = Math.max((day.earnings / maxEarnings) * 100, 4); // min 4% height
+                    
+                    return (
+                      <div key={i} className="flex flex-col items-center flex-1 group">
+                        <div className="w-full relative flex justify-center h-40 items-end">
+                          <motion.div 
+                            initial={{ height: 0 }}
+                            animate={{ height: `${heightPercent}%` }}
+                            transition={{ duration: 0.8, delay: 0.1 * i, type: "spring" }}
+                            className="w-full max-w-[40px] bg-gradient-to-t from-indigo-600 to-purple-500 rounded-t-md relative"
+                          >
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                              {formatCurrency(day.earnings)}
+                            </div>
+                          </motion.div>
+                        </div>
+                        <span className="text-xs font-medium text-gray-500 mt-2">{day.date}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Recent Trips */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-0 shadow-sm overflow-hidden flex flex-col">
+                <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="text-base font-bold text-gray-900">Recent Trips</h3>
+                  <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">{earningsData.recentTrips?.length || 0} completed</span>
+                </div>
+                <div className="flex-1 overflow-y-auto max-h-[220px]">
+                  {earningsData.recentTrips?.length > 0 ? (
+                    <ul className="divide-y divide-gray-100">
+                      {earningsData.recentTrips.slice(0, 5).map((trip: any, i: number) => (
+                        <motion.li 
+                          key={trip.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.3 + (i * 0.05) }}
+                          className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-bold text-sm">
+                              {trip.riderName?.[0] || 'R'}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">{trip.riderName}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(trip.date).toLocaleDateString()} • {trip.distance || '—'} km
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-gray-900">{formatCurrency(trip.fare)}</p>
+                            <p className="text-[10px] text-green-600 font-medium">Completed</p>
+                          </div>
+                        </motion.li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="p-8 text-center flex flex-col items-center justify-center h-full">
+                      <div className="text-3xl mb-2 opacity-50">🚕</div>
+                      <p className="text-sm font-medium text-gray-600">No recent trips</p>
+                      <p className="text-xs text-gray-400 mt-1">Your completed trips will appear here</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* ── Quick Tips (fills whitespace below) ───── */}

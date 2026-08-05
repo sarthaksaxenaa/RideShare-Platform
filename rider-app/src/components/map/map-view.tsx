@@ -83,23 +83,17 @@ export default function MapView({
   const routeLayerRef = useRef<L.LayerGroup | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Fetch real road route from OSRM
   const fetchRoute = useCallback(async (
     from: [number, number],
-    to: [number, number]
+    to: [number, number],
+    signal?: AbortSignal
   ): Promise<[number, number][] | null> => {
-    // Cancel any in-flight request
-    if (abortRef.current) abortRef.current.abort();
-    abortRef.current = new AbortController();
-
     try {
-      // OSRM expects lon,lat (not lat,lon)
       const url = `${OSRM_URL}/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson&alternatives=false&steps=false`;
-      const res = await fetch(url, { signal: abortRef.current.signal });
+      const res = await fetch(url, { signal });
       const data = await res.json();
 
       if (data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
-        // GeoJSON coordinates are [lon, lat] — convert to [lat, lon] for Leaflet
         return data.routes[0].geometry.coordinates.map(
           (coord: [number, number]) => [coord[1], coord[0]] as [number, number]
         );
@@ -197,35 +191,43 @@ export default function MapView({
         .addTo(markersRef.current);
     }
 
+    const abortCtrl = new AbortController();
+
     // Fetch and draw real road route
     if (pickup && dropoff && mapRef.current) {
       const map = mapRef.current;
       const routeLayer = routeLayerRef.current;
 
-      fetchRoute(pickup, dropoff).then((routeCoords) => {
+      fetchRoute(pickup, dropoff, abortCtrl.signal).then((routeCoords) => {
         if (!routeCoords || !routeLayer) return;
 
-        // Shadow / outline polyline for depth effect (Rapido-style blue)
         L.polyline(routeCoords, {
-          color: '#1a73e8',
-          weight: 9,
-          opacity: 0.2,
-          lineCap: 'round',
-          lineJoin: 'round',
-        }).addTo(routeLayer);
-
-        // Main route polyline — bright blue like Rapido
-        L.polyline(routeCoords, {
-          color: '#4285F4',
+          color: '#6366f1',
           weight: 5,
-          opacity: 0.9,
+          opacity: 0.8,
           lineCap: 'round',
           lineJoin: 'round',
+          dashArray: '15, 15',
+          className: 'animated-route-path',
         }).addTo(routeLayer);
 
-        // Fit map to route bounds with generous padding
         const bounds = L.latLngBounds(routeCoords);
         map.fitBounds(bounds, { padding: [70, 70], animate: true });
+      });
+    }
+
+    if (driverLocation && pickup && mapRef.current) {
+      const routeLayer = routeLayerRef.current;
+      fetchRoute([driverLocation.lat, driverLocation.lng], pickup, abortCtrl.signal).then((driverRouteCoords) => {
+        if (!driverRouteCoords || !routeLayer) return;
+        L.polyline(driverRouteCoords, {
+          color: '#9ca3af',
+          weight: 4,
+          opacity: 0.7,
+          dashArray: '5, 10',
+          lineCap: 'round',
+          lineJoin: 'round',
+        }).addTo(routeLayer);
       });
     }
 
@@ -240,6 +242,8 @@ export default function MapView({
     nearbyDrivers.forEach((d) => {
       L.marker([d.lat, d.lng], { icon: nearbyDriverIcon }).addTo(markersRef.current!);
     });
+
+    return () => abortCtrl.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickup, dropoff, driverLocation, nearbyDrivers, fetchRoute]);
 
@@ -268,6 +272,14 @@ export default function MapView({
 
   return (
     <div className="relative w-full h-full">
+      <style>{`
+        .animated-route-path {
+          animation: dash-flow 1s linear infinite;
+        }
+        @keyframes dash-flow {
+          to { stroke-dashoffset: -30; }
+        }
+      `}</style>
       <div
         ref={containerRef}
         className={`w-full h-full rounded-2xl overflow-hidden ${className}`}

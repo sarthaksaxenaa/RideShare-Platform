@@ -16,7 +16,7 @@ const outfit = Outfit({
 });
 
 export const viewport: Viewport = {
-  themeColor: '#ffffff',
+  themeColor: '#6366f1',
 };
 
 /**
@@ -101,9 +101,22 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" data-scroll-behavior="smooth" className={`${inter.variable} ${outfit.variable}`} suppressHydrationWarning>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="RideShare" />
+      </head>
       <body className="font-sans antialiased bg-white text-gray-900 min-h-screen">
         <Providers>{children}</Providers>
       </body>
+      <script dangerouslySetInnerHTML={{ __html: `
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+          });
+        }
+      `}} />
     </html>
   );
 }

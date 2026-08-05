@@ -1,150 +1,107 @@
 <div align="center">
-  <img src="./docs/banner.jpg" alt="RideShare Platform Banner" width="100%" />
-  
-  <br />
-  <br />
-
   <h1>🚗 RideShare Platform</h1>
-  <p><strong>A production-grade, real-time ride-hailing platform built from scratch.</strong></p>
-  <p>Real-time GPS tracking • Stripe payments • WebSocket matching • PostgreSQL • JWT refresh tokens</p>
-
-  <br />
-
+  <p><strong>A full-stack real-time ride-booking platform built with Next.js, Express, Socket.io & PostgreSQL</strong></p>
+  
   <p>
-    <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js_16-000000?style=for-the-badge&logo=next.js&logoColor=white" alt="Next.js"></a>
-    <a href="https://nodejs.org/"><img src="https://img.shields.io/badge/Node.js-5FA04E?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"></a>
-    <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"></a>
-    <a href="https://socket.io/"><img src="https://img.shields.io/badge/Socket.io-010101?style=for-the-badge&logo=socket.io&logoColor=white" alt="Socket.io"></a>
-    <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white" alt="Prisma"></a>
-    <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL"></a>
-    <a href="https://stripe.com/"><img src="https://img.shields.io/badge/Stripe-635BFF?style=for-the-badge&logo=stripe&logoColor=white" alt="Stripe"></a>
+    <a href="https://rideshare-platform.vercel.app">🌐 Live Demo</a> •
+    <a href="#features">✨ Features</a> •
+    <a href="#tech-stack">🛠 Tech Stack</a> •
+    <a href="#architecture">🏗 Architecture</a>
   </p>
 
-  <p>
-    <img src="https://img.shields.io/github/stars/sarthaksaxenaa/RideShare-Platform?style=social" alt="Stars">
-    <img src="https://img.shields.io/github/forks/sarthaksaxenaa/RideShare-Platform?style=social" alt="Forks">
-    <img src="https://img.shields.io/github/last-commit/sarthaksaxenaa/RideShare-Platform?color=blue" alt="Last Commit">
-    <img src="https://img.shields.io/github/languages/top/sarthaksaxenaa/RideShare-Platform?color=blue" alt="Top Language">
-    <img src="https://img.shields.io/github/repo-size/sarthaksaxenaa/RideShare-Platform" alt="Repo Size">
-  </p>
-
-  <br />
-
-  <p>
-    <a href="#-features">Features</a> •
-    <a href="#-system-architecture">Architecture</a> •
-    <a href="#-tech-stack">Tech Stack</a> •
-    <a href="#-quick-start">Quick Start</a> •
-    <a href="#-api-reference">API Reference</a> •
-    <a href="#-security">Security</a> •
-    <a href="#-database-schema">Database</a>
-  </p>
+  <img src="https://img.shields.io/badge/Next.js-16-black?logo=next.js" />
+  <img src="https://img.shields.io/badge/Express-4.x-green?logo=express" />
+  <img src="https://img.shields.io/badge/Socket.io-4.x-white?logo=socket.io" />
+  <img src="https://img.shields.io/badge/PostgreSQL-Neon-blue?logo=postgresql" />
+  <img src="https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript" />
 </div>
 
-<br />
+<br/>
 
----
+## 📖 Overview
 
-## 🎯 What Is This?
+RideShare is a production-ready, full-stack ride-hailing platform designed to connect riders with drivers in real-time. It handles the entire ride lifecycle—from fare estimation and live driver tracking to secure payments and trip history. Built from the ground up to solve complex engineering challenges, the platform features sub-second location streaming via WebSocket rooms, PCI-compliant payments using Stripe, and enterprise-grade authentication with silent token refresh.
 
-RideShare is a **full-stack ride-hailing platform** (like Uber/Ola) built entirely from scratch — no templates, no starters. It handles everything from user authentication to real-time GPS tracking to payment processing.
+## 🌐 Live Demo
 
-This isn't a tutorial project. It solves **real engineering problems**:
-
-- 🏎️ **Race condition handling** when multiple drivers accept the same ride
-- 📡 **Sub-second location streaming** via WebSocket rooms
-- 💳 **PCI-compliant payments** using Stripe's authorize-then-capture flow
-- 🔐 **Enterprise-grade auth** with HttpOnly cookies + refresh token rotation
-- 🗄️ **Cloud PostgreSQL** with Prisma ORM on Neon (serverless)
-
-<br />
+Experience the platform live: **[https://rideshare-platform.vercel.app](https://rideshare-platform.vercel.app)**
 
 ## ✨ Features
 
-<table>
-<tr>
-<td width="50%">
+### 🚗 Ride Booking
+- **Multi-Vehicle Support**: Choose between Auto, Sedan, SUV, or Premium rides.
+- **Dynamic Fare Estimation**: Real-time fare calculation with integrated surge pricing models.
+- **Promo Codes**: Real-time fare adjustments and discounts.
+- **Stripe Payments**: Secure, PCI-compliant hold-and-capture payment flow.
 
-### 🧑‍💼 For Riders
-- 📍 Live GPS tracking on interactive map
-- 🚘 Multiple vehicle types (Auto, Sedan, SUV, Premium)
-- 💰 Dynamic fare estimation with surge pricing
-- 🎫 Promo code system with real-time fare adjustment
-- 📜 Complete trip history with ratings
-- 🆘 Emergency SOS with live location sharing
-- 📞 Emergency contacts management
-- 🌙 Dark mode support
-- 📍 Saved locations (Home, Work, etc.)
+### 📍 Real-time Tracking
+- **Live Interactive Map**: Powered by React Leaflet and OpenStreetMap.
+- **Driver Location**: Sub-second GPS coordinate streaming over WebSockets.
+- **Live ETA**: Accurate time-to-arrival estimations during pickup and trip.
 
-</td>
-<td width="50%">
+### 💬 Communication & Safety
+- **In-App Chat**: Real-time communication between riders and drivers.
+- **Emergency SOS**: Live location sharing and one-tap emergency alerts.
+- **Call Driver**: Direct calling integration.
 
-### 🚗 For Drivers
-- 🔔 Real-time ride request notifications
-- ✅ Accept/reject ride requests
-- 🗺️ Turn-by-turn navigation to pickup & drop
-- 📊 Earnings dashboard
-- 🔑 Ride OTP verification for safety
-- 📍 Live location broadcasting
-- 🟢 Online/Offline toggle
-- 🏷️ Vehicle management (model, number, type)
+### 👤 User Management
+- **Role-Based Authentication**: Distinct experiences for Riders, Drivers, and Admins.
+- **Secure Auth Flow**: HttpOnly cookies with silent JWT refresh token rotation.
+- **Profile Management**: Manage saved places, emergency contacts, and ride history.
+- **OTP Reset**: Secure password recovery workflow.
 
-</td>
-</tr>
-<tr>
-<td width="50%">
+### 🚘 Driver Features
+- **Earnings Dashboard**: Track daily and weekly revenue.
+- **Online Timer**: Toggle availability and track active hours.
+- **Ride OTP Verification**: Ensure passenger safety with ride-start PINs.
+- **Vehicle Profile**: Manage vehicle make, model, and registration details.
 
-### 👨‍💼 For Admins
-- 📊 Platform analytics dashboard
-- 👥 User management (view, edit, delete)
-- 🚕 All trips monitoring
-- 💵 Revenue tracking
-- 🔍 Search & filter users
-- 🛡️ Role-based access control
+### 🛡️ Admin Panel
+- **User Management**: Search, filter, edit, and delete users.
+- **Driver Verification**: Review and approve driver registrations.
+- **Promo Code Management**: Create and track discount codes.
+- **Platform Analytics**: Revenue tracking and system monitoring.
 
-</td>
-<td width="50%">
+### 📱 PWA Support
+- **Installable**: Add to home screen functionality.
+- **Offline Mode**: Custom offline fallback page.
+- **Network-First Strategy**: Cached app shell for faster loading.
 
-### 🔧 Engineering
-- ⚡ Real-time WebSocket event system
-- 🔄 Silent token refresh (zero-downtime auth)
-- 🛡️ Rate limiting on all endpoints
-- 🧩 Error boundaries + loading skeletons
-- 📱 Fully responsive (mobile-first)
-- 🩺 Health check endpoint
-- ♻️ Graceful server shutdown (SIGTERM)
+## 🛠 Tech Stack
 
-</td>
-</tr>
-</table>
+| Domain | Technology | Description |
+|--------|------------|-------------|
+| **Frontend** | Next.js 16 (App Router), TypeScript, Zustand, Tailwind CSS | High-performance React framework with lightweight state management. |
+| **Backend** | Node.js, Express, Socket.io, TypeScript | Robust REST API server with real-time bidirectional WebSocket events. |
+| **Database** | PostgreSQL (Neon), Prisma ORM | Serverless cloud relational database with type-safe queries. |
+| **Security** | Helmet.js, bcrypt, JWT | HttpOnly cookie auth, brute-force protection, and HTTP security headers. |
+| **Deployment** | Vercel (Frontend), Render/Railway (Backend) | Scalable cloud hosting and CI/CD pipelines. |
 
-<br />
-
-## 🏗 System Architecture
+## 🏗 Architecture
 
 ```mermaid
 graph TB
     subgraph "Frontend — Next.js 16"
-        UI["🖥️ React UI<br/>(App Router + Turbopack)"]
-        Store["📦 Zustand Store<br/>(Auth + Trip State)"]
-        WS["⚡ Socket.io Client<br/>(withCredentials: true)"]
+        UI["🖥️ React UI<br/>(App Router)"]
+        Store["📦 Zustand Store<br/>(Auth + State)"]
+        WS["⚡ Socket.io Client"]
     end
 
     subgraph "Backend — Node.js + Express"
         API["🔌 REST API<br/>(Express + Helmet)"]
-        Auth["🔐 Auth Middleware<br/>(HttpOnly Cookie → JWT)"]
-        Socket["📡 Socket.io Server<br/>(Rooms + Namespaces)"]
+        Auth["🔐 Auth Middleware"]
+        Socket["📡 Socket.io Server"]
         Rate["🛡️ Rate Limiter"]
     end
 
     subgraph "Infrastructure"
         DB[("🐘 PostgreSQL<br/>(Neon Serverless)")]
-        Stripe["💳 Stripe API<br/>(Hold & Capture)"]
-        OSRM["🗺️ OSRM API<br/>(Route Polylines)"]
+        Stripe["💳 Stripe API"]
+        OSRM["🗺️ OSRM API"]
     end
 
     UI <-->|"HTTP + Cookies"| API
-    UI <-->|"WebSocket + Cookies"| Socket
+    UI <-->|"WebSocket"| Socket
     Store --- UI
     WS --- UI
     API --- Auth
@@ -156,119 +113,6 @@ graph TB
     UI <--> OSRM
 ```
 
-### Request Flow
-
-```
-📱 User Action
-    ↓
-🔐 HttpOnly Cookie sent automatically
-    ↓
-🛡️ Rate Limiter (100 req/15min)
-    ↓
-🔑 JWT Middleware (cookie → verify → req.user)
-    ↓  
-🎯 Route Handler
-    ↓
-🐘 Prisma ORM → PostgreSQL (Neon)
-    ↓
-📤 JSON Response + Set-Cookie (if auth)
-```
-
-<br />
-
-## 💻 Tech Stack
-
-### Frontend
-| Technology | Purpose |
-|---|---|
-| **Next.js 16** | React framework with App Router + Turbopack |
-| **TypeScript** | Type safety across the entire codebase |
-| **Zustand** | Lightweight state management with persist middleware |
-| **Socket.io Client** | Real-time bidirectional WebSocket communication |
-| **React Leaflet** | Interactive maps with OpenStreetMap tiles |
-| **Framer Motion** | Smooth animations and page transitions |
-| **Tailwind CSS** | Utility-first styling with dark mode |
-| **Axios** | HTTP client with refresh token interceptor |
-
-### Backend
-| Technology | Purpose |
-|---|---|
-| **Node.js + Express** | REST API server with modular routing |
-| **Socket.io** | WebSocket server for real-time events |
-| **Prisma ORM** | Type-safe database queries + migrations |
-| **PostgreSQL (Neon)** | Serverless cloud database (AWS Singapore) |
-| **JWT + bcrypt** | HttpOnly cookie auth + password hashing (12 rounds) |
-| **Helmet.js** | Security HTTP headers (11+ protections) |
-| **Stripe SDK** | Payment processing with hold-and-capture |
-| **express-rate-limit** | Brute-force and DDoS protection |
-
-<br />
-
-## 🔐 Security
-
-This project implements **production-grade security** — not just basic auth:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    SECURITY LAYERS                       │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  🔒 Layer 1: HttpOnly Cookies                           │
-│     └─ JWT stored in HttpOnly cookie                    │
-│     └─ JavaScript CANNOT read it (XSS-proof)           │
-│                                                         │
-│  🔄 Layer 2: Refresh Token Rotation                     │
-│     └─ Access Token:  15 min (short-lived)              │
-│     └─ Refresh Token: 7 days (restricted path)          │
-│     └─ Silent auto-refresh via axios interceptor        │
-│                                                         │
-│  🔑 Layer 3: Password Security                          │
-│     └─ bcrypt hashing with 12 salt rounds               │
-│     └─ Passwords are NEVER stored in plaintext          │
-│                                                         │
-│  🛡️ Layer 4: HTTP Security Headers (Helmet.js)          │
-│     └─ X-Content-Type-Options: nosniff                  │
-│     └─ X-Frame-Options: DENY (anti-clickjacking)       │
-│     └─ Strict-Transport-Security (force HTTPS)          │
-│                                                         │
-│  ⏱️ Layer 5: Rate Limiting                               │
-│     └─ Auth routes: 20 req/15min                        │
-│     └─ General API: 100 req/15min                       │
-│                                                         │
-│  🎭 Layer 6: Role-Based Access Control                  │
-│     └─ RIDER, DRIVER, ADMIN roles                       │
-│     └─ Server validates role on every request           │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Auth Flow
-
-```mermaid
-sequenceDiagram
-    participant C as Client
-    participant S as Server
-    participant DB as PostgreSQL
-
-    C->>S: POST /api/auth/login {email, password}
-    S->>DB: Find user by email
-    DB-->>S: User record (with bcrypt hash)
-    S->>S: bcrypt.compare(password, hash)
-    S-->>C: Set-Cookie: jwt (15min) + jwt_refresh (7 days)
-    
-    Note over C,S: 15 minutes later...
-    
-    C->>S: GET /api/trips (jwt cookie expired)
-    S-->>C: 401 Unauthorized
-    C->>S: POST /api/auth/refresh (jwt_refresh cookie)
-    S->>DB: Verify user still exists
-    S-->>C: Set-Cookie: jwt (new 15min token)
-    C->>S: GET /api/trips (retry with new token)
-    S-->>C: 200 OK ✅
-```
-
-<br />
-
 ## 🗄️ Database Schema
 
 ```mermaid
@@ -279,13 +123,12 @@ erDiagram
     User ||--o{ Rating : "receives rating"
     User ||--o{ SavedLocation : "has saved places"
     User ||--o{ EmergencyContact : "has contacts"
-    User ||--o| DriverLocation : "has live location"
     Trip ||--o| Rating : "has rating"
 
     User {
         uuid id PK
         string email UK
-        string password "bcrypt hashed"
+        string password
         string name
         string role "RIDER | DRIVER | ADMIN"
         string phone
@@ -297,7 +140,7 @@ erDiagram
 
     Trip {
         uuid id PK
-        string status "REQUESTED → MATCHED → STARTED → COMPLETED"
+        string status "REQUESTED | MATCHED | STARTED | COMPLETED | CANCELLED"
         uuid riderId FK
         uuid driverId FK
         float pickupLat
@@ -315,215 +158,145 @@ erDiagram
     Rating {
         uuid id PK
         uuid tripId FK
-        int stars "1-5"
+        int stars
         string comment
-        string tags
     }
 ```
 
-<br />
-
-## 🚦 Quick Start
-
-### Prerequisites
-- **Node.js** v18+ 
-- **Python** v3.8+ (for the launcher)
-
-### One-Command Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/sarthaksaxenaa/RideShare-Platform.git
-cd RideShare-Platform
-
-# Run the automated launcher
-python run.py
-```
-
-The launcher automatically:
-1. ✅ Installs all NPM dependencies
-2. ✅ Generates `.env` with secure defaults
-3. ✅ Sets up Prisma Client and database schema
-4. ✅ Boots both servers concurrently
-
-### Manual Setup
-
-```bash
-# 1. Install dependencies
-cd server && npm install
-cd ../rider-app && npm install
-
-# 2. Configure environment
-cp server/.env.example server/.env
-# Edit server/.env with your DATABASE_URL and JWT_SECRET
-
-# 3. Setup database
-cd server
-npx prisma db push
-npx prisma generate
-
-# 4. Start development servers
-npm run dev          # Start backend (port 3001)
-cd ../rider-app
-npm run dev          # Start frontend (port 3000)
-```
-
-### Access Points
-
-| Service | URL | Description |
-|---------|-----|-------------|
-| 🌐 Web App | http://localhost:3000 | Next.js frontend |
-| 🔌 API Server | http://localhost:3001 | Express + Socket.io |
-| 🩺 Health Check | http://localhost:3001/health | Server status |
-
-<br />
-
-## 📖 API Reference
+## 🔌 API Endpoints
 
 ### Authentication
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/api/auth/register` | ❌ | Create account → sets HttpOnly cookies |
-| `POST` | `/api/auth/login` | ❌ | Login → sets access + refresh cookies |
-| `POST` | `/api/auth/refresh` | 🍪 | Refresh access token using refresh cookie |
-| `POST` | `/api/auth/logout` | 🍪 | Clear both auth cookies |
-| `POST` | `/api/auth/reset-password` | ❌ | Reset password by email |
-
-### Trips
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/trips/estimate` | 🔐 | Calculate fare estimates for route |
-| `POST` | `/api/trips/book` | 🔐 | Create trip + Stripe PaymentIntent |
-| `GET` | `/api/trips/:id` | 🔐 | Get trip details |
-| `GET` | `/api/trips/history` | 🔐 | Paginated trip history |
+| Method | Route | Description |
+|--------|-------|-------------|
+| `POST` | `/api/auth/register` | Create a new user account |
+| `POST` | `/api/auth/login` | Authenticate and set HttpOnly cookies |
+| `POST` | `/api/auth/refresh` | Refresh access token |
+| `POST` | `/api/auth/logout` | Clear authentication cookies |
+| `POST` | `/api/auth/reset-password` | Initiate password reset flow |
 
 ### Users
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/users/me` | Retrieve current user profile |
+| `PUT` | `/api/users/me` | Update user profile details |
+| `GET` | `/api/users/me/locations` | Get user saved locations |
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/users/me` | 🔐 | Current user profile |
-| `PUT` | `/api/users/me` | 🔐 | Update profile |
-| `PUT` | `/api/users/me/password` | 🔐 | Change password |
-| `GET` | `/api/users/me/emergency-contacts` | 🔐 | List emergency contacts |
-| `GET` | `/api/users/me/saved-locations` | 🔐 | List saved places |
+### Trips
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/api/trips/estimate` | Calculate fare estimates |
+| `POST` | `/api/trips/book` | Create new trip & Stripe intent |
+| `GET` | `/api/trips/:id` | Retrieve specific trip details |
+| `GET` | `/api/trips/history` | Get user trip history |
 
-### WebSocket Events
+## 📡 Socket Events
 
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `trip:request` | Client → Server | Rider requests a ride |
-| `trip:matched` | Server → Client | Driver assigned to trip |
-| `trip:accept` | Client → Server | Driver accepts ride request |
-| `trip:start` | Client → Server | Driver confirms pickup (OTP verified) |
-| `trip:complete` | Client → Server | Driver completes drop-off |
-| `trip:cancel` | Bidirectional | Either party cancels the trip |
-| `driver:location` | Client → Server | Driver streams GPS coordinates |
-| `driver:location_update` | Server → Client | Rider receives driver position |
-| `driver:disconnected` | Server → Client | Driver went offline mid-trip |
+| Event Name | Direction | Description |
+|------------|-----------|-------------|
+| `trip:request` | Client → Server | Rider initiates a new ride request |
+| `trip:matched` | Server → Client | Driver is successfully assigned to a trip |
+| `trip:accept` | Client → Server | Driver accepts an incoming ride request |
+| `trip:start` | Client → Server | Driver starts trip (post OTP verification) |
+| `trip:complete` | Client → Server | Driver marks trip as completed |
+| `trip:cancel` | Bidirectional | Trip cancelled by rider or driver |
+| `driver:location` | Client → Server | Driver broadcasts live GPS coordinates |
+| `driver:location_update`| Server → Client | Rider receives driver's updated position |
 
-<br />
+## 🚦 Getting Started
 
-## 📁 Project Structure
+### Prerequisites
+- Node.js (v18+)
+- PostgreSQL Database
+- Stripe Account (Optional)
 
-```
-RideShare-Platform/
-├── rider-app/                    # Next.js 16 Frontend
-│   ├── src/
-│   │   ├── app/                  # App Router pages
-│   │   │   ├── dashboard/        # Authenticated pages
-│   │   │   │   ├── admin/        # Admin panel
-│   │   │   │   ├── driver/       # Driver-specific views
-│   │   │   │   ├── history/      # Trip history
-│   │   │   │   └── profile/      # User profile
-│   │   │   ├── login/            # Authentication
-│   │   │   ├── sitemap.ts        # Dynamic SEO sitemap
-│   │   │   ├── robots.ts         # Dynamic robots.txt
-│   │   │   └── page.tsx          # Landing page
-│   │   ├── components/           # Reusable UI components
-│   │   │   ├── booking/          # Ride booking flow
-│   │   │   ├── layout/           # Navbar, sidebar
-│   │   │   ├── map/              # Map & tracking
-│   │   │   └── trip/             # Trip cards & status
-│   │   ├── stores/               # Zustand state management
-│   │   └── lib/                  # API client, socket, utils
-│   └── public/                   # Static assets
-│
-├── server/                       # Express.js Backend
-│   ├── src/
-│   │   ├── routes/               # API route handlers
-│   │   │   ├── auth.ts           # Register, Login, Refresh, Logout
-│   │   │   ├── trips.ts          # Booking, estimates, history
-│   │   │   └── users.ts          # Profile, contacts, locations
-│   │   ├── socket/               # WebSocket handlers
-│   │   │   ├── index.ts          # Socket auth + connection
-│   │   │   ├── driverHandlers.ts # Driver location, online/offline
-│   │   │   └── tripHandlers.ts   # Trip lifecycle events
-│   │   ├── middleware/           # Auth, rate limiting
-│   │   └── lib/                  # Prisma client, helpers
-│   └── prisma/
-│       └── schema.prisma         # Database schema
-│
-├── run.py                        # One-command launcher
-└── README.md
-```
+### Local Setup
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/sarthaksaxenaa/RideShare-Platform.git
+   cd RideShare-Platform
+   ```
 
-<br />
+2. **Install dependencies**
+   ```bash
+   cd server && npm install
+   cd ../rider-app && npm install
+   ```
+
+3. **Configure Environment Variables**
+   Copy `.env.example` to `.env` in both `server/` and `rider-app/` directories and fill in the values.
+
+4. **Database Setup**
+   ```bash
+   cd server
+   npx prisma generate
+   npx prisma db push
+   ```
+
+5. **Start Development Servers**
+   ```bash
+   # Terminal 1 (Backend)
+   cd server && npm run dev
+   
+   # Terminal 2 (Frontend)
+   cd rider-app && npm run dev
+   ```
 
 ## 🔧 Environment Variables
 
-### Server (`server/.env`)
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host/db?sslmode=require` |
+| `JWT_SECRET` | Secret key for signing tokens | `your-super-secret-jwt-key` |
+| `STRIPE_SECRET_KEY`| Stripe API secret | `sk_test_...` |
+| `NEXT_PUBLIC_API_URL`| Backend URL | `http://localhost:3001` |
+| `PORT` | Backend port number | `3001` |
 
-```env
-# Database (Neon PostgreSQL)
-DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
+## 🚀 Deployment
 
-# Authentication
-JWT_SECRET=your-64-char-random-string
-JWT_EXPIRES_IN=7d
+- **Frontend**: Hosted on **Vercel** with optimized Edge caching and Server Actions.
+- **Backend**: Hosted on **Render** (or Railway) for robust WebSocket support and scalable Express APIs.
+- **Database**: Managed on **Neon**, leveraging serverless PostgreSQL for automatic scaling.
 
-# Server
-PORT=3001
+## 📁 Project Structure
 
-# Stripe (optional — app works without it in mock mode)
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-
-# CORS
-CORS_ORIGIN=http://localhost:3000
+```text
+RideShare-Platform/
+├── rider-app/                    # Next.js Frontend
+│   ├── src/
+│   │   ├── app/                  # App Router & Pages
+│   │   ├── components/           # Reusable UI components
+│   │   ├── stores/               # Zustand state management
+│   │   └── lib/                  # Utilities and API clients
+│   └── public/                   # Static assets & PWA files
+├── server/                       # Node.js/Express Backend
+│   ├── src/
+│   │   ├── routes/               # REST API endpoints
+│   │   ├── socket/               # WebSocket event handlers
+│   │   ├── middleware/           # Auth and security middlewares
+│   │   └── lib/                  # Helpers and Prisma setup
+│   └── prisma/                   # Database schema
+└── README.md
 ```
 
-<br />
+## 📸 Screenshots
+
+> *Add application screenshots here to showcase the beautiful UI and features.*
+> 
+> * [Home/Landing Page]
+> * [Ride Booking Map View]
+> * [Driver Dashboard]
+> * [Trip History]
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are always welcome! 
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
-
-<br />
 
 ## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
-
-<br />
-
----
-
-<div align="center">
-  <p><strong>Built with ❤️ by <a href="https://github.com/sarthaksaxenaa">Sarthak Saxena</a></strong></p>
-  <p><em>If you found this useful, consider giving it a ⭐</em></p>
-  
-  <br />
-  
-  <p>
-    <a href="https://github.com/sarthaksaxenaa"><img src="https://img.shields.io/badge/GitHub-sarthaksaxenaa-181717?style=for-the-badge&logo=github" alt="GitHub"></a>
-    <a href="https://linkedin.com/in/sarthaksaxenaa"><img src="https://img.shields.io/badge/LinkedIn-sarthaksaxenaa-0A66C2?style=for-the-badge&logo=linkedin" alt="LinkedIn"></a>
-  </p>
-</div>
+Distributed under the MIT License. See `LICENSE` for more information.

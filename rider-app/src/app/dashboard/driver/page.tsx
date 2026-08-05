@@ -230,16 +230,30 @@ export default function DriverDashboardPage() {
           {/* Online/Offline toggle */}
           <button
             onClick={toggleOnline}
+            disabled={driverProfile?.verificationStatus === 'PENDING' || driverProfile?.verificationStatus === 'REJECTED'}
             className={`relative flex items-center gap-2.5 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-400 cursor-pointer ${
               isOnline
                 ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg shadow-green-500/25 hover:shadow-green-500/40 hover:-translate-y-0.5'
                 : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-gray-200'
-            }`}
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-white animate-pulse' : 'bg-gray-400'}`} />
             {isOnline ? 'Online' : 'Go Online'}
           </button>
         </motion.div>
+
+        {driverProfile?.verificationStatus === 'PENDING' && (
+          <div className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+            <span className="text-amber-500 text-xl">⏳</span>
+            <p className="text-sm text-amber-800 font-medium">Your account is under review. You can go online once approved.</p>
+          </div>
+        )}
+        {driverProfile?.verificationStatus === 'REJECTED' && (
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+            <span className="text-red-500 text-xl">❌</span>
+            <p className="text-sm text-red-800 font-medium">Your account was rejected. Please contact support.</p>
+          </div>
+        )}
 
         {/* ── Stats Cards ────────────────────────── */}
         <motion.div

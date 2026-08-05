@@ -206,6 +206,8 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
         password: hashedPassword,
         name,
         role,
+        isVerified: role !== 'DRIVER',
+        verificationStatus: role === 'DRIVER' ? 'PENDING' : 'APPROVED',
         // Driver-specific fields (null for riders)
         ...(role === 'DRIVER' && {
           phone,

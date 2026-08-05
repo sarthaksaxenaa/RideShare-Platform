@@ -14,7 +14,7 @@ import type { VehicleEstimate, EstimateResponse } from '@/types/trip';
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
 interface BookingCardProps {
-  onBook: (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number, paymentMethod: string, vehicle: { type: string; icon: string; label: string }) => void;
+  onBook: (pickup: { lat: number; lng: number }, drop: { lat: number; lng: number }, fare: number, paymentMethod: string, vehicle: { type: string; icon: string; label: string }, scheduledAt?: Date) => void;
   loading?: boolean;
   onLocationChange?: (pickup: [number, number] | null, dropoff: [number, number] | null) => void;
   onCancelBooking?: (reason: string) => void;
@@ -51,6 +51,12 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
 
   // Promo code state
   const [promoCode, setPromoCode] = useState(initialPromoCode || '');
+  
+  // Schedule state
+  const [bookingMode, setBookingMode] = useState<'now' | 'schedule'>('now');
+  const [scheduledDate, setScheduledDate] = useState<string>('');
+  const [scheduledTime, setScheduledTime] = useState<string>('');
+
   
   useEffect(() => {
     if (initialPromoCode) {
@@ -487,14 +493,21 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
     const chosen = estimates.find((e) => e.vehicleType === selectedVehicle);
     if (!chosen) return;
     const finalFare = promoApplied ? Math.max(0, chosen.fare - promoDiscount) : chosen.fare;
+
+    let scheduledAt: Date | undefined;
+    if (bookingMode === 'schedule' && scheduledDate && scheduledTime) {
+      scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
+    }
+
     onBook(
       { lat: selectedPickup.lat, lng: selectedPickup.lng },
       { lat: selectedDrop.lat, lng: selectedDrop.lng },
       finalFare,
       paymentMethod,
-      { type: chosen.vehicleType, icon: chosen.icon, label: chosen.label }
+      { type: chosen.vehicleType, icon: chosen.icon, label: chosen.label },
+      scheduledAt
     );
-  }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook, paymentMethod, promoApplied, promoDiscount]);
+  }, [estimates, selectedPickup, selectedDrop, selectedVehicle, onBook, paymentMethod, promoApplied, promoDiscount, bookingMode, scheduledDate, scheduledTime]);
 
   // Promo code validation
   const handleApplyPromo = useCallback(async () => {
@@ -746,6 +759,46 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
           </motion.div>
         )}
       </AnimatePresence>
+      
+      {/* Schedule Ride Toggle */}
+      {estimates && selectedVehicle && !loading && (
+        <div className="px-5 mb-4">
+          <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+            <button
+              onClick={() => setBookingMode('now')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${bookingMode === 'now' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Ride Now
+            </button>
+            <button
+              onClick={() => setBookingMode('schedule')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${bookingMode === 'schedule' ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              Schedule
+            </button>
+          </div>
+          
+          {bookingMode === 'schedule' && (
+            <div className="flex gap-2 mt-3">
+              <input 
+                type="date" 
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                max={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm"
+              />
+              <input 
+                type="time" 
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Action Buttons */}
       {estimates && (
         <PaymentSelector selected={paymentMethod} onChange={setPaymentMethod} />
@@ -803,10 +856,14 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
             </button>
             <button
               onClick={handleBook}
-              disabled={!selectedVehicle}
+              disabled={!selectedVehicle || (bookingMode === 'schedule' && (!scheduledDate || !scheduledTime))}
               className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 text-white text-sm font-semibold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
             >
-              {selectedVehicle ? `Book ${estimates?.find(e => e.vehicleType === selectedVehicle)?.label || selectedVehicle}` : 'Select a ride'}
+              {selectedVehicle 
+                ? (bookingMode === 'schedule' && scheduledDate && scheduledTime 
+                   ? `Schedule Ride for ${new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` 
+                   : `Book ${estimates?.find(e => e.vehicleType === selectedVehicle)?.label || selectedVehicle}`) 
+                : 'Select a ride'}
             </button>
           </>
         )}

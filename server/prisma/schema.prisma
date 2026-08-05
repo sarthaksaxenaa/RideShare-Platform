@@ -86,6 +86,9 @@ model Trip {
   paymentStatus         String    @default("PENDING")
   paymentMethod         String    @default("CARD")
   rideOtp               String?
+  scheduledAt           DateTime?
+  cancellationFee       Int?
+  cancelledAt           DateTime?
   createdAt             DateTime  @default(now())
   completedAt           DateTime?
   rating                Rating?
@@ -100,6 +103,8 @@ model User {
   password         String
   name             String
   role             String
+  isVerified       Boolean            @default(false)
+  verificationStatus String           @default("PENDING")
   createdAt        DateTime           @default(now())
   avatarUrl        String?
   phone            String?
@@ -117,6 +122,7 @@ model User {
   tripsAsDriver    Trip[]             @relation("Trip_driverIdToUser")
   tripsAsRider     Trip[]             @relation("Trip_riderIdToUser")
   messages         Message[]
+  notifications    Notification[]
 }
 
 model PromoCode {
@@ -143,6 +149,17 @@ model OTP {
   createdAt DateTime @default(now())
 
   @@index([email, code])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Message {

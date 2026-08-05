@@ -151,6 +151,8 @@ router.get(
             aadhaarNumber: true,
             vehicleType: true,
             vehicleNumber: true,
+            isVerified: true,
+            verificationStatus: true,
             _count: {
               select: {
                 tripsAsRider: true,
@@ -217,6 +219,52 @@ router.patch(
     } catch (error) {
       console.error("[admin/users/role] Error:", error);
       res.status(500).json({ error: "Failed to update role" });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// PATCH /api/admin/users/:id/verify — Verify a driver
+// ─────────────────────────────────────────────────────────────
+
+router.patch(
+  "/users/:id/verify",
+  authenticate,
+  requireRole("ADMIN"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const updated = await prisma.user.update({
+        where: { id },
+        data: { isVerified: true, verificationStatus: "APPROVED" },
+      });
+      res.json({ message: "Driver verified", user: updated });
+    } catch (error) {
+      console.error("[admin/users/verify] Error:", error);
+      res.status(500).json({ error: "Failed to verify user" });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// PATCH /api/admin/users/:id/reject — Reject a driver
+// ─────────────────────────────────────────────────────────────
+
+router.patch(
+  "/users/:id/reject",
+  authenticate,
+  requireRole("ADMIN"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const updated = await prisma.user.update({
+        where: { id },
+        data: { verificationStatus: "REJECTED" },
+      });
+      res.json({ message: "Driver rejected", user: updated });
+    } catch (error) {
+      console.error("[admin/users/reject] Error:", error);
+      res.status(500).json({ error: "Failed to reject user" });
     }
   }
 );

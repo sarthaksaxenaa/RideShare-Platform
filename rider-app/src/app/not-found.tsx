@@ -1,22 +1,53 @@
+'use client';
+
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white px-4">
-      <div className="text-center">
-        <h1 className="text-7xl font-extrabold text-gray-200 tracking-tight">404</h1>
-        <h2 className="text-xl font-bold text-gray-900 mt-4">Page not found</h2>
-        <p className="text-sm text-gray-400 mt-2 max-w-sm">
-          The page you&apos;re looking for doesn&apos;t exist or has been moved.
-        </p>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-indigo-700 transition-colors"
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 p-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="max-w-md w-full text-center space-y-6"
+      >
+        <motion.div
+          animate={{ y: [0, -20, 0] }}
+          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+          className="text-8xl"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          Back to Home
-        </Link>
-      </div>
+          🚗
+        </motion.div>
+        
+        <h1 className="text-8xl font-black bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-transparent bg-clip-text">
+          404
+        </h1>
+        
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Oops! This route doesn't exist
+          </h2>
+          <p className="text-gray-500 dark:text-gray-400">
+            Looks like you've taken a wrong turn. Let's get you back on track.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
+          <Link
+            href="/dashboard"
+            className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-indigo-500/30"
+          >
+            Back to Dashboard
+          </Link>
+          <Link
+            href="/"
+            className="w-full sm:w-auto px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 rounded-xl font-medium transition-colors"
+          >
+            Go Home
+          </Link>
+        </div>
+      </motion.div>
     </div>
   );
 }

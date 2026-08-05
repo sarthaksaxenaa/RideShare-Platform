@@ -253,4 +253,88 @@ router.get(
   }
 );
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/users/notifications — Fetch user notifications
+// ─────────────────────────────────────────────────────────────
+
+router.get(
+  "/notifications",
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const notifications = await prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+      });
+      res.status(200).json(notifications);
+    } catch (error) {
+      console.error("[users/notifications] Error:", error);
+      res.status(500).json({
+        error: "Internal server error",
+        message: "Failed to fetch notifications.",
+      });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// PATCH /api/users/notifications/:id/read — Mark as read
+// ─────────────────────────────────────────────────────────────
+
+router.patch(
+  "/notifications/:id/read",
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const { id } = req.params;
+
+      const notification = await prisma.notification.updateMany({
+        where: { id, userId },
+        data: { isRead: true },
+      });
+
+      if (notification.count === 0) {
+        res.status(404).json({ error: "Not found", message: "Notification not found" });
+        return;
+      }
+
+      res.status(200).json({ message: "Notification marked as read" });
+    } catch (error) {
+      console.error("[users/notifications/read] Error:", error);
+      res.status(500).json({
+        error: "Internal server error",
+        message: "Failed to update notification.",
+      });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// PATCH /api/users/notifications/read-all — Mark all as read
+// ─────────────────────────────────────────────────────────────
+
+router.patch(
+  "/notifications/read-all",
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      await prisma.notification.updateMany({
+        where: { userId, isRead: false },
+        data: { isRead: true },
+      });
+      res.status(200).json({ message: "All notifications marked as read" });
+    } catch (error) {
+      console.error("[users/notifications/read-all] Error:", error);
+      res.status(500).json({
+        error: "Internal server error",
+        message: "Failed to update notifications.",
+      });
+    }
+  }
+);
+
 export default router;

@@ -619,7 +619,7 @@ router.post(
   requireRole("RIDER"),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { pickupLat, pickupLng, dropLat, dropLng, fare, baseFare, distanceFare, timeFare, platformFee, vehicleType, distanceKm, durationMin, paymentMethod } = req.body;
+      const { pickupLat, pickupLng, dropLat, dropLng, fare, baseFare, distanceFare, timeFare, platformFee, vehicleType, distanceKm, durationMin, paymentMethod, scheduledAt } = req.body;
       const userId = req.user!.id;
 
       // ── Validation ──────────────────────────────────────────
@@ -655,6 +655,7 @@ router.post(
           distanceKm,
           durationMin,
           paymentMethod,
+          scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
           status: "REQUESTED",
         },
       });

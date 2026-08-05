@@ -4,11 +4,21 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/stores/auth-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useThemeStore } from '@/stores/theme-store';
 import { cn, getInitials } from '@/lib/utils';
+import api from '@/lib/api';
+
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -19,6 +29,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const connect = useSocketStore((s) => s.connect);
   const disconnect = useSocketStore((s) => s.disconnect);
   const isConnected = useSocketStore((s) => s.isConnected);
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   // Wait for zustand to hydrate from localStorage before checking auth.
   // Without this, a page refresh would flash-redirect to /login because
@@ -37,13 +50,45 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   }, [hydrated, isAuthenticated, router]);
 
-  // Socket connect on mount
   useEffect(() => {
     if (isAuthenticated) {
       connect();
     }
     return () => disconnect();
   }, [isAuthenticated, connect, disconnect]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !hydrated) return;
+    const fetchNotifications = async () => {
+      try {
+        const res = await api.get('/users/notifications');
+        setNotifications(res.data);
+      } catch (error) {
+        console.error('Failed to fetch notifications', error);
+      }
+    };
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, hydrated]);
+
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await api.patch(`/users/notifications/${id}/read`);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await api.patch('/users/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   if (!hydrated || !isAuthenticated || !user) {
     return (
@@ -182,6 +227,71 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-400'
                 )} />
                 {isConnected ? 'Live' : 'Offline'}
+              </div>
+
+              {/* Notification Bell */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsNotifOpen(!isNotifOpen)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-all duration-200 relative cursor-pointer"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                  </svg>
+                  {notifications.filter(n => !n.isRead).length > 0 && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute top-1 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-gray-900"
+                    />
+                  )}
+                </button>
+
+                <AnimatePresence>
+                  {isNotifOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 5 }}
+                      className="absolute right-0 mt-2 w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-xl shadow-xl shadow-gray-200/50 dark:shadow-gray-900/50 border border-gray-200/80 dark:border-gray-800/80 overflow-hidden z-50 flex flex-col"
+                    >
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                        <span className="font-semibold text-gray-900 dark:text-white text-sm">Notifications</span>
+                        <button onClick={handleMarkAllAsRead} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">Mark all as read</button>
+                      </div>
+                      <div className="max-h-[350px] overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-6 text-center text-sm text-gray-500">No notifications yet</div>
+                        ) : (
+                          notifications.map((n) => (
+                            <div
+                              key={n.id}
+                              onClick={() => !n.isRead && handleMarkAsRead(n.id)}
+                              className={cn(
+                                "px-4 py-3 border-b border-gray-50 dark:border-gray-800/50 transition-colors",
+                                !n.isRead ? "bg-indigo-50/50 dark:bg-indigo-900/20 border-l-2 border-l-indigo-500 cursor-pointer" : "opacity-75 hover:bg-gray-50 dark:hover:bg-gray-800"
+                              )}
+                            >
+                              <div className="flex gap-3">
+                                <span className="text-xl shrink-0 mt-0.5">{n.type === 'SUCCESS' ? '✅' : n.type === 'WARNING' ? '⚠️' : '🔔'}</span>
+                                <div>
+                                  <h4 className="text-[13px] font-semibold text-gray-900 dark:text-gray-100">{n.title}</h4>
+                                  <p className="text-[12px] text-gray-600 dark:text-gray-400 mt-0.5">{n.message}</p>
+                                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                                    {new Date(n.createdAt).toLocaleString(undefined, {
+                                      hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric'
+                                    })}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Dark mode toggle */}

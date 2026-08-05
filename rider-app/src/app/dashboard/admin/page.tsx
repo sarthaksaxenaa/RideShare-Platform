@@ -38,6 +38,7 @@ export default function AdminDashboardPage() {
     id: string; name: string; email: string; role: string; createdAt: string;
     faceImageUrl?: string; vehicleImages?: string[]; aadhaarNumber?: string;
     vehicleType?: string; vehicleNumber?: string;
+    isVerified?: boolean; verificationStatus?: string;
     _count: { tripsAsRider: number; tripsAsDriver: number };
   }
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -101,6 +102,22 @@ export default function AdminDashboardPage() {
       fetchUsers();
       fetchStats();
     } catch { toast.error('Failed to delete user'); }
+  };
+
+  const handleVerifyDriver = async (userId: string) => {
+    try {
+      await api.patch(`/admin/users/${userId}/verify`);
+      toast.success(`Driver approved`);
+      fetchUsers();
+    } catch { toast.error('Failed to approve driver'); }
+  };
+
+  const handleRejectDriver = async (userId: string) => {
+    try {
+      await api.patch(`/admin/users/${userId}/reject`);
+      toast.success(`Driver rejected`);
+      fetchUsers();
+    } catch { toast.error('Failed to reject driver'); }
   };
 
   const formatDate = (iso: string) =>
@@ -443,6 +460,12 @@ export default function AdminDashboardPage() {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-right flex items-center justify-end gap-2">
+                            {u.role === 'DRIVER' && u.verificationStatus === 'PENDING' && (
+                              <>
+                                <button onClick={() => handleVerifyDriver(u.id)} className="p-1.5 rounded-lg text-green-500 hover:text-green-700 hover:bg-green-50 transition-all cursor-pointer" title="Approve">✅</button>
+                                <button onClick={() => handleRejectDriver(u.id)} className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-all cursor-pointer" title="Reject">❌</button>
+                              </>
+                            )}
                             {u.role === 'DRIVER' && (
                               <button
                                 onClick={() => setExpandedUserId(expandedUserId === u.id ? null : u.id)}

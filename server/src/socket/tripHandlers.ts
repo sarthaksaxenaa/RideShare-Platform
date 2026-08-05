@@ -340,6 +340,15 @@ export function registerTripHandlers(
         },
       });
 
+      await prisma.notification.create({
+        data: {
+          userId: trip.riderId,
+          title: 'Ride Accepted',
+          message: `Driver ${driver?.name ?? 'Driver'} accepted your ride!`,
+          type: 'SUCCESS',
+        }
+      });
+
       console.log(`[socket] Trip ${tripId} matched with driver ${user.email}`);
     } catch (err) {
       console.error(
@@ -369,9 +378,19 @@ export function registerTripHandlers(
       const { tripId } = payload;
 
       // Update status to STARTED.
-      await prisma.trip.update({
+      const trip = await prisma.trip.update({
         where: { id: tripId },
         data: { status: 'STARTED' },
+        select: { riderId: true }
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId: trip.riderId,
+          title: 'Trip Started',
+          message: 'Your trip has started. Enjoy the ride!',
+          type: 'INFO',
+        }
       });
 
       // Notify both parties in the trip room.
@@ -456,6 +475,15 @@ export function registerTripHandlers(
         },
       });
 
+      await prisma.notification.create({
+        data: {
+          userId: trip.riderId,
+          title: 'Trip Completed',
+          message: `Trip completed! Fare: ₹${trip.fare}`,
+          type: 'SUCCESS',
+        }
+      });
+
       // ── 4. Notify both parties ─────────────────────────────
       io.to(tripRoom).emit('trip:completed', {
         tripId,
@@ -519,6 +547,8 @@ export function registerTripHandlers(
           status: true,
           driverId: true,
           stripePaymentIntentId: true,
+          createdAt: true,
+          riderId: true,
         },
       });
 
@@ -527,12 +557,22 @@ export function registerTripHandlers(
         return;
       }
 
-      // Only allow cancellation for REQUESTED and MATCHED trips.
-      if (trip.status !== 'REQUESTED' && trip.status !== 'MATCHED') {
+      if (trip.status === 'COMPLETED' || trip.status === 'CANCELLED') {
         socket.emit('trip:error', {
           message: `Cannot cancel trip with status ${trip.status}`,
         });
         return;
+      }
+
+      let cancellationFee = 0;
+      const minutesSinceBooking = (Date.now() - trip.createdAt.getTime()) / 60000;
+      
+      if (minutesSinceBooking > 1) {
+        if (trip.status === 'STARTED') {
+          cancellationFee = 50;
+        } else if (trip.status === 'REQUESTED' || trip.status === 'MATCHED') {
+          cancellationFee = 25;
+        }
       }
 
       // ── 2. Release payment hold if applicable ──────────────
@@ -557,7 +597,20 @@ export function registerTripHandlers(
       // ── 3. Update trip status ──────────────────────────────
       await prisma.trip.update({
         where: { id: tripId },
-        data: { status: 'CANCELLED' },
+        data: { 
+          status: 'CANCELLED',
+          cancellationFee: cancellationFee > 0 ? cancellationFee : null,
+          cancelledAt: new Date(),
+        },
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId: trip.riderId,
+          title: 'Trip Cancelled',
+          message: 'Your trip has been cancelled',
+          type: 'WARNING',
+        }
       });
 
       // ── 4. Notify everyone in the trip room ────────────────
@@ -565,6 +618,7 @@ export function registerTripHandlers(
         tripId,
         cancelledBy: user.role,
         reason: reason ?? null,
+        cancellationFee,
       });
 
       // ── 5. Return the assigned driver to the pool ──────────

@@ -64,6 +64,17 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState('');
   const [resetPassword, setResetPassword] = useState('');
   const [resetLoading, setResetLoading] = useState(false);
+  const [resetStep, setResetStep] = useState<1 | 2 | 3>(1);
+  const [resetOtp, setResetOtp] = useState<string[]>(Array(6).fill(''));
+  const [otpTimer, setOtpTimer] = useState(600); // 10 minutes in seconds
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (showResetModal && resetStep === 2 && otpTimer > 0) {
+      interval = setInterval(() => setOtpTimer((t) => t - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [showResetModal, resetStep, otpTimer]);
 
   // Driver fields
   const [phone, setPhone] = useState('');
@@ -112,9 +123,47 @@ export default function LoginPage() {
     setVehicleImages(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleSendOtp = async () => {
+    if (!resetEmail.trim()) {
+      toast.error('Please enter your email');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await api.post('/auth/send-otp', { email: resetEmail.trim().toLowerCase(), role });
+      toast.success('OTP sent to your email (check console if mock mode)');
+      setResetStep(2);
+      setOtpTimer(600);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      toast.error(axiosErr?.response?.data?.message || 'Failed to send OTP');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = resetOtp.join('');
+    if (code.length !== 6) {
+      toast.error('Please enter the 6-digit OTP');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await api.post('/auth/verify-otp', { email: resetEmail.trim().toLowerCase(), code });
+      toast.success('OTP verified!');
+      setResetStep(3);
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { message?: string } } };
+      toast.error(axiosErr?.response?.data?.message || 'Invalid or expired OTP');
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
   const handleResetPassword = async () => {
-    if (!resetEmail.trim() || !resetPassword.trim()) {
-      toast.error('Please fill in all fields');
+    if (!resetPassword.trim()) {
+      toast.error('Please enter a new password');
       return;
     }
     if (resetPassword.length < 6) {
@@ -127,16 +176,37 @@ export default function LoginPage() {
         email: resetEmail.trim().toLowerCase(),
         role,
         newPassword: resetPassword,
+        otpCode: resetOtp.join(''),
       });
       toast.success('Password reset! You can now sign in.');
       setShowResetModal(false);
       setResetEmail('');
       setResetPassword('');
+      setResetStep(1);
+      setResetOtp(Array(6).fill(''));
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       toast.error(axiosErr?.response?.data?.message || 'Failed to reset password');
     } finally {
       setResetLoading(false);
+    }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const newOtp = [...resetOtp];
+    newOtp[index] = value;
+    setResetOtp(newOtp);
+    if (value && index < 5) {
+      const nextInput = document.getElementById(`otp-${index + 1}`);
+      nextInput?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !resetOtp[index] && index > 0) {
+      const prevInput = document.getElementById(`otp-${index - 1}`);
+      prevInput?.focus();
     }
   };
 
@@ -719,56 +789,142 @@ export default function LoginPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowResetModal(false)}
+              onClick={() => {
+                setShowResetModal(false);
+                setResetStep(1);
+                setResetEmail('');
+                setResetPassword('');
+                setResetOtp(Array(6).fill(''));
+              }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-sm bg-[#12121a] border border-white/[0.08] rounded-2xl p-6 shadow-2xl"
+              className="relative w-full max-w-sm bg-[#12121a] border border-white/[0.08] rounded-2xl p-6 shadow-2xl overflow-hidden"
             >
               <h3 className="text-[16px] font-bold text-white mb-1">Reset Password</h3>
-              <p className="text-[12px] text-white/30 mb-5">Enter your email and choose a new password</p>
+              <p className="text-[12px] text-white/30 mb-5">
+                {resetStep === 1 && "Enter your email to receive an OTP"}
+                {resetStep === 2 && "Enter the 6-digit code sent to your email"}
+                {resetStep === 3 && "Choose a new password for your account"}
+              </p>
 
-              <div className="flex flex-col gap-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Email</label>
-                  <input
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="your@email.com"
-                    className="w-full px-3.5 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none transition-all focus:border-indigo-500/50"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">New Password</label>
-                  <input
-                    type="password"
-                    value={resetPassword}
-                    onChange={(e) => setResetPassword(e.target.value)}
-                    placeholder="Min 6 characters"
-                    minLength={6}
-                    className="w-full px-3.5 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none transition-all focus:border-indigo-500/50"
-                  />
-                </div>
+              <div className="relative" style={{ minHeight: '120px' }}>
+                <AnimatePresence mode="wait">
+                  {resetStep === 1 && (
+                    <motion.div
+                      key="step1"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 flex flex-col gap-3"
+                    >
+                      <div>
+                        <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">Email</label>
+                        <input
+                          type="email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          placeholder="your@email.com"
+                          className="w-full px-3.5 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none transition-all focus:border-indigo-500/50"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                  {resetStep === 2 && (
+                    <motion.div
+                      key="step2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                    >
+                      <div className="flex gap-2 w-full justify-center">
+                        {resetOtp.map((digit, index) => (
+                          <input
+                            key={index}
+                            id={`otp-${index}`}
+                            type="text"
+                            maxLength={1}
+                            value={digit}
+                            onChange={(e) => handleOtpChange(index, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                            className="w-12 h-14 text-center text-xl font-bold bg-white/[0.07] border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500/50 focus:bg-white/[0.1] transition-all"
+                          />
+                        ))}
+                      </div>
+                      <div className="flex w-full justify-between items-center text-[11px]">
+                        <span className="text-white/40">
+                          Expires in: {Math.floor(otpTimer / 60)}:{(otpTimer % 60).toString().padStart(2, '0')}
+                        </span>
+                        <button
+                          onClick={handleSendOtp}
+                          className="text-indigo-400 font-semibold hover:text-indigo-300 transition-colors cursor-pointer"
+                        >
+                          Resend OTP
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                  {resetStep === 3 && (
+                    <motion.div
+                      key="step3"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute inset-0 flex flex-col gap-3"
+                    >
+                      <div>
+                        <label className="text-[11px] font-semibold text-white/40 uppercase tracking-wider mb-1.5 block">New Password</label>
+                        <input
+                          type="password"
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                          placeholder="Min 6 characters"
+                          minLength={6}
+                          className="w-full px-3.5 py-[10px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[13px] text-white placeholder:text-white/20 outline-none transition-all focus:border-indigo-500/50"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="flex gap-3 mt-5">
                 <button
-                  onClick={() => setShowResetModal(false)}
+                  onClick={() => {
+                    setShowResetModal(false);
+                    setResetStep(1);
+                    setResetEmail('');
+                    setResetPassword('');
+                    setResetOtp(Array(6).fill(''));
+                  }}
                   className="flex-1 py-2.5 rounded-xl border border-white/[0.08] text-[13px] font-medium text-white/40 hover:bg-white/[0.04] transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleResetPassword}
+                  onClick={
+                    resetStep === 1
+                      ? handleSendOtp
+                      : resetStep === 2
+                      ? handleVerifyOtp
+                      : handleResetPassword
+                  }
                   disabled={resetLoading}
                   className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 text-[13px] font-semibold text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {resetLoading ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : resetStep === 1 ? (
+                    'Send OTP'
+                  ) : resetStep === 2 ? (
+                    'Verify OTP'
                   ) : (
                     'Reset Password'
                   )}

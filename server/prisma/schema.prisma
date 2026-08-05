@@ -91,6 +91,7 @@ model Trip {
   rating                Rating?
   driver                User?     @relation("Trip_driverIdToUser", fields: [driverId], references: [id])
   rider                 User      @relation("Trip_riderIdToUser", fields: [riderId], references: [id])
+  messages              Message[]
 }
 
 model User {
@@ -115,6 +116,7 @@ model User {
   savedLocations   SavedLocation[]
   tripsAsDriver    Trip[]             @relation("Trip_driverIdToUser")
   tripsAsRider     Trip[]             @relation("Trip_riderIdToUser")
+  messages         Message[]
 }
 
 model PromoCode {
@@ -132,3 +134,23 @@ model PromoCode {
   createdAt    DateTime @default(now())
 }
 
+model OTP {
+  id        String   @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, code])
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  tripId    String
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  sender    User     @relation(fields: [senderId], references: [id])
+}

@@ -742,4 +742,55 @@ router.post(
   }
 );
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/trips/:id/messages — Get chat history
+// ─────────────────────────────────────────────────────────────
+
+router.get(
+  "/:id/messages",
+  authenticate,
+  requireRole("RIDER", "DRIVER"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+
+      const trip = await prisma.trip.findUnique({
+        where: { id },
+        select: { riderId: true, driverId: true },
+      });
+
+      if (!trip) {
+        res.status(404).json({ error: "Not found", message: "Trip not found." });
+        return;
+      }
+
+      if (trip.riderId !== userId && trip.driverId !== userId) {
+        res.status(403).json({ error: "Forbidden", message: "Not authorized." });
+        return;
+      }
+
+      const messages = await prisma.message.findMany({
+        where: { tripId: id },
+        include: { sender: { select: { name: true } } },
+        orderBy: { createdAt: "asc" },
+      });
+
+      res.status(200).json(
+        messages.map((m) => ({
+          id: m.id,
+          tripId: m.tripId,
+          senderId: m.senderId,
+          senderName: m.sender.name,
+          content: m.content,
+          createdAt: m.createdAt,
+        }))
+      );
+    } catch (error) {
+      console.error("[trips/messages] Unexpected error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 export default router;

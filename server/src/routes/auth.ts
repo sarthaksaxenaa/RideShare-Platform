@@ -315,17 +315,112 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// POST /api/auth/send-otp — Send OTP for password reset
+// ─────────────────────────────────────────────────────────────
+
+router.post("/send-otp", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, role } = req.body;
+    if (!email || !role) {
+      res.status(400).json({ error: "Validation error", message: "Email and role are required." });
+      return;
+    }
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (!user) {
+      res.status(404).json({ error: "Not found", message: "No account found with this email." });
+      return;
+    }
+    if (user.role !== role) {
+      res.status(403).json({ error: "Role mismatch", message: `This email is registered as a ${user.role}.` });
+      return;
+    }
+    
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    
+    await prisma.oTP.create({
+      data: { email: email.toLowerCase(), code, expiresAt }
+    });
+
+    if (process.env.RESEND_API_KEY) {
+      try {
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
+          },
+          body: JSON.stringify({
+            from: 'RideShare <noreply@rideshare.com>',
+            to: [email.toLowerCase()],
+            subject: 'Your Password Reset OTP',
+            html: `<p>Your OTP for password reset is: <strong>${code}</strong>. It expires in 10 minutes.</p>`
+          })
+        });
+      } catch (err) {
+        console.error("Failed to send email via Resend:", err);
+      }
+    } else {
+      console.log(`[MOCK MODE] OTP for ${email.toLowerCase()} is: ${code}`);
+    }
+
+    res.status(200).json({ message: "OTP sent to your email" });
+  } catch (error) {
+    console.error("[auth/send-otp] Error:", error);
+    res.status(500).json({ error: "Internal server error", message: "Failed to send OTP." });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/auth/verify-otp — Verify OTP
+// ─────────────────────────────────────────────────────────────
+
+router.post("/verify-otp", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      res.status(400).json({ error: "Validation error", message: "Email and code are required." });
+      return;
+    }
+    
+    const otpRecord = await prisma.oTP.findFirst({
+      where: {
+        email: email.toLowerCase(),
+        code,
+        used: false,
+        expiresAt: { gt: new Date() }
+      }
+    });
+
+    if (!otpRecord) {
+      res.status(400).json({ error: "Invalid or expired OTP", message: "The OTP is invalid or has expired." });
+      return;
+    }
+
+    await prisma.oTP.update({
+      where: { id: otpRecord.id },
+      data: { used: true }
+    });
+
+    res.status(200).json({ verified: true });
+  } catch (error) {
+    console.error("[auth/verify-otp] Error:", error);
+    res.status(500).json({ error: "Internal server error", message: "Failed to verify OTP." });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
 // POST /api/auth/reset-password — Reset password for an account
 // ─────────────────────────────────────────────────────────────
 
 router.post("/reset-password", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, role, newPassword } = req.body;
+    const { email, role, newPassword, otpCode } = req.body;
 
-    if (!email || !role || !newPassword) {
+    if (!email || !role || !newPassword || !otpCode) {
       res.status(400).json({
         error: "Validation error",
-        message: "Email, role, and new password are required.",
+        message: "Email, role, new password, and OTP code are required.",
       });
       return;
     }
@@ -334,6 +429,24 @@ router.post("/reset-password", async (req: Request, res: Response): Promise<void
       res.status(400).json({
         error: "Validation error",
         message: "Password must be at least 6 characters.",
+      });
+      return;
+    }
+
+    // Verify OTP was successfully verified
+    const otpRecord = await prisma.oTP.findFirst({
+      where: {
+        email: email.toLowerCase(),
+        code: otpCode,
+        used: true,
+        expiresAt: { gt: new Date() }
+      }
+    });
+
+    if (!otpRecord) {
+      res.status(400).json({
+        error: "Unauthorized",
+        message: "Invalid or expired OTP session.",
       });
       return;
     }

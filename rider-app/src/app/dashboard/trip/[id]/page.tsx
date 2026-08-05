@@ -78,6 +78,13 @@ export default function ActiveTripPage() {
   const [fetchingTrip, setFetchingTrip] = useState(false);
   const [etaSeconds, setEtaSeconds] = useState<number | null>(null);
   
+  // Chat State
+  const [messages, setMessages] = useState<any[]>([]);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [chatInput, setChatInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
   const driverLocationRef = useRef(driverLocation);
   useEffect(() => { driverLocationRef.current = driverLocation; }, [driverLocation]);
 
@@ -171,6 +178,45 @@ export default function ActiveTripPage() {
       return () => clearTimeout(timer);
     }
   }, [tripState, isDriver]);
+
+  // Chat Socket Listeners
+  useEffect(() => {
+    if (!socket || !tripId) return;
+
+    socket.emit('chat:history', { tripId });
+
+    const handleReceive = (msg: any) => {
+      setMessages(prev => [...prev, msg]);
+      if (!chatOpen && msg.senderId !== user?.id) {
+        setUnreadCount(prev => prev + 1);
+      }
+    };
+    const handleHistory = (msgs: any[]) => {
+      setMessages(msgs);
+    };
+
+    socket.on('chat:receive', handleReceive);
+    socket.on('chat:history', handleHistory);
+
+    return () => {
+      socket.off('chat:receive', handleReceive);
+      socket.off('chat:history', handleHistory);
+    };
+  }, [socket, tripId, chatOpen, user?.id]);
+
+  useEffect(() => {
+    if (chatOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setUnreadCount(0);
+    }
+  }, [messages, chatOpen]);
+
+  const sendChatMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !socket) return;
+    socket.emit('chat:send', { tripId, content: chatInput.trim() });
+    setChatInput('');
+  };
 
   // Timer
   useEffect(() => {
@@ -513,7 +559,19 @@ export default function ActiveTripPage() {
 
             {/* Quick Actions */}
             {!isDriver && (tripState === 'MATCHED' || tripState === 'IN_TRANSIT') && (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
+                <button
+                  onClick={() => setChatOpen(true)}
+                  className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer relative"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                  <span className="text-[10px] font-medium text-gray-600">Chat</span>
+                  {unreadCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 flex h-3 w-3 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
                 <button
                   onClick={() => {
                     if ((tripData as any)?.driver?.phone) {
@@ -697,6 +755,86 @@ export default function ActiveTripPage() {
           )}
         </motion.div>
       </div>
+
+      {/* Chat Panel */}
+      <AnimatePresence>
+        {chatOpen && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-x-0 bottom-0 z-50 flex h-[60vh] max-h-[500px] flex-col rounded-t-2xl bg-gray-900/95 shadow-2xl backdrop-blur-xl border-t border-gray-800 md:bottom-5 md:right-5 md:left-auto md:w-[380px] md:rounded-2xl md:border"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-800 p-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                💬 Chat
+              </h3>
+              <button
+                onClick={() => setChatOpen(false)}
+                className="rounded-full p-2 text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <p className="text-sm text-gray-500">No messages yet.</p>
+                  <p className="text-xs text-gray-600 mt-1">Send a message to your driver.</p>
+                </div>
+              ) : (
+                messages.map((msg, idx) => {
+                  const isMe = msg.senderId === user?.id;
+                  return (
+                    <div key={msg.id || idx} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                      {!isMe && (
+                        <span className="mb-1 text-[10px] font-medium text-gray-500 ml-1">
+                          {msg.senderName}
+                        </span>
+                      )}
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
+                          isMe
+                            ? 'bg-blue-600 text-white rounded-br-sm'
+                            : 'bg-gray-800 text-gray-100 rounded-bl-sm'
+                        }`}
+                      >
+                        {msg.content}
+                      </div>
+                      <span className="mt-1 text-[9px] text-gray-600">
+                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <form onSubmit={sendChatMessage} className="border-t border-gray-800 p-4 flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Type a message..."
+                className="flex-1 rounded-xl bg-gray-800 px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                disabled={!chatInput.trim()}
+                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+              </button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer spacer for mobile */}
       <div className="h-16 md:h-0" />

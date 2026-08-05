@@ -598,4 +598,57 @@ export function registerTripHandlers(
       socket.emit('trip:error', { message: 'Failed to cancel trip' });
     }
   });
+
+  // ── Event: chat:send ───────────────────────────────────────
+  socket.on('chat:send', async (payload: { tripId: string, content: string }) => {
+    try {
+      const { tripId, content } = payload;
+      const message = await prisma.message.create({
+        data: {
+          tripId,
+          senderId: user.id,
+          content,
+        },
+        include: { sender: { select: { name: true } } },
+      });
+
+      const tripRoom = `trip:${tripId}`;
+      io.to(tripRoom).emit('chat:receive', {
+        id: message.id,
+        tripId: message.tripId,
+        senderId: message.senderId,
+        senderName: message.sender.name,
+        content: message.content,
+        createdAt: message.createdAt,
+      });
+    } catch (err) {
+      console.error(`[socket] Error sending message:`, (err as Error).message);
+    }
+  });
+
+  // ── Event: chat:history ────────────────────────────────────
+  socket.on('chat:history', async (payload: { tripId: string }) => {
+    try {
+      const { tripId } = payload;
+      const messages = await prisma.message.findMany({
+        where: { tripId },
+        include: { sender: { select: { name: true } } },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      const formattedMessages = messages.map(msg => ({
+        id: msg.id,
+        tripId: msg.tripId,
+        senderId: msg.senderId,
+        senderName: msg.sender.name,
+        content: msg.content,
+        createdAt: msg.createdAt,
+      }));
+
+      socket.emit('chat:history', formattedMessages);
+    } catch (err) {
+      console.error(`[socket] Error fetching history:`, (err as Error).message);
+    }
+  });
 }
+

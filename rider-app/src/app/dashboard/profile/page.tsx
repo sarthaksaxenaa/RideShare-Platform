@@ -62,6 +62,15 @@ export default function ProfilePage() {
   const [contactPhone, setContactPhone] = useState('');
   const [savingContact, setSavingContact] = useState(false);
 
+  // ── Referral State ─────────────────────────
+  const [referralData, setReferralData] = useState<{
+    referralCode: string;
+    referralCredits: number;
+    totalReferrals: number;
+    referralLink: string;
+  } | null>(null);
+  const [loadingReferral, setLoadingReferral] = useState(true);
+
   const initials = getInitials(user?.name || 'U');
   const isDriver = user?.role === 'DRIVER';
 
@@ -89,6 +98,17 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => { fetchContacts(); }, [fetchContacts]);
+
+  // ── Fetch referral ────────────────────────
+  const fetchReferral = useCallback(async () => {
+    try {
+      const res = await api.get('/users/referral');
+      setReferralData(res.data);
+    } catch { /* ignore */ }
+    finally { setLoadingReferral(false); }
+  }, []);
+
+  useEffect(() => { fetchReferral(); }, [fetchReferral]);
 
   const handleAddContact = async () => {
     if (!contactName.trim() || !contactPhone.trim()) {
@@ -532,6 +552,99 @@ export default function ProfilePage() {
             ))}
           </div>
         )}
+      </motion.div>
+
+      {/* ── Refer & Earn ───────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.28 }}
+        className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white overflow-hidden relative"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+        <div className="relative z-10">
+          <h3 className="text-xl font-bold mb-2">Invite friends, earn ₹50!</h3>
+          <p className="text-sm text-indigo-100 mb-6">Share your referral code. They get ₹30, you get ₹50 when they sign up.</p>
+
+          {loadingReferral ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="w-5 h-5 border-2 border-indigo-200 border-t-white rounded-full animate-spin" />
+            </div>
+          ) : referralData ? (
+            <div className="flex flex-col gap-5">
+              <div className="flex flex-col sm:flex-row gap-4 items-center">
+                <div className="flex-1 w-full bg-black/20 rounded-xl p-4 flex flex-col items-center justify-center border border-white/10">
+                  <span className="text-xs text-indigo-200 uppercase tracking-wider mb-1">Your Code</span>
+                  <span className="text-3xl font-black tracking-widest">{referralData.referralCode}</span>
+                </div>
+                <div className="flex flex-col gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(referralData.referralCode);
+                      toast.success('Code copied!');
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white text-indigo-600 text-sm font-bold hover:bg-indigo-50 transition-colors shadow-sm"
+                  >
+                    Copy Code
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(referralData.referralLink);
+                      toast.success('Link copied!');
+                    }}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-black/20 text-white text-sm font-bold hover:bg-black/30 transition-colors border border-white/10"
+                  >
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Sign up for RideShare using my code ${referralData.referralCode} and get ₹30! ${referralData.referralLink}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 py-2.5 rounded-xl bg-[#25D366] text-white text-sm font-bold text-center hover:bg-[#20bd5a] transition-colors"
+                >
+                  WhatsApp
+                </a>
+                <button
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'RideShare Referral',
+                        text: `Sign up for RideShare using my code ${referralData.referralCode} and get ₹30!`,
+                        url: referralData.referralLink,
+                      }).catch(() => {});
+                    }
+                  }}
+                  className="flex-1 py-2.5 rounded-xl bg-white/20 text-white text-sm font-bold text-center hover:bg-white/30 transition-colors"
+                >
+                  Share
+                </button>
+              </div>
+
+              <div className="flex justify-between items-center mt-2 pt-4 border-t border-white/20">
+                <div className="text-center">
+                  <p className="text-xs text-indigo-200 mb-0.5">Referrals Made</p>
+                  <p className="text-lg font-bold">{referralData.totalReferrals}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-indigo-200 mb-0.5">Credits Earned</p>
+                  <p className="text-lg font-bold">₹{referralData.referralCredits}</p>
+                </div>
+              </div>
+
+              {referralData.referralCredits > 0 && (
+                <div className="mt-2 text-center bg-white/20 py-2 rounded-lg text-sm font-bold animate-pulse">
+                  You have ₹{referralData.referralCredits} in ride credits!
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-indigo-200">Could not load referral info.</p>
+          )}
+        </div>
       </motion.div>
 
       {/* Danger Zone */}

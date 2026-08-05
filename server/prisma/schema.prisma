@@ -95,6 +95,7 @@ model Trip {
   driver                User?     @relation("Trip_driverIdToUser", fields: [driverId], references: [id])
   rider                 User      @relation("Trip_riderIdToUser", fields: [riderId], references: [id])
   messages              Message[]
+  fareSplits            FareSplit[]
 }
 
 model User {
@@ -123,6 +124,11 @@ model User {
   tripsAsRider     Trip[]             @relation("Trip_riderIdToUser")
   messages         Message[]
   notifications    Notification[]
+  fareSplits       FareSplit[]
+  referralCode     String?            @unique
+  referralCredits  Int                @default(0)
+  referralsMade    Referral[]         @relation("referralsMade")
+  referralsUsed    Referral[]         @relation("referralsUsed")
 }
 
 model PromoCode {
@@ -170,4 +176,30 @@ model Message {
   createdAt DateTime @default(now())
   trip      Trip     @relation(fields: [tripId], references: [id])
   sender    User     @relation(fields: [senderId], references: [id])
+}
+
+model Referral {
+  id          String   @id @default(uuid())
+  referrerId  String
+  refereeId   String?  
+  referralCode String  @unique
+  status      String   @default("PENDING")
+  rewardAmount Int     @default(50)
+  createdAt   DateTime @default(now())
+  claimedAt   DateTime?
+  referrer    User     @relation("referralsMade", fields: [referrerId], references: [id])
+  referee     User?    @relation("referralsUsed", fields: [refereeId], references: [id])
+}
+
+model FareSplit {
+  id          String   @id @default(uuid())
+  tripId      String
+  initiatorId String
+  totalFare   Int
+  splitCount  Int      @default(2)
+  shareCode   String   @unique
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  trip        Trip     @relation(fields: [tripId], references: [id])
+  initiator   User     @relation(fields: [initiatorId], references: [id])
 }

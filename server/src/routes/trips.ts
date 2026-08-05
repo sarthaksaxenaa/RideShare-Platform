@@ -919,4 +919,109 @@ router.get(
   }
 );
 
+// ─────────────────────────────────────────────────────────────
+// POST /api/trips/:id/split — Create a fare split request
+// ─────────────────────────────────────────────────────────────
+router.post(
+  "/:id/split",
+  authenticate,
+  requireRole("RIDER"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { splitCount } = req.body;
+      const userId = req.user!.id;
+
+      if (!splitCount || splitCount < 2 || splitCount > 4) {
+        res.status(400).json({ error: "Validation error", message: "splitCount must be between 2 and 4." });
+        return;
+      }
+
+      const trip = await prisma.trip.findUnique({
+        where: { id },
+      });
+
+      if (!trip) {
+        res.status(404).json({ error: "Not found", message: "Trip not found." });
+        return;
+      }
+
+      if (trip.riderId !== userId) {
+        res.status(403).json({ error: "Forbidden", message: "Only the rider can split the fare." });
+        return;
+      }
+
+      if (!trip.fare) {
+        res.status(400).json({ error: "Bad Request", message: "Trip fare is not set." });
+        return;
+      }
+
+      const shareCode = `SPL-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const perPersonAmount = Math.ceil(trip.fare / splitCount);
+
+      const split = await prisma.fareSplit.create({
+        data: {
+          tripId: id,
+          initiatorId: userId,
+          totalFare: trip.fare,
+          splitCount,
+          shareCode,
+        }
+      });
+
+      const frontendUrl = process.env.FRONTEND_URL || 'https://rideshare-platform.vercel.app';
+      const shareLink = `${frontendUrl}/dashboard/trip/${id}?split=${shareCode}`;
+
+      res.status(201).json({ shareCode, perPersonAmount, splitCount, shareLink });
+    } catch (error) {
+      console.error("[trips/split] Unexpected error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/trips/split/:shareCode — Get split details
+// ─────────────────────────────────────────────────────────────
+router.get(
+  "/split/:shareCode",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { shareCode } = req.params;
+
+      const split = await prisma.fareSplit.findUnique({
+        where: { shareCode },
+        include: {
+          trip: {
+            include: {
+              rider: { select: { name: true } }
+            }
+          },
+          initiator: { select: { name: true } }
+        }
+      });
+
+      if (!split) {
+        res.status(404).json({ error: "Not found", message: "Invalid share code." });
+        return;
+      }
+
+      const perPersonAmount = Math.ceil(split.totalFare / split.splitCount);
+
+      res.status(200).json({
+        tripId: split.tripId,
+        initiatorName: split.initiator.name,
+        perPersonAmount,
+        splitCount: split.splitCount,
+        totalFare: split.totalFare,
+        pickupAddress: split.trip.pickupAddress,
+        dropAddress: split.trip.dropAddress,
+      });
+    } catch (error) {
+      console.error("[trips/split/get] Unexpected error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 export default router;

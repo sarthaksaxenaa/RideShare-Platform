@@ -84,6 +84,12 @@ export default function ActiveTripPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [chatInput, setChatInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Split Fare State
+  const [splitOpen, setSplitOpen] = useState(false);
+  const [splitCount, setSplitCount] = useState(2);
+  const [shareData, setShareData] = useState<{shareCode: string, perPersonAmount: number, splitCount: number, shareLink: string} | null>(null);
+  const [splitLoading, setSplitLoading] = useState(false);
   
   const driverLocationRef = useRef(driverLocation);
   useEffect(() => { driverLocationRef.current = driverLocation; }, [driverLocation]);
@@ -587,6 +593,13 @@ export default function ActiveTripPage() {
                   <span className="text-[10px] font-medium text-gray-600">Call</span>
                 </button>
                 <button
+                  onClick={() => setSplitOpen(true)}
+                  className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
+                >
+                  <span className="text-lg leading-none mt-0.5">💰</span>
+                  <span className="text-[10px] font-medium text-gray-600">Split Fare</span>
+                </button>
+                <button
                   onClick={() => toast.info('Trip link copied!')}
                   className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
                 >
@@ -835,6 +848,130 @@ export default function ActiveTripPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Split Fare Panel */}
+      <AnimatePresence>
+        {splitOpen && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-x-0 bottom-0 z-50 flex h-[60vh] max-h-[500px] flex-col rounded-t-2xl bg-gray-900/95 shadow-2xl backdrop-blur-xl border-t border-gray-800 md:bottom-5 md:right-5 md:left-auto md:w-[380px] md:rounded-2xl md:border"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-800 p-4">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                💰 Split Fare
+              </h3>
+              <button
+                onClick={() => setSplitOpen(false)}
+                className="rounded-full p-2 text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5">
+              {!shareData ? (
+                <div className="space-y-6">
+                  <div>
+                    <label className="text-sm font-medium text-gray-300">How many people are riding?</label>
+                    <div className="flex gap-2 mt-3">
+                      {[2, 3, 4].map(num => (
+                        <button
+                          key={num}
+                          onClick={() => setSplitCount(num)}
+                          className={`flex-1 py-3 rounded-xl border font-bold text-lg transition-colors cursor-pointer ${splitCount === num ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'}`}
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gray-800 rounded-xl p-4 flex justify-between items-center border border-gray-700">
+                    <span className="text-gray-400 font-medium">Per Person</span>
+                    <span className="text-2xl font-bold text-white">
+                      {formatCurrency(Math.ceil((tripData?.fare || 0) / splitCount))}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        setSplitLoading(true);
+                        const res = await api.post(`/trips/${tripId}/split`, { splitCount });
+                        setShareData(res.data);
+                      } catch (err) {
+                        toast.error('Failed to generate split link');
+                      } finally {
+                        setSplitLoading(false);
+                      }
+                    }}
+                    disabled={splitLoading}
+                    className="w-full py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50 cursor-pointer"
+                  >
+                    {splitLoading ? 'Generating...' : 'Generate Share Link'}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6 text-center">
+                  <div className="w-16 h-16 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto text-3xl mb-2">✓</div>
+                  <h4 className="text-xl font-bold text-white">Link Generated!</h4>
+                  <p className="text-sm text-gray-400">Share this link with your friends to split the fare.</p>
+                  
+                  <div className="bg-gray-800 rounded-xl p-3 flex items-center gap-2 border border-gray-700">
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={shareData.shareLink}
+                      className="bg-transparent text-sm text-gray-300 flex-1 outline-none"
+                    />
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(shareData.shareLink);
+                        toast.success('Copied to clipboard');
+                      }}
+                      className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-white cursor-pointer"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-3 mt-4">
+                    <a
+                      href={`https://wa.me/?text=${encodeURIComponent(`Hey! Let's split our ride fare. Your share is ${formatCurrency(shareData.perPersonAmount)}. Pay here: ${shareData.shareLink}`)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 rounded-xl bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      Share via WhatsApp
+                    </a>
+                    
+                    <button
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: 'Split Ride Fare',
+                            text: `Hey! Let's split our ride fare. Your share is ${formatCurrency(shareData.perPersonAmount)}.`,
+                            url: shareData.shareLink
+                          }).catch(console.error);
+                        } else {
+                          toast.error('Web Share API not supported');
+                        }
+                      }}
+                      className="w-full py-3 rounded-xl bg-gray-700 text-white font-bold hover:bg-gray-600 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      More Options
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
 
       {/* Footer spacer for mobile */}
       <div className="h-16 md:h-0" />

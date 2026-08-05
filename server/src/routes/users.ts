@@ -337,4 +337,118 @@ router.patch(
   }
 );
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/users/referral — Get referral info
+// ─────────────────────────────────────────────────────────────
+
+router.get(
+  "/referral",
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+
+      let user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { _count: { select: { referralsMade: true } } },
+      });
+
+      if (!user) {
+        res.status(404).json({ error: "Not found", message: "User not found" });
+        return;
+      }
+
+      if (!user.referralCode) {
+        const genCode = "REF-" + Math.random().toString(36).substring(2, 6).toUpperCase();
+        user = await prisma.user.update({
+          where: { id: userId },
+          data: { referralCode: genCode },
+          include: { _count: { select: { referralsMade: true } } },
+        });
+      }
+
+      const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+      
+      res.status(200).json({
+        referralCode: user.referralCode,
+        referralCredits: user.referralCredits,
+        totalReferrals: user._count.referralsMade,
+        referralLink: `${FRONTEND_URL}/login?ref=${user.referralCode}`
+      });
+    } catch (error) {
+      console.error("[users/referral] Error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// POST /api/users/referral/apply — Apply a referral code
+// ─────────────────────────────────────────────────────────────
+
+router.post(
+  "/referral/apply",
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const refereeId = req.user!.id;
+      const { referralCode } = req.body;
+
+      if (!referralCode) {
+        res.status(400).json({ error: "Bad request", message: "Referral code required" });
+        return;
+      }
+
+      const referrer = await prisma.user.findUnique({
+        where: { referralCode },
+      });
+
+      if (!referrer) {
+        res.status(404).json({ error: "Not found", message: "Invalid referral code" });
+        return;
+      }
+
+      if (referrer.id === refereeId) {
+        res.status(400).json({ error: "Bad request", message: "Cannot apply own code" });
+        return;
+      }
+
+      const existingRef = await prisma.referral.findFirst({
+        where: { refereeId },
+      });
+
+      if (existingRef) {
+        res.status(400).json({ error: "Bad request", message: "Referral already applied" });
+        return;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.referral.create({
+          data: {
+            referrerId: referrer.id,
+            refereeId: refereeId,
+            referralCode,
+            status: "COMPLETED",
+          }
+        });
+
+        await tx.user.update({
+          where: { id: referrer.id },
+          data: { referralCredits: { increment: 50 } },
+        });
+
+        await tx.user.update({
+          where: { id: refereeId },
+          data: { referralCredits: { increment: 30 } },
+        });
+      });
+
+      res.status(200).json({ message: "Referral applied successfully" });
+    } catch (error) {
+      console.error("[users/referral/apply] Error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 export default router;

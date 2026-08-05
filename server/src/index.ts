@@ -30,7 +30,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import http from "http";
 import cors from "cors";
 import { Server as SocketIOServer } from "socket.io";
@@ -44,9 +44,9 @@ import locationsRouter from "./routes/locations.js";
 import emergencyRouter from "./routes/emergency.js";
 import adminRouter from "./routes/admin.js";
 import { initSocket } from "./socket/index.js";
-import { authLimiter, generalLimiter } from "./middleware/rate-limit.js";
+import { authLimiter, apiLimiter, uploadLimiter } from "./middleware/rateLimiter.js";
+import { sanitize } from "./middleware/sanitize.js";
 import cookieParser from "cookie-parser";
-import helmet from "helmet";
 
 // ── App & Server ────────────────────────────────────────────
 
@@ -86,14 +86,15 @@ app.use(
 );
 
 /**
- * 📚 HELMET — Security Headers
- * Sets HTTP headers that protect against common attacks:
- *  - X-Content-Type-Options: nosniff (prevents MIME-type sniffing)
- *  - X-Frame-Options: DENY (prevents clickjacking)
- *  - X-XSS-Protection: 1 (enables browser XSS filters)
- *  - Strict-Transport-Security (forces HTTPS)
+ * Security Headers
  */
-app.use(helmet());
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 /**
  * 📚 COOKIE PARSER
@@ -121,6 +122,7 @@ app.use("/webhooks/stripe", express.raw({ type: "application/json" }), webhooksR
  * Parse JSON request bodies for all other routes.
  */
 app.use(express.json({ limit: '10mb' }));
+app.use(sanitize);
 
 // ── Routes ──────────────────────────────────────────────────
 
@@ -157,10 +159,11 @@ app.get("/api/ping", (_req, res) => { res.send("pong"); });
 
 /** Auth routes: /api/auth/register, /api/auth/login
  *  Rate limited to 20 req/15min to prevent brute-force attacks */
+app.use("/api/auth/register", uploadLimiter);
 app.use("/api/auth", authLimiter, authRouter);
 
 /** Apply general rate limit (100 req/15min) to all other API routes */
-app.use("/api", generalLimiter);
+app.use("/api", apiLimiter);
 
 /** Trip routes: /api/trips — CRUD, estimation, payment intents */
 app.use("/api/trips", tripsRouter);
@@ -179,6 +182,11 @@ app.use("/api/emergency", emergencyRouter);
 
 /** Admin routes: /api/admin — Platform stats & overview */
 app.use("/api/admin", adminRouter);
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  console.error('[Server Error]', err.message);
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 // ── Start ───────────────────────────────────────────────────
 

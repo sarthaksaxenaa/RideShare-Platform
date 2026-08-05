@@ -57,8 +57,20 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [referralCode, setReferralCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref) {
+        setReferralCode(ref);
+        setMode('signup');
+      }
+    }
+  }, []);
 
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
@@ -281,6 +293,17 @@ export default function LoginPage() {
         }
         
         login(res.data.user, res.data.accessToken);
+
+        if (referralCode.trim()) {
+          try {
+            await api.post('/users/referral/apply', { referralCode: referralCode.trim() });
+            toast.success('Referral applied! You earned ₹30 in ride credits!');
+          } catch (refErr: unknown) {
+            const rAxiosErr = refErr as { response?: { data?: { message?: string } } };
+            toast.error(rAxiosErr?.response?.data?.message || 'Failed to apply referral code');
+          }
+        }
+
         router.replace('/dashboard');
       } else {
         const res = await api.post('/auth/login', {
@@ -524,6 +547,30 @@ export default function LoginPage() {
                         required
                         minLength={2}
                         autoComplete="name"
+                        className="w-full px-3.5 py-[11px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[14px] text-white placeholder:text-white/20 outline-none transition-all hover:border-white/[0.15] focus:border-indigo-500/50 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Referral Code (signup) */}
+                <AnimatePresence>
+                  {mode === 'signup' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="flex flex-col gap-1.5 overflow-hidden"
+                    >
+                      <label htmlFor="referralCode" className="text-[12px] font-semibold text-white/40 uppercase tracking-wider">
+                        Referral Code (Optional)
+                      </label>
+                      <input
+                        id="referralCode"
+                        type="text"
+                        value={referralCode}
+                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                        placeholder="e.g. REF-X7K2"
                         className="w-full px-3.5 py-[11px] bg-white/[0.04] border border-white/[0.08] rounded-xl text-[14px] text-white placeholder:text-white/20 outline-none transition-all hover:border-white/[0.15] focus:border-indigo-500/50 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.1)]"
                       />
                     </motion.div>

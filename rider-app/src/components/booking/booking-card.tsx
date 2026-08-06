@@ -384,84 +384,121 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
     if (onLocationChange) onLocationChange(selectedPickup ? [selectedPickup.lat, selectedPickup.lng] : null, [lat, lng]);
   };
 
-  // Use current GPS location
+  // Reverse geocode lat/lng to a human-readable address
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=19&addressdetails=1&namedetails=1&extratags=1`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      const data = await res.json();
+      const addr = data.address || {};
+      const poiName = addr.amenity || addr.building || addr.college || addr.university
+        || addr.school || addr.hospital || addr.office || addr.shop || addr.mall
+        || (data.namedetails?.name) || '';
+      const road = addr.road || addr.pedestrian || '';
+      const area = addr.neighbourhood || addr.suburb || '';
+      const city = addr.city || addr.town || '';
+      if (poiName && typeof poiName === 'string') {
+        const context = [area, city].filter(Boolean).join(', ');
+        return context ? `${poiName}, ${context}` : poiName;
+      }
+      const parts = [road, area, city].filter(Boolean);
+      return parts.length > 0 ? parts.join(', ') : `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    } catch {
+      return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    }
+  }, []);
+
+  // IP-based location fallback (always works, ~city-level accuracy)
+  const getIPLocation = useCallback(async (): Promise<{ lat: number; lng: number } | null> => {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      const data = await res.json();
+      if (data.latitude && data.longitude) {
+        return { lat: data.latitude, lng: data.longitude };
+      }
+    } catch { /* ignore */ }
+    return null;
+  }, []);
+
+  // Use current location — GPS first, IP fallback
   const handleUseCurrentLocation = useCallback(async () => {
-    if (!navigator.geolocation) { setError('Geolocation not supported'); return; }
     setGettingLocation(true);
     setError('');
 
-    let bestPosition: GeolocationPosition | null = null;
-    let settled = false;
-
-    const finalize = async (pos: GeolocationPosition) => {
-      if (settled) return;
-      settled = true;
-      navigator.geolocation.clearWatch(watchId);
-      clearTimeout(timer);
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      try {
-        // Use zoom=19 for building-level precision + namedetails for POI names
-        const res = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=19&addressdetails=1&namedetails=1&extratags=1`,
-          { headers: { 'Accept-Language': 'en' } }
-        );
-        const data = await res.json();
-        const addr = data.address || {};
-        // Prioritize POI/building name (e.g. "NIET College") over road
-        const poiName = addr.amenity || addr.building || addr.college || addr.university
-          || addr.school || addr.hospital || addr.office || addr.shop || addr.mall
-          || (data.namedetails?.name) || '';
-        const road = addr.road || addr.pedestrian || '';
-        const area = addr.neighbourhood || addr.suburb || '';
-        const city = addr.city || addr.town || '';
-        let name = '';
-        if (poiName && typeof poiName === 'string') {
-          const context = [area, city].filter(Boolean).join(', ');
-          name = context ? `${poiName}, ${context}` : poiName;
-        } else {
-          const parts = [road, area, city].filter(Boolean);
-          name = parts.length > 0 ? parts.join(', ') : `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        }
-        setSelectedPickup({ name, lat, lng });
-        setPickupQuery(name);
-        if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
-      } catch {
-        const fallback = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        setSelectedPickup({ name: fallback, lat, lng });
-        setPickupQuery(fallback);
-        if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
-      }
+    const setPickupFromCoords = async (lat: number, lng: number) => {
+      const name = await reverseGeocode(lat, lng);
+      setSelectedPickup({ name, lat, lng });
+      setPickupQuery(name);
+      if (onLocationChange) onLocationChange([lat, lng], selectedDrop ? [selectedDrop.lat, selectedDrop.lng] : null);
       setGettingLocation(false);
     };
 
-    const watchId = navigator.geolocation.watchPosition(
-      (pos) => {
-        if (!bestPosition || pos.coords.accuracy < bestPosition.coords.accuracy) bestPosition = pos;
-        if (pos.coords.accuracy <= 50) finalize(pos);
-      },
-      (err) => {
+    // Try browser GPS first
+    if (navigator.geolocation) {
+      let bestPosition: GeolocationPosition | null = null;
+      let settled = false;
+
+      const finalize = async (pos: GeolocationPosition) => {
+        if (settled) return;
+        settled = true;
+        navigator.geolocation.clearWatch(watchId);
+        clearTimeout(timer);
+        await setPickupFromCoords(pos.coords.latitude, pos.coords.longitude);
+      };
+
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          if (!bestPosition || pos.coords.accuracy < bestPosition.coords.accuracy) bestPosition = pos;
+          if (pos.coords.accuracy <= 50) finalize(pos);
+        },
+        async () => {
+          // GPS failed — try IP-based fallback
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            const ipLoc = await getIPLocation();
+            if (ipLoc) {
+              await setPickupFromCoords(ipLoc.lat, ipLoc.lng);
+            } else {
+              setError('Could not detect location. Please type your address.');
+              setGettingLocation(false);
+            }
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+
+      const timer = setTimeout(async () => {
         if (!settled) {
-          settled = true;
-          clearTimeout(timer);
           if (bestPosition) {
             finalize(bestPosition);
           } else {
-            const friendlyMsg = err.code === 1
-              ? 'Location access denied. Please enable location in your browser settings.'
-              : err.code === 2
-              ? 'Location unavailable. Please try again or type your pickup address.'
-              : 'Could not get your location. Please type your pickup address instead.';
-            setError(friendlyMsg);
-            setGettingLocation(false);
+            settled = true;
+            navigator.geolocation.clearWatch(watchId);
+            // GPS timed out — try IP fallback
+            const ipLoc = await getIPLocation();
+            if (ipLoc) {
+              await setPickupFromCoords(ipLoc.lat, ipLoc.lng);
+            } else {
+              setError('Could not detect location. Please type your address.');
+              setGettingLocation(false);
+            }
           }
         }
-      },
-      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
-    );
-
-    const timer = setTimeout(() => { if (!settled && bestPosition) finalize(bestPosition); }, 12000);
-  }, [onLocationChange, selectedDrop]);
+      }, 8000);
+    } else {
+      // No GPS at all — IP fallback
+      const ipLoc = await getIPLocation();
+      if (ipLoc) {
+        await setPickupFromCoords(ipLoc.lat, ipLoc.lng);
+      } else {
+        setError('Could not detect location. Please type your address.');
+        setGettingLocation(false);
+      }
+    }
+  }, [onLocationChange, selectedDrop, reverseGeocode, getIPLocation]);
 
   // Auto-estimate
   const handleEstimate = useCallback(async () => {

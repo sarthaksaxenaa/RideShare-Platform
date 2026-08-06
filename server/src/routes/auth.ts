@@ -62,32 +62,32 @@ const SALT_ROUNDS = 12;
  *
  *   Access Token  (15 min)  → Used for every API call. Short-lived
  *                              so if stolen, damage is limited.
- *   Refresh Token (7 days)  → Used ONLY to get a new access token.
+ *   Refresh Token (30 days) → Used ONLY to get a new access token.
  *                              Stored in a cookie that's sent ONLY
  *                              to /api/auth/* (not every request).
  *
  * FLOW:
  *   1. Login → Server sets both cookies
  *   2. User makes API calls → Access token cookie is sent
- *   3. Access token expires (15 min) → API returns 401
+ *   3. Access token expires (1 hour) → API returns 401
  *   4. Frontend auto-calls /api/auth/refresh → Gets new access token
  *   5. Frontend retries the original request → Works!
- *   6. Refresh token expires (7 days) → User must login again
+ *   6. Refresh token expires (30 days) → User must login again
  *
  * WHY IS THIS SAFER?
- * - Access token stolen? Attacker only has 15 minutes
+ * - Access token stolen? Attacker only has 1 hour
  * - Refresh token has `path: '/api/auth'` so it's ONLY sent to
  *   auth endpoints, not to every API call — smaller attack surface
  */
-const ACCESS_TOKEN_EXPIRY = '15m';   // Short-lived
-const REFRESH_TOKEN_EXPIRY = '7d';   // Long-lived
+const ACCESS_TOKEN_EXPIRY = '1h';    // Short-lived (1 hour)
+const REFRESH_TOKEN_EXPIRY = '30d';  // Long-lived (30 days — like Ola/Uber)
 
 /** Cookie config for the access token (sent on ALL requests) */
 const ACCESS_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
-  maxAge: 15 * 60 * 1000, // 15 minutes
+  maxAge: 60 * 60 * 1000, // 1 hour
   path: '/',
 };
 
@@ -96,7 +96,7 @@ const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   path: '/api/auth', // 📚 Restricted path — only sent to auth endpoints!
 };
 

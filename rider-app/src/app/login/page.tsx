@@ -327,6 +327,8 @@ export default function LoginPage() {
       else if (status === 401) setError('Invalid email or password.');
       else if (status === 404)
         setError('No account found with this email. Please sign up first.');
+      else if (status === 429)
+        setError('Too many login attempts. Please wait a minute and try again.');
       else if (status) setError(`Server error (${status}). Please try again.`);
       else setError('Service temporarily unavailable. Please try again in a moment.');
     } finally {

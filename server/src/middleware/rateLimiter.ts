@@ -32,6 +32,6 @@ setInterval(() => {
 }, 300000);
 
 // Pre-configured limiters
-export const authLimiter = rateLimit(15 * 60 * 1000, 10); // 10 req / 15 min for auth
-export const apiLimiter = rateLimit(60 * 1000, 60); // 60 req / min for general API
-export const uploadLimiter = rateLimit(60 * 1000, 5); // 5 req / min for uploads
+export const authLimiter = rateLimit(5 * 60 * 1000, 30); // 30 req / 5 min for auth
+export const apiLimiter = rateLimit(60 * 1000, 120); // 120 req / min for general API
+export const uploadLimiter = rateLimit(60 * 1000, 10); // 10 req / min for uploads

@@ -32,6 +32,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Wait for zustand to hydrate from localStorage before checking auth.
   // Without this, a page refresh would flash-redirect to /login because
@@ -106,7 +107,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const initials = getInitials(user.name);
   const accent = isAdmin ? 'purple' : isDriver ? 'emerald' : 'indigo';
 
-  const handleLogout = () => {
+  const confirmLogout = () => setShowLogoutConfirm(true);
+  const performLogout = () => {
+    setShowLogoutConfirm(false);
     disconnect();
     logout();
     router.replace('/login');
@@ -373,7 +376,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                   </div>
                   <div className="border-t border-gray-100 pt-1 mt-1">
                     <button
-                      onClick={handleLogout}
+                      onClick={confirmLogout}
                       className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors cursor-pointer rounded-lg mx-1"
                     >
                       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -430,7 +433,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           })}
           {/* Logout */}
           <button
-            onClick={handleLogout}
+            onClick={confirmLogout}
             className="flex flex-col items-center justify-center gap-0.5 w-14 h-12 rounded-xl text-gray-400 hover:text-red-500 transition-all duration-200 cursor-pointer"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -438,6 +441,51 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </nav>
+      {/* Logout Confirmation Modal */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={() => setShowLogoutConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-sm overflow-hidden"
+            >
+              <div className="p-6 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Sign Out?</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Are you sure you want to sign out of your account?</p>
+              </div>
+              <div className="flex border-t border-gray-100 dark:border-gray-800">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className="flex-1 py-3.5 text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={performLogout}
+                  className="flex-1 py-3.5 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors border-l border-gray-100 dark:border-gray-800 cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

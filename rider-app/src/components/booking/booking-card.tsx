@@ -440,11 +440,27 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
         if (!bestPosition || pos.coords.accuracy < bestPosition.coords.accuracy) bestPosition = pos;
         if (pos.coords.accuracy <= 50) finalize(pos);
       },
-      (err) => { if (!settled) { settled = true; clearTimeout(timer); if (bestPosition) finalize(bestPosition); else { setError(err.message); setGettingLocation(false); } } },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      (err) => {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timer);
+          if (bestPosition) {
+            finalize(bestPosition);
+          } else {
+            const friendlyMsg = err.code === 1
+              ? 'Location access denied. Please enable location in your browser settings.'
+              : err.code === 2
+              ? 'Location unavailable. Please try again or type your pickup address.'
+              : 'Could not get your location. Please type your pickup address instead.';
+            setError(friendlyMsg);
+            setGettingLocation(false);
+          }
+        }
+      },
+      { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 }
     );
 
-    const timer = setTimeout(() => { if (!settled && bestPosition) finalize(bestPosition); }, 8000);
+    const timer = setTimeout(() => { if (!settled && bestPosition) finalize(bestPosition); }, 12000);
   }, [onLocationChange, selectedDrop]);
 
   // Auto-estimate

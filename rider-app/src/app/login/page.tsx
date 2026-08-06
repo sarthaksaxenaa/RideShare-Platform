@@ -890,7 +890,7 @@ export default function LoginPage() {
                       transition={{ duration: 0.2 }}
                       className="absolute inset-0 flex flex-col items-center justify-center gap-4"
                     >
-                      <div className="flex gap-2 w-full justify-center">
+                      <div className="flex gap-1.5 sm:gap-2 w-full justify-center">
                         {resetOtp.map((digit, index) => (
                           <input
                             key={index}
@@ -900,7 +900,7 @@ export default function LoginPage() {
                             value={digit}
                             onChange={(e) => handleOtpChange(index, e.target.value)}
                             onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                            className="w-12 h-14 text-center text-xl font-bold bg-white/[0.07] border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500/50 focus:bg-white/[0.1] transition-all"
+                            className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold bg-white/[0.07] border border-white/10 rounded-xl text-white outline-none focus:border-indigo-500/50 focus:bg-white/[0.1] transition-all"
                           />
                         ))}
                       </div>

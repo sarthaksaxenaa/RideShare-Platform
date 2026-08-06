@@ -159,3 +159,20 @@ input:-webkit-autofill:focus {
     background-position: 200% 0;
   }
 }
+
+/* ── Mobile Optimizations ──────────────────── */
+
+@media (max-width: 640px) {
+  button:not(.no-touch-target), 
+  [role="button"]:not(.no-touch-target),
+  a:not(.no-touch-target) {
+    min-height: 44px;
+  }
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}

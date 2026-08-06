@@ -271,7 +271,7 @@ export default function MapView({
   }, [pickMode]);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-[300px] sm:h-[400px] lg:h-full min-h-[300px]">
       <style>{`
         .animated-route-path {
           animation: dash-flow 1s linear infinite;

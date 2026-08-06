@@ -254,7 +254,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 5 }}
-                      className="absolute right-0 mt-2 w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-xl shadow-xl shadow-gray-200/50 dark:shadow-gray-900/50 border border-gray-200/80 dark:border-gray-800/80 overflow-hidden z-50 flex flex-col"
+                      className="fixed right-4 sm:absolute sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-h-[70vh] bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl rounded-xl shadow-xl shadow-gray-200/50 dark:shadow-gray-900/50 border border-gray-200/80 dark:border-gray-800/80 overflow-hidden z-50 flex flex-col"
                     >
                       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                         <span className="font-semibold text-gray-900 dark:text-white text-sm">Notifications</span>
@@ -393,7 +393,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </main>
 
       {/* ── Mobile Bottom Nav ──────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-gray-200/60 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-gray-200/60 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] pb-safe">
         <div className="flex items-center justify-around h-[60px] max-w-lg mx-auto px-2">
           {navItems.map((item) => {
             const active = isActive(item.href, item.exact);

@@ -702,12 +702,12 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
             </div>
 
             {/* Vehicle list */}
-            <div className="px-5 flex flex-col gap-1.5 pb-2">
+            <div className="px-5 flex overflow-x-auto sm:flex-col gap-3 sm:gap-1.5 pb-2 snap-x hide-scrollbar">
               {estimates.map((est) => (
                 <button
                   key={est.vehicleType}
                   onClick={() => setSelectedVehicle(est.vehicleType)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer min-w-[240px] sm:min-w-0 snap-start ${
                     selectedVehicle === est.vehicleType
                       ? 'border-indigo-500 bg-indigo-50/50 shadow-sm'
                       : 'border-gray-100 hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5 hover:border-gray-200'
@@ -779,7 +779,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
           </div>
           
           {bookingMode === 'schedule' && (
-            <div className="flex gap-2 mt-3">
+            <div className="flex flex-col sm:flex-row gap-2 mt-3">
               <input 
                 type="date" 
                 value={scheduledDate}
@@ -808,7 +808,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
       {estimates && selectedVehicle && !loading && (
         <div className="px-5 pb-3">
           {!promoApplied ? (
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 value={promoCode}
                 onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(''); }}
@@ -845,7 +845,7 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
       )}
 
       {/* Action Buttons */}
-      <div className="px-5 pb-5 pt-2 flex gap-3">
+      <div className="px-5 pb-5 pt-2 flex flex-col sm:flex-row gap-3">
         {estimates && !loading && (
           <>
             <button

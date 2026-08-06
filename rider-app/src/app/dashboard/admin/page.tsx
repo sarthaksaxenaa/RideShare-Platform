@@ -294,7 +294,7 @@ export default function AdminDashboardPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-gray-100">
                       <th className="text-left py-2 px-2 text-[11px] text-gray-400 font-medium uppercase tracking-wider">Rider</th>
@@ -420,7 +420,7 @@ export default function AdminDashboardPage() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-800">
                       <th className="text-left py-3 px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">User</th>

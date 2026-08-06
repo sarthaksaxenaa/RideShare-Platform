@@ -548,7 +548,8 @@ export default function DriverDashboardPage() {
               {/* Weekly Bar Chart */}
               <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm">
                 <h3 className="text-base font-bold text-gray-900 mb-6">Weekly Breakdown</h3>
-                <div className="h-48 flex items-end justify-between gap-2 px-2">
+                <div className="h-52 overflow-x-auto hide-scrollbar pb-2">
+                  <div className="h-48 flex items-end justify-between gap-4 px-2 min-w-[350px]">
                   {earningsData.dailyBreakdown?.map((day: any, i: number) => {
                     const maxEarnings = Math.max(...earningsData.dailyBreakdown.map((d: any) => d.earnings), 1);
                     const heightPercent = Math.max((day.earnings / maxEarnings) * 100, 4); // min 4% height
@@ -571,6 +572,7 @@ export default function DriverDashboardPage() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               </div>
 

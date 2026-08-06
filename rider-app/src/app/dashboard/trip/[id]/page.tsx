@@ -394,7 +394,7 @@ export default function ActiveTripPage() {
         )}
 
         {/* ── Main Grid ───────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="flex flex-col-reverse lg:grid lg:grid-cols-3 gap-5">
 
           {tripState === 'COMPLETED' ? (
             <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-6 printable-receipt">
@@ -565,7 +565,7 @@ export default function ActiveTripPage() {
 
             {/* Quick Actions */}
             {!isDriver && (tripState === 'MATCHED' || tripState === 'IN_TRANSIT') && (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
                   onClick={() => setChatOpen(true)}
                   className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer relative"
@@ -777,7 +777,7 @@ export default function ActiveTripPage() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 z-50 flex h-[60vh] max-h-[500px] flex-col rounded-t-2xl bg-gray-900/95 shadow-2xl backdrop-blur-xl border-t border-gray-800 md:bottom-5 md:right-5 md:left-auto md:w-[380px] md:rounded-2xl md:border"
+            className="fixed inset-x-0 bottom-0 z-50 flex h-[60vh] max-h-[500px] flex-col rounded-t-2xl bg-gray-900/95 shadow-2xl backdrop-blur-xl border-t border-gray-800 w-full md:bottom-5 md:right-5 md:left-auto md:w-[380px] md:rounded-2xl md:border"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-800 p-4">
@@ -857,7 +857,7 @@ export default function ActiveTripPage() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-x-0 bottom-0 z-50 flex h-[60vh] max-h-[500px] flex-col rounded-t-2xl bg-gray-900/95 shadow-2xl backdrop-blur-xl border-t border-gray-800 md:bottom-5 md:right-5 md:left-auto md:w-[380px] md:rounded-2xl md:border"
+            className="fixed inset-x-0 bottom-0 z-50 flex h-[60vh] max-h-[500px] flex-col rounded-t-2xl bg-gray-900/95 shadow-2xl backdrop-blur-xl border-t border-gray-800 w-full md:bottom-5 md:right-5 md:left-auto md:w-[380px] md:rounded-2xl md:border"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-800 p-4">

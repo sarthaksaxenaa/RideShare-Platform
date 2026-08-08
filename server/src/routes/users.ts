@@ -451,4 +451,78 @@ router.post(
   }
 );
 
+// ─────────────────────────────────────────────────────────────
+// GET /api/users/places — Fetch user's saved locations (HOME/WORK)
+// ─────────────────────────────────────────────────────────────
+
+router.get(
+  "/places",
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const locations = await prisma.savedLocation.findMany({
+        where: { userId, label: { in: ['HOME', 'WORK'] } },
+      });
+
+      const result: { home: any | null; work: any | null } = { home: null, work: null };
+      
+      const homeLoc = locations.find(l => l.label === 'HOME');
+      if (homeLoc) result.home = { name: homeLoc.address, lat: homeLoc.lat, lng: homeLoc.lng };
+      
+      const workLoc = locations.find(l => l.label === 'WORK');
+      if (workLoc) result.work = { name: workLoc.address, lat: workLoc.lat, lng: workLoc.lng };
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("[users/places] Error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// PUT /api/users/places — Upsert a saved location
+// ─────────────────────────────────────────────────────────────
+
+router.put(
+  "/places",
+  authenticate,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const { type, name, lat, lng } = req.body;
+
+      if (!type || !['HOME', 'WORK'].includes(type) || !name || typeof lat !== 'number' || typeof lng !== 'number') {
+        res.status(400).json({ error: "Validation error", message: "Invalid payload." });
+        return;
+      }
+
+      const location = await prisma.savedLocation.upsert({
+        where: {
+          userId_label: { userId, label: type }
+        },
+        update: {
+          address: name,
+          lat,
+          lng
+        },
+        create: {
+          userId,
+          label: type,
+          address: name,
+          lat,
+          lng,
+          icon: type === 'HOME' ? '🏠' : '💼'
+        }
+      });
+
+      res.status(200).json(location);
+    } catch (error) {
+      console.error("[users/places] Put Error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 export default router;

@@ -42,16 +42,14 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [changingPw, setChangingPw] = useState(false);
 
-  // ── Saved Locations State ─────────────────────────────────
-  const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
-  const [loadingLocations, setLoadingLocations] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [addLabel, setAddLabel] = useState('Home');
-  const [addIcon, setAddIcon] = useState('🏠');
-  const [addAddress, setAddAddress] = useState('');
-  const [addSuggestions, setAddSuggestions] = useState<{ display_name: string; lat: string; lon: string }[]>([]);
-  const [addSaving, setAddSaving] = useState(false);
-  const [searchTimeout, setSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  // ── Saved Places State ─────────────────────────────────
+  const [places, setPlaces] = useState<{ home: any | null, work: any | null }>({ home: null, work: null });
+  const [loadingPlaces, setLoadingPlaces] = useState(true);
+  const [editingPlace, setEditingPlace] = useState<'HOME' | 'WORK' | null>(null);
+  const [placeAddress, setPlaceAddress] = useState('');
+  const [placeSuggestions, setPlaceSuggestions] = useState<{ display_name: string; lat: string; lon: string }[]>([]);
+  const [placeSaving, setPlaceSaving] = useState(false);
+  const [placeSearchTimeout, setPlaceSearchTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Emergency Contacts State ─────────────────────────
   interface EmergencyContact { id: string; name: string; phone: string; }
@@ -74,19 +72,19 @@ export default function ProfilePage() {
   const initials = getInitials(user?.name || 'U');
   const isDriver = user?.role === 'DRIVER';
 
-  // ── Fetch saved locations ─────────────────────────────────
-  const fetchLocations = useCallback(async () => {
+  // ── Fetch saved places ─────────────────────────────────
+  const fetchPlaces = useCallback(async () => {
     try {
-      const res = await api.get('/locations');
-      setSavedLocations(res.data);
+      const res = await api.get('/users/places');
+      setPlaces(res.data);
     } catch {
-      // Silently fail — locations are a nice-to-have
+      // Silently fail
     } finally {
-      setLoadingLocations(false);
+      setLoadingPlaces(false);
     }
   }, []);
 
-  useEffect(() => { fetchLocations(); }, [fetchLocations]);
+  useEffect(() => { fetchPlaces(); }, [fetchPlaces]);
 
   // ── Fetch emergency contacts ────────────────────────
   const fetchContacts = useCallback(async () => {
@@ -138,18 +136,11 @@ export default function ProfilePage() {
     } catch { toast.error('Failed to delete contact'); }
   };
 
-  // ── Address search (Nominatim) ────────────────────────────
-  /**
-   * 📚 DEBOUNCED SEARCH
-   * We don't fire an API call on every keystroke — that would
-   * be 10+ requests for typing "Connaught Place". Instead, we
-   * wait 400ms after the user STOPS typing, then fire once.
-   * This is called "debouncing" — a fundamental UX optimization.
-   */
-  const handleAddressSearch = (query: string) => {
-    setAddAddress(query);
-    if (searchTimeout) clearTimeout(searchTimeout);
-    if (query.length < 3) { setAddSuggestions([]); return; }
+  // ── Address search (Nominatim) for Places ────────────────────────────
+  const handlePlaceSearch = (query: string) => {
+    setPlaceAddress(query);
+    if (placeSearchTimeout) clearTimeout(placeSearchTimeout);
+    if (query.length < 3) { setPlaceSuggestions([]); return; }
     const timeout = setTimeout(async () => {
       try {
         const res = await fetch(
@@ -157,44 +148,33 @@ export default function ProfilePage() {
           { headers: { 'User-Agent': 'RideShareApp/1.0' } }
         );
         const data = await res.json();
-        setAddSuggestions(data);
+        setPlaceSuggestions(data);
       } catch { /* ignore */ }
     }, 400);
-    setSearchTimeout(timeout);
+    setPlaceSearchTimeout(timeout);
   };
 
-  // ── Save a new location ───────────────────────────────────
-  const handleSaveLocation = async (suggestion: { display_name: string; lat: string; lon: string }) => {
-    setAddSaving(true);
+  // ── Save a place ───────────────────────────────────
+  const handleSavePlace = async (suggestion: { display_name: string; lat: string; lon: string }) => {
+    if (!editingPlace) return;
+    setPlaceSaving(true);
     try {
-      await api.post('/locations', {
-        label: addLabel,
-        icon: addIcon,
+      await api.put('/users/places', {
+        type: editingPlace,
+        name: suggestion.display_name.split(', ').slice(0, 4).join(', '),
         lat: parseFloat(suggestion.lat),
         lng: parseFloat(suggestion.lon),
-        address: suggestion.display_name.split(', ').slice(0, 4).join(', '),
       });
-      toast.success(`${addLabel} location saved!`);
-      setShowAddForm(false);
-      setAddAddress('');
-      setAddSuggestions([]);
-      fetchLocations();
+      toast.success(`${editingPlace === 'HOME' ? 'Home' : 'Work'} saved!`);
+      setEditingPlace(null);
+      setPlaceAddress('');
+      setPlaceSuggestions([]);
+      fetchPlaces();
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string } } };
       toast.error(axiosErr?.response?.data?.message || 'Failed to save location');
     } finally {
-      setAddSaving(false);
-    }
-  };
-
-  // ── Delete a location ─────────────────────────────────────
-  const handleDeleteLocation = async (id: string) => {
-    try {
-      await api.delete(`/locations/${id}`);
-      setSavedLocations((prev) => prev.filter((l) => l.id !== id));
-      toast.success('Location removed');
-    } catch {
-      toast.error('Failed to delete location');
+      setPlaceSaving(false);
     }
   };
 
@@ -304,7 +284,7 @@ export default function ProfilePage() {
         </form>
       </motion.div>
 
-      {/* ── Saved Locations ─────────────────────────────────── */}
+      {/* ── Saved Places ─────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -312,107 +292,98 @@ export default function ProfilePage() {
         className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 mb-6"
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Saved Locations</h3>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition-colors cursor-pointer"
-          >
-            {showAddForm ? '✕ Cancel' : '+ Add Location'}
-          </button>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Saved Places</h3>
         </div>
 
-        {/* Add Form */}
-        <AnimatePresence>
-          {showAddForm && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="overflow-hidden mb-4"
-            >
-              <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
-                {/* Label selector */}
-                <p className="text-xs font-semibold text-gray-500 mb-2">Location Type</p>
-                <div className="flex gap-2 mb-3">
-                  {LOCATION_PRESETS.map((preset) => (
-                    <button
-                      key={preset.label}
-                      onClick={() => { setAddLabel(preset.label); setAddIcon(preset.icon); }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                        addLabel === preset.label
-                          ? 'bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-900 dark:text-indigo-300 dark:border-indigo-700'
-                          : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      {preset.icon} {preset.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Address search */}
-                <p className="text-xs font-semibold text-gray-500 mb-2">Search Address</p>
-                <input
-                  value={addAddress}
-                  onChange={(e) => handleAddressSearch(e.target.value)}
-                  placeholder="Type an address..."
-                  className="w-full px-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-white outline-none transition-all focus:border-indigo-500 focus:ring-3 focus:ring-indigo-500/10 placeholder:text-gray-400"
-                />
-
-                {/* Suggestions */}
-                {addSuggestions.length > 0 && (
-                  <div className="mt-2 border border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden divide-y divide-gray-100 dark:divide-gray-700">
-                    {addSuggestions.map((s, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleSaveLocation(s)}
-                        disabled={addSaving}
-                        className="w-full text-left px-4 py-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors text-sm text-gray-700 dark:text-gray-300 cursor-pointer disabled:opacity-50"
-                      >
-                        <span className="text-indigo-500 mr-1.5">📍</span>
-                        {s.display_name.split(', ').slice(0, 4).join(', ')}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Saved locations list */}
-        {loadingLocations ? (
+        {loadingPlaces ? (
           <div className="flex items-center justify-center py-8">
             <div className="w-5 h-5 border-2 border-gray-200 border-t-indigo-500 rounded-full animate-spin" />
           </div>
-        ) : savedLocations.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-3xl mb-2">📍</p>
-            <p className="text-sm text-gray-400">No saved locations yet</p>
-            <p className="text-xs text-gray-300 mt-1">Save your Home, Work, or favorite places for quick booking</p>
-          </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            {savedLocations.map((loc) => (
-              <div
-                key={loc.id}
-                className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+          <div className="flex flex-col gap-3">
+            {/* Home Card */}
+            <div className="rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div 
+                className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                onClick={() => setEditingPlace(editingPlace === 'HOME' ? null : 'HOME')}
               >
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-lg shrink-0">
-                  {loc.icon}
-                </div>
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-lg shrink-0">🏠</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{loc.label}</p>
-                  <p className="text-xs text-gray-400 truncate">{loc.address}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Home</p>
+                  <p className="text-xs text-gray-400 truncate">{places.home ? places.home.name : 'Not set'}</p>
                 </div>
-                <button
-                  onClick={() => handleDeleteLocation(loc.id)}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all cursor-pointer"
-                  title="Remove location"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                </button>
               </div>
-            ))}
+              <AnimatePresence>
+                {editingPlace === 'HOME' && (
+                  <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-gray-50 dark:bg-gray-800/50">
+                    <div className="p-3 border-t border-gray-100 dark:border-gray-700">
+                      <input
+                        value={placeAddress}
+                        onChange={(e) => handlePlaceSearch(e.target.value)}
+                        placeholder="Search home address..."
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm mb-2"
+                      />
+                      {placeSuggestions.length > 0 && (
+                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-700">
+                          {placeSuggestions.map((s, i) => (
+                            <button
+                              key={i}
+                              onClick={() => handleSavePlace(s)}
+                              disabled={placeSaving}
+                              className="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-xs text-gray-700 dark:text-gray-300"
+                            >
+                              📍 {s.display_name.split(', ').slice(0, 4).join(', ')}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Work Card */}
+            <div className="rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+              <div 
+                className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                onClick={() => setEditingPlace(editingPlace === 'WORK' ? null : 'WORK')}
+              >
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center text-lg shrink-0">💼</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">Work</p>
+                  <p className="text-xs text-gray-400 truncate">{places.work ? places.work.name : 'Not set'}</p>
+                </div>
+              </div>
+              <AnimatePresence>
+                {editingPlace === 'WORK' && (
+                  <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-gray-50 dark:bg-gray-800/50">
+                    <div className="p-3 border-t border-gray-100 dark:border-gray-700">
+                      <input
+                        value={placeAddress}
+                        onChange={(e) => handlePlaceSearch(e.target.value)}
+                        placeholder="Search work address..."
+                        className="w-full px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm mb-2"
+                      />
+                      {placeSuggestions.length > 0 && (
+                        <div className="border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-700">
+                          {placeSuggestions.map((s, i) => (
+                            <button
+                              key={i}
+                              onClick={() => handleSavePlace(s)}
+                              disabled={placeSaving}
+                              className="w-full text-left px-3 py-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 text-xs text-gray-700 dark:text-gray-300"
+                            >
+                              📍 {s.display_name.split(', ').slice(0, 4).join(', ')}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         )}
       </motion.div>

@@ -8,19 +8,13 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useSocketStore } from '@/stores/socket-store';
 import { useTripStore } from '@/stores/trip-store';
 import { useLocationStore } from '@/stores/location-store';
+import api from '@/lib/api';
 import BookingCard from '@/components/booking/booking-card';
 import MapSkeleton from '@/components/map/map-skeleton';
 
 const MapView = lazy(() => import('@/components/map/map-view'));
 
-const DEFAULT_CENTER: [number, number] = [28.6139, 77.209];
-
-const quickActions = [
-  { icon: '🏠', label: 'Home', sub: 'Set home address', color: 'bg-amber-50 text-amber-600 border-amber-100', href: '/dashboard/profile' },
-  { icon: '💼', label: 'Work', sub: 'Set office address', color: 'bg-blue-50 text-blue-600 border-blue-100', href: '/dashboard/profile' },
-  { icon: '🕐', label: 'History', sub: 'Past rides', color: 'bg-purple-50 text-purple-600 border-purple-100', href: '/dashboard/history' },
-  { icon: '⭐', label: 'My Rating', sub: 'View feedback', color: 'bg-green-50 text-green-600 border-green-100', href: '/dashboard/profile' },
-];
+const DEFAULT_MAP_CENTER: [number, number] = [28.6139, 77.209];
 
 const steps = [
   { num: '1', title: 'Set Location', desc: 'Enter your pickup and drop-off points', icon: '📍' },
@@ -53,6 +47,8 @@ export default function RiderDashboardPage() {
   const [nearbyDrivers, setNearbyDrivers] = useState<{ lat: number; lng: number }[]>([]);
   const [mapPickMode, setMapPickMode] = useState<'pickup' | 'drop' | null>(null);
   const [mapPickedLocation, setMapPickedLocation] = useState<{ mode: 'pickup' | 'drop'; lat: number; lng: number } | null>(null);
+  const [places, setPlaces] = useState<{ home: any | null, work: any | null }>({ home: null, work: null });
+  const [prefillDrop, setPrefillDrop] = useState<{ name: string; lat: number; lng: number } | undefined>(undefined);
 
   const isDriver = user?.role === 'DRIVER';
   const isAdmin = user?.role === 'ADMIN';
@@ -68,6 +64,10 @@ export default function RiderDashboardPage() {
       router.replace('/dashboard/driver');
     } else if (isAdmin) {
       router.replace('/dashboard/admin');
+    } else {
+      api.get('/users/places').then((res) => {
+        setPlaces(res.data);
+      }).catch(() => {});
     }
   }, [isDriver, isAdmin, router]);
 
@@ -95,7 +95,7 @@ export default function RiderDashboardPage() {
   const mapCenter = useMemo<[number, number]>(() => {
     if (pickupCoords) return pickupCoords;
     if (userPosition) return [userPosition.lat, userPosition.lng];
-    return DEFAULT_CENTER;
+    return DEFAULT_MAP_CENTER;
   }, [pickupCoords, userPosition]);
 
   const handleLocationChange = useCallback(
@@ -160,6 +160,41 @@ export default function RiderDashboardPage() {
     setMapPickMode(null);
     toast.success(`${mapPickMode === 'pickup' ? 'Pickup' : 'Drop-off'} location set!`);
   }, [mapPickMode]);
+
+  const computedQuickActions = useMemo(() => [
+    { 
+      id: 'home',
+      icon: '🏠', 
+      label: 'Home', 
+      sub: places.home ? places.home.name.split(',')[0] : 'Set home address', 
+      color: 'bg-amber-50 text-amber-600 border-amber-100',
+      action: () => {
+        if (places.home) {
+          setPrefillDrop(places.home);
+          bookingRef.current?.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          router.push('/dashboard/profile');
+        }
+      }
+    },
+    { 
+      id: 'work',
+      icon: '💼', 
+      label: 'Work', 
+      sub: places.work ? places.work.name.split(',')[0] : 'Set office address', 
+      color: 'bg-blue-50 text-blue-600 border-blue-100', 
+      action: () => {
+        if (places.work) {
+          setPrefillDrop(places.work);
+          bookingRef.current?.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          router.push('/dashboard/profile');
+        }
+      }
+    },
+    { id: 'history', icon: '🕐', label: 'History', sub: 'Past rides', color: 'bg-purple-50 text-purple-600 border-purple-100', action: () => router.push('/dashboard/history') },
+    { id: 'rating', icon: '⭐', label: 'My Rating', sub: 'View feedback', color: 'bg-green-50 text-green-600 border-green-100', action: () => router.push('/dashboard/profile') },
+  ], [places, router]);
 
   const firstName = user?.name?.split(' ')[0] || 'Rider';
 
@@ -316,6 +351,7 @@ export default function RiderDashboardPage() {
               onCancelBooking={handleCancelBooking}
               onLocateOnMap={handleLocateOnMap}
               mapPickedLocation={mapPickedLocation}
+              prefillDrop={prefillDrop}
             />
           </motion.div>
         </div>
@@ -331,16 +367,16 @@ export default function RiderDashboardPage() {
           >
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {quickActions.map((action) => (
+              {computedQuickActions.map((action) => (
                 <button
-                  key={action.label}
-                  onClick={() => router.push(action.href)}
+                  key={action.id}
+                  onClick={action.action}
                   className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer ${action.color}`}
                 >
                   <span className="text-xl">{action.icon}</span>
                   <div className="text-left">
                     <p className="text-sm font-semibold">{action.label}</p>
-                    <p className="text-[11px] opacity-70">{action.sub}</p>
+                    <p className="text-[11px] opacity-70 truncate max-w-[100px]">{action.sub}</p>
                   </div>
                 </button>
               ))}

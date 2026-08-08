@@ -1029,4 +1029,79 @@ router.get(
   }
 );
 
+// ─────────────────────────────────────────────────────────────
+// POST /api/trips/:id/share — Share trip live tracking
+// ─────────────────────────────────────────────────────────────
+router.post(
+  "/:id/share",
+  authenticate,
+  requireRole("RIDER"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const userId = req.user!.id;
+
+      const trip = await prisma.trip.findUnique({
+        where: { id },
+      });
+
+      if (!trip) {
+        res.status(404).json({ error: "Not found", message: "Trip not found." });
+        return;
+      }
+
+      if (trip.riderId !== userId) {
+        res.status(403).json({ error: "Forbidden", message: "Only the rider can share the trip." });
+        return;
+      }
+
+      const shareCode = Buffer.from(id).toString('base64url');
+      const frontendUrl = process.env.FRONTEND_URL || 'https://rideshare-platform.vercel.app';
+      const shareLink = `${frontendUrl}/track/${shareCode}`;
+
+      res.status(200).json({ shareCode, shareLink });
+    } catch (error) {
+      console.error("[trips/share] Unexpected error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────
+// GET /api/trips/track/:shareCode — Track shared trip
+// ─────────────────────────────────────────────────────────────
+router.get(
+  "/track/:shareCode",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { shareCode } = req.params;
+      const tripId = Buffer.from(shareCode, 'base64url').toString();
+
+      const trip = await prisma.trip.findUnique({
+        where: { id: tripId },
+        include: { driver: true }
+      });
+
+      if (!trip) {
+        res.status(404).json({ error: "Not found", message: "Trip not found." });
+        return;
+      }
+
+      res.status(200).json({
+        status: trip.status,
+        driverName: trip.driver?.name?.split(' ')[0] || null,
+        vehicleType: trip.vehicleType,
+        vehicleModel: trip.driver?.vehicleModel,
+        vehicleNumber: trip.driver?.vehicleNumber,
+        pickupAddress: (trip as any).pickupAddress || "Pickup Location",
+        dropAddress: (trip as any).dropAddress || "Drop-off Location",
+        durationMin: trip.durationMin
+      });
+    } catch (error) {
+      console.error("[trips/track/get] Unexpected error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 export default router;

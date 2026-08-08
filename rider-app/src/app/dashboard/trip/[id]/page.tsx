@@ -96,6 +96,12 @@ export default function ActiveTripPage() {
   const [pinError, setPinError] = useState(false);
   const pinInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+  // Share Live Trip State
+  const [shareLiveOpen, setShareLiveOpen] = useState(false);
+  const [liveShareLink, setLiveShareLink] = useState('');
+  const [liveShareLoading, setLiveShareLoading] = useState(false);
+
+
   const driverLocationRef = useRef(driverLocation);
   useEffect(() => { driverLocationRef.current = driverLocation; }, [driverLocation]);
 
@@ -648,10 +654,29 @@ export default function ActiveTripPage() {
                   <span className="text-[10px] font-medium text-gray-600">Split Fare</span>
                 </button>
                 <button
-                  onClick={() => toast.info('Trip link copied!')}
+                  onClick={async () => {
+                    if (liveShareLink) {
+                      setShareLiveOpen(true);
+                      return;
+                    }
+                    try {
+                      setLiveShareLoading(true);
+                      const res = await api.post(`/trips/${tripId}/share`);
+                      setLiveShareLink(res.data.shareLink);
+                      setShareLiveOpen(true);
+                    } catch (err) {
+                      toast.error('Failed to generate share link');
+                    } finally {
+                      setLiveShareLoading(false);
+                    }
+                  }}
                   className="flex flex-col items-center gap-1.5 p-3 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition-all cursor-pointer"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  {liveShareLoading ? (
+                    <div className="w-[18px] h-[18px] border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  )}
                   <span className="text-[10px] font-medium text-gray-600">Share</span>
                 </button>
                 <button
@@ -1056,6 +1081,82 @@ export default function ActiveTripPage() {
         )}
       </AnimatePresence>
 
+      {/* Share Live Trip Panel */}
+      <AnimatePresence>
+        {shareLiveOpen && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-x-0 bottom-0 z-50 flex h-[50vh] max-h-[400px] flex-col rounded-t-2xl bg-gray-900/95 shadow-2xl backdrop-blur-xl border-t border-gray-800 w-full md:bottom-5 md:right-5 md:left-auto md:w-[380px] md:rounded-2xl md:border"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-800 p-4 bg-gradient-to-r from-teal-900/40 to-green-900/40 rounded-t-2xl md:rounded-t-2xl">
+              <h3 className="text-lg font-semibold text-teal-400 flex items-center gap-2">
+                🛡️ Share Trip Safely
+              </h3>
+              <button
+                onClick={() => setShareLiveOpen(false)}
+                className="rounded-full p-2 text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-5 text-center">
+              <div className="w-16 h-16 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center mx-auto text-3xl mb-2">🛡️</div>
+              <h4 className="text-xl font-bold text-white mb-2">Live Tracking Active</h4>
+              <p className="text-sm text-gray-400 mb-6">Share this link with family or friends so they can track your ride in real-time.</p>
+              
+              <div className="bg-gray-800 rounded-xl p-3 flex items-center gap-2 border border-teal-900/50 mb-6">
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={liveShareLink}
+                  className="bg-transparent text-sm text-teal-100 flex-1 outline-none truncate"
+                />
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(liveShareLink);
+                    toast.success('Link copied to clipboard');
+                  }}
+                  className="p-2 bg-teal-900/40 hover:bg-teal-800/60 rounded-lg text-teal-400 cursor-pointer transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Track my ride live on RideShare: ${liveShareLink}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 rounded-xl bg-[#25D366] text-white font-bold hover:bg-[#128C7E] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#25D366]/20"
+                >
+                  Share via WhatsApp
+                </a>
+                
+                <button
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'Track my RideShare trip',
+                        text: 'Track my ride live on RideShare!',
+                        url: liveShareLink
+                      }).catch(console.error);
+                    } else {
+                      toast.error('Web Share API not supported on this browser');
+                    }
+                  }}
+                  className="w-full py-3 rounded-xl bg-gray-800 text-white font-bold hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 cursor-pointer border border-gray-700"
+                >
+                  More Options
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer spacer for mobile */}
       <div className="h-16 md:h-0" />

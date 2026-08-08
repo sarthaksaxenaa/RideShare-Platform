@@ -21,9 +21,10 @@ interface BookingCardProps {
   onLocateOnMap?: (mode: 'pickup' | 'drop') => void;
   mapPickedLocation?: { mode: 'pickup' | 'drop'; lat: number; lng: number } | null;
   initialPromoCode?: string;
+  prefillDrop?: { name: string; lat: number; lng: number };
 }
 
-export default function BookingCard({ onBook, loading = false, onLocationChange, onCancelBooking, onLocateOnMap, mapPickedLocation, initialPromoCode }: BookingCardProps) {
+export default function BookingCard({ onBook, loading = false, onLocationChange, onCancelBooking, onLocateOnMap, mapPickedLocation, initialPromoCode, prefillDrop }: BookingCardProps) {
   const userPosition = useLocationStore((s) => s.userPosition);
   const isLocating = useLocationStore((s) => s.isLocating);
   const acquirePreciseLocation = useLocationStore((s) => s.acquirePreciseLocation);
@@ -63,6 +64,18 @@ export default function BookingCard({ onBook, loading = false, onLocationChange,
       setPromoCode(initialPromoCode);
     }
   }, [initialPromoCode]);
+
+  useEffect(() => {
+    if (prefillDrop) {
+      setSelectedDrop({ name: prefillDrop.name, lat: prefillDrop.lat, lng: prefillDrop.lng });
+      setDropQuery(prefillDrop.name);
+      if (onLocationChange) {
+        onLocationChange(selectedPickup ? [selectedPickup.lat, selectedPickup.lng] : null, [prefillDrop.lat, prefillDrop.lng]);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefillDrop]);
+
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [promoDescription, setPromoDescription] = useState('');
   const [promoError, setPromoError] = useState('');

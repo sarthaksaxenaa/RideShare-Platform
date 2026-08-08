@@ -474,7 +474,7 @@ export default function LoginPage() {
 
               {/* Role Selector */}
               <div className="flex gap-1 mb-5 bg-white/[0.04] rounded-xl p-1 border border-white/[0.06]">
-                {(['RIDER', 'DRIVER', 'ADMIN'] as UserRole[]).map((r) => {
+                {(['RIDER', 'DRIVER'] as UserRole[]).map((r) => {
                   const roleConfig: Record<string, { active: string; icon: React.ReactNode; label: string }> = {
                     RIDER: {
                       active: 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/20',

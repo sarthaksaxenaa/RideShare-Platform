@@ -138,10 +138,19 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
     }
 
     // Ensure role is one of the allowed values.
-    if (!["RIDER", "DRIVER", "ADMIN"].includes(role)) {
+    // ADMIN accounts can only be created directly in the database.
+    if (role === "ADMIN") {
+      res.status(403).json({
+        error: "Forbidden",
+        message: "Admin accounts cannot be created through registration. Contact the system administrator.",
+      });
+      return;
+    }
+
+    if (!["RIDER", "DRIVER"].includes(role)) {
       res.status(400).json({
         error: "Validation error",
-        message: 'Role must be "RIDER", "DRIVER", or "ADMIN".',
+        message: 'Role must be "RIDER" or "DRIVER".',
       });
       return;
     }

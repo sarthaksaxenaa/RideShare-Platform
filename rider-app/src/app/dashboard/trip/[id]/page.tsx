@@ -91,6 +91,11 @@ export default function ActiveTripPage() {
   const [shareData, setShareData] = useState<{shareCode: string, perPersonAmount: number, splitCount: number, shareLink: string} | null>(null);
   const [splitLoading, setSplitLoading] = useState(false);
   
+  // PIN State
+  const [pin, setPin] = useState(['', '', '', '']);
+  const [pinError, setPinError] = useState(false);
+  const pinInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const driverLocationRef = useRef(driverLocation);
   useEffect(() => { driverLocationRef.current = driverLocation; }, [driverLocation]);
 
@@ -138,10 +143,12 @@ export default function ActiveTripPage() {
             useTripStore.getState().setSearching({
               tripId: trip.id, pickupLat: trip.pickupLat, pickupLng: trip.pickupLng,
               dropLat: trip.dropLat, dropLng: trip.dropLng, fare: trip.fare,
+              rideOtp: trip.rideOtp,
             });
             useTripStore.getState().setMatched({
               tripId: trip.id, driverId: trip.driverId,
               driverName: trip.driver?.name, fare: trip.fare,
+              rideOtp: trip.rideOtp,
             });
           },
           STARTED: () => {
@@ -210,6 +217,22 @@ export default function ActiveTripPage() {
     };
   }, [socket, tripId, chatOpen, user?.id]);
 
+  // Listen for PIN error
+  useEffect(() => {
+    if (!socket) return;
+    const handlePinError = (data: { message: string }) => {
+      toast.error(data.message);
+      setPinError(true);
+      setTimeout(() => setPinError(false), 500); // clear shake after 500ms
+      setPin(['', '', '', '']);
+      pinInputRefs.current[0]?.focus();
+    };
+    socket.on('trip:pin-error', handlePinError);
+    return () => {
+      socket.off('trip:pin-error', handlePinError);
+    };
+  }, [socket]);
+
   useEffect(() => {
     if (chatOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -275,9 +298,10 @@ export default function ActiveTripPage() {
 
   const handleStartTrip = useCallback(() => {
     if (!socket) return;
-    socket.emit('trip:start', { tripId });
-    toast.success('Trip started!');
-  }, [socket, tripId]);
+    const pinString = pin.join('');
+    if (pinString.length !== 4) return;
+    socket.emit('trip:start', { tripId, pin: pinString });
+  }, [socket, tripId, pin]);
 
   const handleCompleteTrip = useCallback(() => {
     if (!socket) return;
@@ -389,6 +413,30 @@ export default function ActiveTripPage() {
                   {tripState === 'IN_TRANSIT' ? 'Enjoy your ride!' : etaSeconds !== null ? `${Math.ceil(etaSeconds / 60)} min` : 'Calculating...'}
                 </p>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── Ride PIN Card ───────────────────────────── */}
+        {!isDriver && tripState === 'MATCHED' && tripData?.rideOtp && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-5 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-5 text-white shadow-xl flex flex-col items-center justify-center text-center relative overflow-hidden"
+          >
+            {/* Background design elements */}
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl"></div>
+            
+            <p className="text-sm font-semibold opacity-90 mb-1 z-10">Share this PIN with your driver</p>
+            <p className="text-xs text-indigo-200 mb-4 z-10">Your driver will ask for this PIN to verify your identity</p>
+            
+            <div className="flex gap-2.5 z-10">
+              {tripData.rideOtp.split('').map((digit, i) => (
+                <div key={i} className="w-12 h-14 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center text-2xl font-bold text-white border border-white/30 shadow-inner">
+                  {digit}
+                </div>
+              ))}
             </div>
           </motion.div>
         )}
@@ -742,11 +790,47 @@ export default function ActiveTripPage() {
 
           {/* Driver: Start trip */}
           {isDriver && tripState === 'MATCHED' && (
-            <button onClick={handleStartTrip}
-              className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold shadow-lg shadow-green-500/25 hover:shadow-green-500/40 hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-              Rider Picked Up — Start Trip
-            </button>
+            <div className="flex-1 flex flex-col gap-3">
+              <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col items-center shadow-sm">
+                <p className="text-sm font-semibold text-gray-900 mb-1">Enter Rider's PIN to start trip</p>
+                <p className="text-[11px] text-gray-400 mb-4">Ask the rider for their 4-digit verification PIN</p>
+                <motion.div 
+                  className="flex gap-3"
+                  animate={pinError ? { x: [-10, 10, -10, 10, 0] } : {}}
+                  transition={{ duration: 0.4 }}
+                >
+                  {pin.map((digit, index) => (
+                    <input
+                      key={index}
+                      ref={el => { pinInputRefs.current[index] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9]/g, '');
+                        const newPin = [...pin];
+                        newPin[index] = val;
+                        setPin(newPin);
+                        if (val && index < 3) pinInputRefs.current[index + 1]?.focus();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Backspace' && !pin[index] && index > 0) {
+                          pinInputRefs.current[index - 1]?.focus();
+                        }
+                      }}
+                      className="w-12 h-14 border-2 border-gray-200 rounded-xl text-center text-xl font-bold text-gray-900 focus:border-indigo-500 focus:ring-0 transition-colors"
+                    />
+                  ))}
+                </motion.div>
+              </div>
+              <button onClick={handleStartTrip}
+                disabled={pin.join('').length !== 4}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold shadow-lg shadow-green-500/25 hover:shadow-green-500/40 hover:-translate-y-0.5 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Rider Picked Up — Start Trip
+              </button>
+            </div>
           )}
 
           {/* Driver: Complete trip */}

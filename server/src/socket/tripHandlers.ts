@@ -64,6 +64,7 @@ interface TripAcceptPayload {
 /** Payload shape for the `trip:start` event (sent by driver). */
 interface TripStartPayload {
   tripId: string;
+  pin?: string;
 }
 
 /** Payload shape for the `trip:complete` event (sent by driver). */
@@ -164,6 +165,7 @@ export function registerTripHandlers(
           dropLng,
           fare,
           status: 'REQUESTED',
+          rideOtp: Math.floor(1000 + Math.random() * 9000).toString(),
         },
         include: {
           rider: {
@@ -290,7 +292,7 @@ export function registerTripHandlers(
       // them join the trip room.
       const trip = await prisma.trip.findUnique({
         where: { id: tripId },
-        select: { riderId: true },
+        select: { riderId: true, rideOtp: true },
       });
 
       if (!trip) {
@@ -338,6 +340,7 @@ export function registerTripHandlers(
           vehicleNumber: driver?.vehicleNumber,
           vehicleType: driver?.vehicleType,
         },
+        rideOtp: trip.rideOtp,
       });
 
       await prisma.notification.create({
@@ -375,7 +378,22 @@ export function registerTripHandlers(
         return;
       }
 
-      const { tripId } = payload;
+      const { tripId, pin } = payload;
+
+      const tripData = await prisma.trip.findUnique({
+        where: { id: tripId },
+        select: { rideOtp: true, riderId: true },
+      });
+      
+      if (!tripData) {
+        socket.emit('trip:error', { message: 'Trip not found' });
+        return;
+      }
+
+      if (tripData.rideOtp && tripData.rideOtp !== pin) {
+        socket.emit('trip:pin-error', { message: 'Incorrect PIN. Please ask the rider for the correct PIN.' });
+        return;
+      }
 
       // Update status to STARTED.
       const trip = await prisma.trip.update({

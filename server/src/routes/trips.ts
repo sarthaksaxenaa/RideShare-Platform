@@ -360,6 +360,11 @@ router.get(
       }
 
       let responseTrip = { ...trip };
+      if (trip.riderId !== userId) {
+        // Driver gets it verbally from the rider
+        (responseTrip as any).rideOtp = null;
+      }
+
       if (!responseTrip.baseFare && responseTrip.vehicleType && responseTrip.distanceKm != null && responseTrip.durationMin != null) {
         const breakdown = calculateFareBreakdown(responseTrip.vehicleType, responseTrip.distanceKm, responseTrip.durationMin);
         responseTrip = {

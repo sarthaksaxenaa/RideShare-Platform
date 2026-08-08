@@ -70,6 +70,7 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
         driverId: data.driverId,
         driverName: data.driverName,
         fare: data.fare,
+        rideOtp: data.rideOtp,
       });
     });
 

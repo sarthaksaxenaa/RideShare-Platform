@@ -22,6 +22,7 @@ export interface TripData {
   pickupLng: number;
   dropLat: number;
   dropLng: number;
+  rideOtp?: string;
 }
 
 export interface DriverLocation {

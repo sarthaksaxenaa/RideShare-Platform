@@ -33,6 +33,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   // Wait for zustand to hydrate from localStorage before checking auth.
   // Without this, a page refresh would flash-redirect to /login because
@@ -89,6 +91,35 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  // PWA Install Prompt
+  useEffect(() => {
+    const dismissed = localStorage.getItem('pwa-install-dismissed');
+    if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return;
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallPrompt(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallPrompt(false);
+    }
+    setDeferredPrompt(null);
+  };
+
+  const dismissInstall = () => {
+    setShowInstallPrompt(false);
+    localStorage.setItem('pwa-install-dismissed', Date.now().toString());
   };
 
   if (!hydrated || !isAuthenticated || !user) {
@@ -155,7 +186,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50/80 dark:bg-gray-950 transition-colors duration-300">
+    <div className="flex flex-col h-screen bg-gray-50/80 dark:bg-gray-950 transition-colors duration-300 overflow-hidden">
       {/* ── Top Navigation ─────────────────────── */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/60 dark:border-gray-800/60 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -391,7 +422,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       </header>
 
       {/* ── Main Content ───────────────────────── */}
-      <main className="flex-1">
+      <main className="flex-1 overflow-y-auto pb-20 md:pb-4">
         {children}
       </main>
 
@@ -441,6 +472,52 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </nav>
+
+      {/* PWA Install Prompt Banner */}
+      <AnimatePresence>
+        {showInstallPrompt && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed bottom-20 md:bottom-6 left-4 right-4 md:left-auto md:right-6 md:w-[380px] z-[90]"
+          >
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl shadow-2xl shadow-indigo-500/25 p-4 text-white">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-bold">Install RideShare App</h4>
+                  <p className="text-xs text-white/70 mt-0.5">Get faster access, offline support & push notifications</p>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={handleInstall}
+                      className="px-4 py-2 bg-white text-indigo-700 text-xs font-bold rounded-lg hover:bg-white/90 transition-colors cursor-pointer"
+                    >
+                      Install Now
+                    </button>
+                    <button
+                      onClick={dismissInstall}
+                      className="px-3 py-2 bg-white/15 text-xs font-semibold rounded-lg hover:bg-white/25 transition-colors cursor-pointer"
+                    >
+                      Not Now
+                    </button>
+                  </div>
+                </div>
+                <button onClick={dismissInstall} className="text-white/50 hover:text-white transition-colors cursor-pointer shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Logout Confirmation Modal */}
       <AnimatePresence>
         {showLogoutConfirm && (

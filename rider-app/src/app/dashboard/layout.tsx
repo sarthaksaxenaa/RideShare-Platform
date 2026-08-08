@@ -93,33 +93,47 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   };
 
-  // PWA Install Prompt
+  // PWA Install Prompt — show on every sign-in unless permanently dismissed
   useEffect(() => {
-    const dismissed = localStorage.getItem('pwa-install-dismissed');
-    if (dismissed && Date.now() - parseInt(dismissed) < 7 * 24 * 60 * 60 * 1000) return;
+    // If user clicked "Already Installed" before, never show again
+    if (localStorage.getItem('pwa-installed') === 'true') return;
+    // If app is running as installed PWA, don't show
+    if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+    // Show the prompt after a short delay on every login
+    const timer = setTimeout(() => setShowInstallPrompt(true), 2000);
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowInstallPrompt(true);
     };
     window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
   }, []);
 
   const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setShowInstallPrompt(false);
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        localStorage.setItem('pwa-installed', 'true');
+        setShowInstallPrompt(false);
+      }
+      setDeferredPrompt(null);
     }
-    setDeferredPrompt(null);
+  };
+
+  const markAlreadyInstalled = () => {
+    localStorage.setItem('pwa-installed', 'true');
+    setShowInstallPrompt(false);
   };
 
   const dismissInstall = () => {
     setShowInstallPrompt(false);
-    localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+    // Only dismiss for this session — will show again next login
   };
 
   if (!hydrated || !isAuthenticated || !user) {
@@ -493,16 +507,24 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <div className="flex-1 min-w-0">
                   <h4 className="text-sm font-bold">Install RideShare App</h4>
                   <p className="text-xs text-white/70 mt-0.5">Get faster access, offline support & push notifications</p>
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {deferredPrompt && (
+                      <button
+                        onClick={handleInstall}
+                        className="px-4 py-2 bg-white text-indigo-700 text-xs font-bold rounded-lg hover:bg-white/90 transition-colors cursor-pointer"
+                      >
+                        Install Now
+                      </button>
+                    )}
                     <button
-                      onClick={handleInstall}
-                      className="px-4 py-2 bg-white text-indigo-700 text-xs font-bold rounded-lg hover:bg-white/90 transition-colors cursor-pointer"
+                      onClick={markAlreadyInstalled}
+                      className="px-3 py-2 bg-white/15 text-xs font-semibold rounded-lg hover:bg-white/25 transition-colors cursor-pointer border border-white/20"
                     >
-                      Install Now
+                      ✅ Already Installed
                     </button>
                     <button
                       onClick={dismissInstall}
-                      className="px-3 py-2 bg-white/15 text-xs font-semibold rounded-lg hover:bg-white/25 transition-colors cursor-pointer"
+                      className="px-3 py-2 bg-white/10 text-xs font-semibold rounded-lg hover:bg-white/20 transition-colors cursor-pointer"
                     >
                       Not Now
                     </button>

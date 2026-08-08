@@ -74,11 +74,14 @@ export default function RiderDashboardPage() {
   // Listen for nearby drivers
   useEffect(() => {
     if (!socket) return;
-    const handleNearby = (data: { drivers: { lat: number; lng: number }[] }) => {
-      setNearbyDrivers(data.drivers || []);
+    const handleDriverLocation = (data: { lat: number; lng: number; driverId?: string }) => {
+      setNearbyDrivers((prev) => {
+        const filtered = prev.filter((d) => !(Math.abs(d.lat - data.lat) < 0.0001 && Math.abs(d.lng - data.lng) < 0.0001));
+        return [...filtered, { lat: data.lat, lng: data.lng }];
+      });
     };
-    socket.on('nearby:drivers', handleNearby);
-    return () => { socket.off('nearby:drivers', handleNearby); };
+    socket.on('driver:location', handleDriverLocation);
+    return () => { socket.off('driver:location', handleDriverLocation); };
   }, [socket]);
 
   // Redirect if trip is active

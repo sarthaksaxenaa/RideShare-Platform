@@ -252,7 +252,7 @@ export default function ActiveTripPage() {
 
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
-        socket.emit('driver:update_location', {
+        socket.emit('driver:location_update', {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
           tripId,

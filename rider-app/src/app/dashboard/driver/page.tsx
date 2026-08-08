@@ -90,7 +90,7 @@ export default function DriverDashboardPage() {
     if (!socket || !isOnline || !userPosition) return;
     const interval = setInterval(() => {
       if (userPosition) {
-        socket.emit('driver:update_location', { lat: userPosition.lat, lng: userPosition.lng });
+        socket.emit('driver:location_update', { lat: userPosition.lat, lng: userPosition.lng });
       }
     }, 5000);
     return () => clearInterval(interval);
@@ -146,22 +146,60 @@ export default function DriverDashboardPage() {
     }
   }, [tripState, router]);
 
-  const toggleOnline = useCallback(() => {
+  const toggleOnline = useCallback(async () => {
     if (!socket) { toast.error('Not connected to server'); return; }
-    const next = !isOnline;
-    setIsOnline(next);
-    
-    if (next) {
-      setOnlineSince(new Date());
-      setOnlineElapsed(0);
-    } else {
+
+    // Going offline — no permission needed
+    if (isOnline) {
+      setIsOnline(false);
       setOnlineSince(null);
       setOnlineElapsed(0);
+      socket.emit('driver:go_offline');
+      toast('You are now offline');
+      setTripRequests([]);
+      return;
     }
 
-    socket.emit('driver:toggle', { online: next });
-    toast(next ? 'You are now online — ride requests will appear here' : 'You are now offline');
-    if (!next) setTripRequests([]);
+    // Going online — require location permission first
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      return;
+    }
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        });
+      });
+
+      // Permission granted — go online
+      setIsOnline(true);
+      setOnlineSince(new Date());
+      setOnlineElapsed(0);
+      socket.emit('driver:go_online');
+      toast.success('You are now online — ride requests will appear here');
+
+      // Send initial location immediately
+      socket.emit('driver:location_update', {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      });
+    } catch (error) {
+      // Permission denied or error
+      const geoError = error as GeolocationPositionError;
+      if (geoError.code === geoError.PERMISSION_DENIED) {
+        toast.error('Location access is required to go live. Please enable location in your browser settings.', {
+          duration: 5000,
+        });
+      } else if (geoError.code === geoError.TIMEOUT) {
+        toast.error('Could not get your location. Please check your GPS and try again.');
+      } else {
+        toast.error('Location unavailable. Please try again.');
+      }
+    }
   }, [socket, isOnline]);
 
   // Timer for online elapsed time

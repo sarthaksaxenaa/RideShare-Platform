@@ -27,6 +27,7 @@ interface TripRequest {
   distanceKm: number;
   pickupAddress?: string;
   dropAddress?: string;
+  riderPhone?: string;
 }
 
 export default function DriverDashboardPage() {
@@ -100,28 +101,9 @@ export default function DriverDashboardPage() {
   useEffect(() => {
     if (!socket) return;
     const handleRequest = (data: TripRequest) => {
-      // Reverse-geocode pickup & drop addresses
-      const enrichWithAddresses = async (req: TripRequest): Promise<TripRequest> => {
-        try {
-          const [pickupRes, dropRes] = await Promise.all([
-            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${req.pickupLat}&lon=${req.pickupLng}&format=json&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'en' } }).then(r => r.json()),
-            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${req.dropLat}&lon=${req.dropLng}&format=json&zoom=18&addressdetails=1`, { headers: { 'Accept-Language': 'en' } }).then(r => r.json()),
-          ]);
-          const fmt = (d: Record<string, unknown>) => {
-            const a = (d.address || {}) as Record<string, string>;
-            const parts = [a.amenity || a.building || a.road || '', a.neighbourhood || a.suburb || '', a.city || a.town || ''].filter(Boolean);
-            return parts.length > 0 ? parts.join(', ') : (d.display_name as string || '').split(',').slice(0, 2).join(',');
-          };
-          return { ...req, pickupAddress: fmt(pickupRes), dropAddress: fmt(dropRes) };
-        } catch {
-          return req;
-        }
-      };
-      enrichWithAddresses(data).then((enriched) => {
-        setTripRequests((prev) => {
-          if (prev.find((r) => r.tripId === enriched.tripId)) return prev;
-          return [...prev, enriched];
-        });
+      setTripRequests((prev) => {
+        if (prev.find((r) => r.tripId === data.tripId)) return prev;
+        return [...prev, data];
       });
       toast('New ride request!', { description: `${data.riderName} · ${formatCurrency(data.fare)}` });
     };
@@ -458,65 +440,56 @@ export default function DriverDashboardPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 100, scale: 0.9 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className="bg-white rounded-2xl border border-gray-200 shadow-[0_4px_20px_rgba(0,0,0,0.06)] overflow-hidden"
+                  className="bg-white rounded-2xl border-2 border-emerald-500 shadow-lg overflow-hidden"
                 >
-                  {/* Green accent bar */}
-                  <div className="h-1 bg-gradient-to-r from-green-400 to-emerald-500" />
-
                   <div className="p-5">
-                    {/* Rider info + fare */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-700">
-                          {req.riderName?.[0] || 'R'}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{req.riderName}</p>
-                          <p className="text-[11px] text-gray-400">
-                            {req.distanceKm ? `${req.distanceKm} km away` : 'Nearby'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-green-600">{formatCurrency(req.fare)}</p>
-                        <p className="text-[10px] text-gray-400">estimated</p>
-                      </div>
+                    {/* Rider info */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="text-2xl">🧑</div>
+                      <p className="text-lg font-bold text-gray-900">{req.riderName}</p>
                     </div>
 
                     {/* Route summary */}
-                    <div className="flex items-start gap-3 mb-4 p-3 bg-gray-50 rounded-xl">
-                      <div className="flex flex-col items-center gap-1 mt-0.5">
-                        <div className="w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white shadow-sm" />
-                        <div className="w-px h-6 bg-gray-300" />
-                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white shadow-sm" />
+                    <div className="mb-4">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-xl">📍</span>
+                        <span className="text-sm font-medium text-gray-800 truncate">{req.pickupAddress || 'Pickup Location'}</span>
                       </div>
-                      <div className="flex flex-col gap-3 text-xs text-gray-600 flex-1 min-w-0">
-                        <span className="truncate">{req.pickupAddress || `${req.pickupLat.toFixed(4)}, ${req.pickupLng.toFixed(4)}`}</span>
-                        <span className="truncate">{req.dropAddress || `${req.dropLat.toFixed(4)}, ${req.dropLng.toFixed(4)}`}</span>
+                      <div className="flex items-center gap-3 ml-2 mb-2">
+                        <span className="text-gray-400">↓</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">📍</span>
+                        <span className="text-sm font-medium text-gray-800 truncate">{req.dropAddress || 'Drop Location'}</span>
+                      </div>
+                    </div>
+
+                    {/* Distance & Fare */}
+                    <div className="flex items-center justify-between mb-5 bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🚗</span>
+                        <span className="text-sm font-bold text-gray-700">{req.distanceKm} km</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">💰</span>
+                        <span className="text-2xl font-bold text-emerald-600">{formatCurrency(req.fare)}</span>
                       </div>
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => rejectTrip(req.tripId)}
-                        className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-gray-300 transition-all cursor-pointer"
-                      >
-                        Decline
-                      </button>
+                    <div className="flex gap-3">
                       <button
                         onClick={() => acceptTrip(req.tripId)}
                         disabled={acceptingId === req.tripId}
-                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-semibold hover:shadow-lg hover:shadow-green-500/25 hover:-translate-y-0.5 transition-all cursor-pointer disabled:opacity-60 flex items-center justify-center gap-2"
+                        className="flex-1 py-3 rounded-xl bg-emerald-500 text-white text-base font-bold hover:bg-emerald-600 transition-all shadow-md flex items-center justify-center"
                       >
-                        {acceptingId === req.tripId ? (
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            Accept Ride
-                          </>
-                        )}
+                        {acceptingId === req.tripId ? 'Accepting...' : 'Accept'}
+                      </button>
+                      <button
+                        onClick={() => rejectTrip(req.tripId)}
+                        className="px-6 py-3 rounded-xl bg-gray-100 text-gray-600 text-base font-bold hover:bg-gray-200 transition-all"
+                      >
+                        Decline
                       </button>
                     </div>
                   </div>

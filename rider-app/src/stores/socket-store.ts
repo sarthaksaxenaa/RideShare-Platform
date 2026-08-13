@@ -71,6 +71,18 @@ export const useSocketStore = create<SocketState>()((set, get) => ({
         driverName: data.driverName,
         fare: data.fare,
         rideOtp: data.rideOtp,
+        riderName: data.riderName,
+        riderPhone: data.riderPhone,
+        driverPhone: data.driver?.phone,
+        vehicleModel: data.driver?.vehicleModel,
+        vehicleNumber: data.driver?.vehicleNumber,
+        pickupAddress: data.pickupAddress,
+        dropAddress: data.dropAddress,
+        pickupLat: data.pickupLat,
+        pickupLng: data.pickupLng,
+        dropLat: data.dropLat,
+        dropLng: data.dropLng,
+        distanceKm: data.distanceKm,
       });
     });
 

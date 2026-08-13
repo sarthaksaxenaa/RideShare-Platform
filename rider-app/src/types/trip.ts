@@ -23,6 +23,14 @@ export interface TripData {
   dropLat: number;
   dropLng: number;
   rideOtp?: string;
+  riderName?: string;
+  riderPhone?: string;
+  driverPhone?: string;
+  vehicleModel?: string;
+  vehicleNumber?: string;
+  pickupAddress?: string;
+  dropAddress?: string;
+  distanceKm?: number;
 }
 
 export interface DriverLocation {

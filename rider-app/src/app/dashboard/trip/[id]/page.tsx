@@ -552,44 +552,83 @@ export default function ActiveTripPage() {
             transition={{ delay: 0.2 }}
             className="flex flex-col gap-4"
           >
-            {/* Driver Info Card */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden">
-              {tripData?.driverName ? (
+            {/* Info Card */}
+            {isDriver ? (
+              <div className="bg-white rounded-2xl border border-emerald-200 shadow-md overflow-hidden mb-4">
                 <div className="p-5">
-                  <p className="text-[11px] text-gray-400 uppercase tracking-wider font-medium mb-3">Your Driver</p>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg font-bold text-white shadow-lg shadow-indigo-500/20">
-                      {tripData.driverName[0]}
+                  <p className="text-[11px] text-gray-400 uppercase tracking-wider font-medium mb-3">Rider Info</p>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">🧑</div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{tripData?.riderName || 'Rider'}</p>
+                        <p className="text-xs text-gray-500">{tripData?.riderPhone || ''}</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">{tripData.driverName}</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <span className="text-xs text-amber-500">★</span>
-                        <span className="text-xs text-gray-500 font-medium">4.9</span>
-                        <span className="text-xs text-gray-300 mx-1">·</span>
-                        <span className="text-xs text-gray-400">128 rides</span>
+                    {tripData?.riderPhone && (
+                      <a href={`tel:${tripData.riderPhone}`} className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 hover:bg-emerald-200 transition-colors cursor-pointer">
+                        📞
+                      </a>
+                    )}
+                  </div>
+                  {tripState === 'MATCHED' && (
+                    <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                      <p className="text-xs font-semibold text-emerald-800 mb-1">Pickup Location</p>
+                      <p className="text-sm text-emerald-900 font-medium">{tripData?.pickupAddress || 'Loading...'}</p>
+                    </div>
+                  )}
+                  {tripState === 'IN_TRANSIT' && (
+                    <div className="bg-indigo-50 p-3 rounded-xl border border-indigo-100">
+                      <p className="text-xs font-semibold text-indigo-800 mb-1">Drop-off Location</p>
+                      <p className="text-sm text-indigo-900 font-medium">{tripData?.dropAddress || 'Loading...'}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden mb-4">
+                {tripData?.driverName ? (
+                  <div className="p-5">
+                    <p className="text-[11px] text-gray-400 uppercase tracking-wider font-medium mb-3">Your Driver</p>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg font-bold text-white shadow-lg shadow-indigo-500/20">
+                          {tripData.driverName[0]}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{tripData.driverName}</p>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-xs text-amber-500">★</span>
+                            <span className="text-xs text-gray-500 font-medium">4.9</span>
+                          </div>
+                        </div>
+                      </div>
+                      {tripData?.driverPhone && (
+                        <a href={`tel:${tripData.driverPhone}`} className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 hover:bg-indigo-200 transition-colors cursor-pointer">
+                          📞
+                        </a>
+                      )}
+                    </div>
+                    {/* Vehicle info */}
+                    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
+                      <span className="text-lg">🚗</span>
+                      <div>
+                        <p className="text-xs font-semibold text-gray-700">{tripData?.vehicleModel || (tripData as any)?.driver?.vehicleModel || tripData?.vehicleType || 'Vehicle'}</p>
+                        <p className="text-[10px] text-gray-400">{tripData?.vehicleNumber || (tripData as any)?.driver?.vehicleNumber || ''}</p>
                       </div>
                     </div>
                   </div>
-                  {/* Vehicle info */}
-                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl">
-                    <span className="text-lg">🚗</span>
-                    <div>
-                      <p className="text-xs font-semibold text-gray-700">{(tripData as any)?.driver?.vehicleModel || (tripData as any)?.vehicleType || 'Vehicle'}</p>
-                      <p className="text-[10px] text-gray-400">{(tripData as any)?.driver?.vehicleNumber || ''}</p>
+                ) : (
+                  <div className="p-5 text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
                     </div>
+                    <p className="text-sm font-medium text-gray-500">Finding your driver...</p>
+                    <p className="text-xs text-gray-400 mt-1">This usually takes less than 30 seconds</p>
                   </div>
-                </div>
-              ) : (
-                <div className="p-5 text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
-                    <div className="w-5 h-5 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-500">Finding your driver...</p>
-                  <p className="text-xs text-gray-400 mt-1">This usually takes less than 30 seconds</p>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
 
             {/* Route Info */}
             <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_2px_12px_rgba(0,0,0,0.04)] p-5">

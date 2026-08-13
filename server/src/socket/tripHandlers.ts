@@ -45,6 +45,33 @@ import { findNearbyDrivers } from '../services/matching.js';
 import { capturePayment, cancelPayment } from '../services/stripe.js';
 import { geocodeTripAddresses } from '../services/geocoding.js';
 
+async function getAddress(lat: number, lng: number): Promise<string> {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
+      headers: { 'User-Agent': 'RideShare-App/1.0' },
+    });
+    if (!res.ok) return "Location";
+    const data = await res.json();
+    if (data && data.display_name) {
+      return data.display_name.split(',').slice(0, 3).join(',');
+    }
+    return "Location";
+  } catch (err) {
+    return "Location";
+  }
+}
+
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.asin(Math.sqrt(a));
+  return R * c;
+}
+
 // ── Types ────────────────────────────────────────────────────
 
 /** Payload shape for the `trip:request` event (sent by rider). */
@@ -169,7 +196,7 @@ export function registerTripHandlers(
         },
         include: {
           rider: {
-            select: { name: true },
+            select: { name: true, phone: true },
           },
         },
       });
@@ -203,6 +230,12 @@ export function registerTripHandlers(
         `found ${nearbyDrivers.length} nearby driver(s)`
       );
 
+      const [pickupAddress, dropAddress] = await Promise.all([
+        getAddress(pickupLat, pickupLng),
+        getAddress(dropLat, dropLng)
+      ]);
+      const distanceKm = calculateDistanceKm(pickupLat, pickupLng, dropLat, dropLng);
+
       // ── 3. Notify each nearby driver ───────────────────────
       // We need to find the Socket.io socket for each driver
       // returned by the matching service. Not all nearby drivers
@@ -224,6 +257,10 @@ export function registerTripHandlers(
             dropLng,
             fare,
             riderName: trip.rider.name,
+            riderPhone: trip.rider.phone,
+            pickupAddress,
+            dropAddress,
+            distanceKm: parseFloat(distanceKm.toFixed(1))
           });
         }
       }
@@ -292,7 +329,7 @@ export function registerTripHandlers(
       // them join the trip room.
       const trip = await prisma.trip.findUnique({
         where: { id: tripId },
-        select: { riderId: true, rideOtp: true },
+        select: { riderId: true, rideOtp: true, pickupLat: true, pickupLng: true, dropLat: true, dropLng: true, pickupAddress: true, dropAddress: true, fare: true, rider: { select: { name: true, phone: true } } },
       });
 
       if (!trip) {
@@ -341,6 +378,16 @@ export function registerTripHandlers(
           vehicleType: driver?.vehicleType,
         },
         rideOtp: trip.rideOtp,
+        riderName: trip.rider.name,
+        riderPhone: trip.rider.phone,
+        pickupAddress: trip.pickupAddress || await getAddress(trip.pickupLat, trip.pickupLng),
+        dropAddress: trip.dropAddress || await getAddress(trip.dropLat, trip.dropLng),
+        pickupLat: trip.pickupLat,
+        pickupLng: trip.pickupLng,
+        dropLat: trip.dropLat,
+        dropLng: trip.dropLng,
+        distanceKm: parseFloat(calculateDistanceKm(trip.pickupLat, trip.pickupLng, trip.dropLat, trip.dropLng).toFixed(1)),
+        fare: trip.fare,
       });
 
       await prisma.notification.create({

@@ -409,9 +409,9 @@ export default function LoginPage() {
             className="flex items-center gap-0 mt-14 pt-8 border-t border-white/[0.06]"
           >
             {[
-              { value: '10K+', label: 'Active Riders' },
-              { value: '99.9%', label: 'Uptime' },
-              { value: '4.9★', label: 'Rating' },
+              { value: '3', label: 'Roles' },
+              { value: 'Live', label: 'GPS tracking' },
+              { value: '₹0', label: 'Until trip ends' },
             ].map((stat, i) => (
               <div key={stat.label} className="flex items-center">
                 {i > 0 && <div className="w-px h-8 bg-white/[0.06] mx-6" />}

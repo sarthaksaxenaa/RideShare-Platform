@@ -26,7 +26,7 @@ const features = [
   {
     icon: '⚡',
     title: 'Real-Time Socket.io Tracking',
-    desc: 'Every 500ms, your driver\'s position streams directly to your map. No polling. No delays. Pure WebSocket precision.',
+    desc: 'Every few seconds, your driver\'s position streams straight to your map over WebSockets. No polling, no refreshing.',
     tag: 'LIVE',
   },
   {
@@ -38,7 +38,7 @@ const features = [
   {
     icon: '🧠',
     title: 'Dijkstra-Optimized Routing',
-    desc: 'OSRM Contraction Hierarchies on OpenStreetMap data. Every route follows real roads, real turns, real traffic.',
+    desc: 'OSRM Contraction Hierarchies on OpenStreetMap data. Every route follows real roads and real turns.',
     tag: 'SMART',
   },
   {
@@ -49,11 +49,12 @@ const features = [
   },
 ];
 
+// Every figure here is how the app actually works, not a usage claim.
 const stats = [
-  { value: '500ms', label: 'Location updates' },
-  { value: '99.9%', label: 'Uptime SLA' },
-  { value: '<3s', label: 'Driver matching' },
-  { value: '12+', label: 'Vehicle types' },
+  { value: '5s', label: 'Driver location updates' },
+  { value: '1', label: 'Driver per ride, by design' },
+  { value: '₹0', label: 'Charged until the trip ends' },
+  { value: '6', label: 'Vehicle types' },
 ];
 
 const steps = [
@@ -101,7 +102,7 @@ export default function LandingPage() {
             featureList: [
               'Real-time GPS tracking via Socket.io',
               'Stripe Hold & Capture payments',
-              'Dijkstra-optimized driver matching',
+              'Nearest-driver matching by distance',
               'Dark mode support',
               'Emergency SOS with live location sharing',
               'Admin dashboard with user management',
@@ -182,8 +183,8 @@ export default function LandingPage() {
             transition={{ duration: 0.8, delay: 0.5, ease: [0.25, 0.4, 0.25, 1] }}
             className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            Real-time rides with sub-second tracking, Dijkstra-optimized routes, 
-            and enterprise-grade payments. Built for those who refuse to wait.
+            Real-time rides with live GPS tracking, real-road routes,
+            and a fare that is only charged when your trip ends. Built for those who refuse to wait.
           </motion.p>
 
           <motion.div
@@ -251,7 +252,7 @@ export default function LandingPage() {
               <span className="bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">real-time precision.</span>
             </h2>
             <p className="text-gray-500 max-w-lg mb-16 text-base leading-relaxed">
-              Every layer of our stack is purpose-built for sub-second responsiveness and zero-compromise reliability.
+              Every layer is built so riders, drivers and admins see the same trip change at the same moment.
             </p>
           </Reveal>
 

@@ -597,10 +597,7 @@ export default function ActiveTripPage() {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-gray-900">{tripData.driverName}</p>
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <span className="text-xs text-amber-500">★</span>
-                            <span className="text-xs text-gray-500 font-medium">4.9</span>
-                          </div>
+                          <p className="text-xs text-gray-500 font-medium mt-0.5">Your driver</p>
                         </div>
                       </div>
                       {tripData?.driverPhone && (

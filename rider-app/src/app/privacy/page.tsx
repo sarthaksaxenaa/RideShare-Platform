@@ -84,7 +84,7 @@ export default function PrivacyPolicy() {
 
               <section id="security">
                 <h2 className="text-2xl font-bold text-white mb-4">Data Security</h2>
-                <p>We employ enterprise-grade security measures including JWT encryption, HttpOnly cookies, and Helmet headers to protect your data against unauthorized access.</p>
+                <p>We use security measures including JWT encryption, HttpOnly cookies, and Helmet headers to protect your data against unauthorized access.</p>
               </section>
 
               <section id="retention">

@@ -1,37 +1,38 @@
-import { Request, Response, NextFunction } from 'express';
+import rateLimit from "express-rate-limit";
 
-const requests = new Map<string, { count: number; resetAt: number }>();
+/**
+ * Rate limiters built on express-rate-limit.
+ *
+ * Each limiter owns its own counter store, so hitting one route group never
+ * consumes another group's budget.
+ *
+ * The client IP comes from `req.ip`. Behind Render's reverse proxy that is
+ * only the real client address when Express is told how many proxy hops to
+ * trust: see `app.set("trust proxy", 1)` in index.ts. Without it every user
+ * would share the proxy's IP and therefore one single bucket.
+ *
+ * The in-memory store is per process and resets on restart. That is fine for
+ * one instance; move to a shared store (for example Redis) before scaling out.
+ */
 
-export function rateLimit(windowMs: number = 60000, maxRequests: number = 100) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const key = req.ip || req.socket.remoteAddress || 'unknown';
-    const now = Date.now();
-    const record = requests.get(key);
-    
-    if (!record || now > record.resetAt) {
-      requests.set(key, { count: 1, resetAt: now + windowMs });
-      return next();
-    }
-    
-    if (record.count >= maxRequests) {
-      res.setHeader('Retry-After', Math.ceil((record.resetAt - now) / 1000));
-      return res.status(429).json({ error: 'Too many requests. Please try again later.' });
-    }
-    
-    record.count++;
-    next();
-  };
+const WINDOW_1_MIN = 60 * 1000;
+const WINDOW_5_MIN = 5 * 60 * 1000;
+
+function createLimiter(windowMs: number, limit: number) {
+  return rateLimit({
+    windowMs,
+    limit,
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again later." },
+  });
 }
 
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, record] of requests) {
-    if (now > record.resetAt) requests.delete(key);
-  }
-}, 300000);
+/** Auth routes: 30 requests per 5 minutes per IP */
+export const authLimiter = createLimiter(WINDOW_5_MIN, 30);
 
-// Pre-configured limiters
-export const authLimiter = rateLimit(5 * 60 * 1000, 30); // 30 req / 5 min for auth
-export const apiLimiter = rateLimit(60 * 1000, 120); // 120 req / min for general API
-export const uploadLimiter = rateLimit(60 * 1000, 10); // 10 req / min for uploads
+/** General API routes: 120 requests per minute per IP */
+export const apiLimiter = createLimiter(WINDOW_1_MIN, 120);
+
+/** Registration: 10 requests per minute per IP */
+export const uploadLimiter = createLimiter(WINDOW_1_MIN, 10);

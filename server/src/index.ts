@@ -51,6 +51,16 @@ import cookieParser from "cookie-parser";
 // ── App & Server ────────────────────────────────────────────
 
 const app = express();
+
+/**
+ * TRUST PROXY — the API runs behind one reverse proxy (Render).
+ * Without this, `req.ip` is the proxy's address for every request, so the
+ * rate limiters would count all users as a single client. `1` trusts exactly
+ * one hop, which also keeps clients from spoofing their IP via a forged
+ * X-Forwarded-For header.
+ */
+app.set("trust proxy", 1);
+
 const server = http.createServer(app);
 
 // ── Socket.io ───────────────────────────────────────────────
@@ -158,11 +168,11 @@ app.get("/health", (_req, res) => {
 app.get("/api/ping", (_req, res) => { res.send("pong"); });
 
 /** Auth routes: /api/auth/register, /api/auth/login
- *  Rate limited to 20 req/15min to prevent brute-force attacks */
+ *  Rate limited (registration 10 req/min, auth 30 req/5min per IP) to slow brute-force attacks */
 app.use("/api/auth/register", uploadLimiter);
 app.use("/api/auth", authLimiter, authRouter);
 
-/** Apply general rate limit (100 req/15min) to all other API routes */
+/** Apply general rate limit (120 req/min per IP) to all other API routes */
 app.use("/api", apiLimiter);
 
 /** Trip routes: /api/trips — CRUD, estimation, payment intents */

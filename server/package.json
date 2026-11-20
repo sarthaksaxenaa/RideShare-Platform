@@ -10,7 +10,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "npx prisma generate && tsc",
     "postinstall": "npx prisma generate || true",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^6.9.0",
@@ -34,8 +36,11 @@
     "typescript": "^5.7.0"
   },
   "devDependencies": {
+    "@types/supertest": "^7.2.1",
     "nodemon": "^3.1.9",
-    "tsx": "^4.19.0"
+    "supertest": "^7.3.2",
+    "tsx": "^4.19.0",
+    "vitest": "^5.1.1"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

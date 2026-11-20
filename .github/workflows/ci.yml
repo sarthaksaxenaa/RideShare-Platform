@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server (typecheck, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    env:
+      # Prisma only needs a syntactically valid URL to generate its client.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  rider-app:
+    name: Rider app (typecheck, lint, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rider-app
+    env:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_SOCKET_URL: http://localhost:3001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rider-app/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - name: Lint (reported, not yet blocking)
+        # 52 existing lint errors (mostly no-explicit-any and React 19 hook rules)
+        # are being cleaned up separately. Remove continue-on-error once it is clean.
+        run: npm run lint
+        continue-on-error: true
+      - run: npm run build
+
+  audit:
+    name: Dependency audit (production, critical)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: [server, rider-app]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: npm audit
+        # Blocks on critical advisories. The server still reports 4 high findings
+        # in Prisma's CLI toolchain (build-time only) that need a Prisma major
+        # upgrade; tighten this to --audit-level=high once that is done.
+        working-directory: ${{ matrix.project }}
+        run: npm audit --omit=dev --audit-level=critical
